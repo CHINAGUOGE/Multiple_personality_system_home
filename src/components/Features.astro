@@ -1,0 +1,20 @@
+---
+import Card from './Card.astro';
+import homeContent from '../content/home.json';
+
+const { features } = homeContent;
+---
+
+<section class="py-20" style="background: var(--surface)">
+  <div class="mx-auto max-w-7xl px-6">
+    <div class="mb-12 text-center">
+      <h2 class="text-3xl font-bold md:text-4xl" style="color: var(--fg)">我们的特色</h2>
+      <p class="mt-4 text-lg" style="color: var(--muted)">
+        基于实证研究，提供客观、严谨的多意识体知识与支持
+      </p>
+    </div>
+    <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+      {features.map((feature) => <Card title={feature.title} description={feature.description} />)}
+    </div>
+  </div>
+</section>

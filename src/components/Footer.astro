@@ -1,0 +1,59 @@
+---
+const currentYear = new Date().getFullYear();
+
+const links = [
+  { text: '关于我们', href: '/about' },
+  { text: '加入社区', href: '/join' },
+  { text: '友情链接', href: '/links' },
+  { text: 'Wiki', href: 'https://wiki.mpsteam.cn/' },
+  { text: 'GitHub', href: 'https://github.com/mpsteam' },
+];
+---
+
+<footer class="border-t py-12" style="border-color: var(--border); background: var(--surface)">
+  <div class="mx-auto max-w-7xl px-6">
+    <div class="grid gap-8 md:grid-cols-3">
+      <!-- Brand -->
+      <div>
+        <div class="mb-4 text-xl font-bold" style="color: var(--brand)">MPS Team CN</div>
+        <p class="text-sm leading-relaxed" style="color: var(--muted)">
+          多意识体科普与社区
+        </p>
+      </div>
+
+      <!-- Links -->
+      <div>
+        <h3 class="mb-4 text-sm font-semibold uppercase" style="color: var(--fg)">快速链接</h3>
+        <ul class="space-y-2">
+          {
+            links.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="text-sm transition-colors hover:underline"
+                  style="color: var(--muted)"
+                >
+                  {link.text}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <!-- Info -->
+      <div>
+        <h3 class="mb-4 text-sm font-semibold uppercase" style="color: var(--fg)">联系方式</h3>
+        <p class="text-sm leading-relaxed" style="color: var(--muted)">
+          通过 GitHub Issues 或社区渠道联系我们
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-8 border-t pt-8 text-center" style="border-color: var(--border)">
+      <p class="text-sm" style="color: var(--muted)">
+        © {currentYear} MPS Team CN. 保留所有权利。
+      </p>
+    </div>
+  </div>
+</footer>

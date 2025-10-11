@@ -1,0 +1,42 @@
+---
+export interface Props {
+  title: string;
+  subtitle: string;
+  primaryHref: string;
+  primaryText: string;
+  secondaryHref: string;
+  secondaryText: string;
+}
+
+const { title, subtitle, primaryHref, primaryText, secondaryHref, secondaryText } = Astro.props;
+---
+
+<section class="py-20 md:py-32">
+  <div class="mx-auto max-w-6xl px-6 text-center">
+    <h1
+      class="text-4xl font-extrabold leading-tight md:text-5xl lg:text-6xl"
+      style="color: var(--fg)"
+    >
+      {title}
+    </h1>
+    <p class="mx-auto mt-6 max-w-3xl text-lg md:text-xl" style="color: var(--muted)">
+      {subtitle}
+    </p>
+    <div class="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
+      <a
+        href={primaryHref}
+        class="inline-flex items-center justify-center rounded-xl px-8 py-3 text-base font-medium text-white transition-transform hover:scale-105"
+        style="background: var(--brand)"
+      >
+        {primaryText}
+      </a>
+      <a
+        href={secondaryHref}
+        class="inline-flex items-center justify-center rounded-xl border px-8 py-3 text-base font-medium transition-all hover:bg-surface"
+        style="border-color: var(--border); color: var(--fg)"
+      >
+        {secondaryText}
+      </a>
+    </div>
+  </div>
+</section>

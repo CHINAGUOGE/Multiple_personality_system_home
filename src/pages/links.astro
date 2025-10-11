@@ -1,0 +1,92 @@
+---
+import Layout from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+
+const links = [
+  {
+    category: '官方资源',
+    items: [
+      {
+        name: 'MPS Team CN Wiki',
+        url: 'https://wiki.mpsteam.cn/',
+        description: '多意识体知识库与科普内容',
+      },
+      {
+        name: 'GitHub 组织',
+        url: 'https://github.com/mpsteam',
+        description: '开源项目与代码仓库',
+      },
+    ],
+  },
+  {
+    category: '相关资源',
+    items: [
+      {
+        name: '占位链接 1',
+        url: '#',
+        description: '相关社区或资源描述（待补充）',
+      },
+      {
+        name: '占位链接 2',
+        url: '#',
+        description: '相关社区或资源描述（待补充）',
+      },
+    ],
+  },
+];
+---
+
+<Layout title="友情链接 — MPS Team CN" description="MPS Team CN 相关资源与友情链接">
+  <Nav />
+
+  <main class="py-20">
+    <div class="mx-auto max-w-4xl px-6">
+      <h1 class="mb-8 text-4xl font-bold md:text-5xl" style="color: var(--fg)">友情链接</h1>
+
+      <div class="mb-12">
+        <p class="text-lg leading-relaxed" style="color: var(--muted)">
+          这里汇集了 MPS Team CN 的官方资源以及相关的社区与信息平台。
+        </p>
+      </div>
+
+      <div class="space-y-12">
+        {
+          links.map((section) => (
+            <section>
+              <h2 class="mb-6 text-2xl font-bold" style="color: var(--fg)">
+                {section.category}
+              </h2>
+              <div class="grid gap-6 md:grid-cols-2">
+                {section.items.map((link) => (
+                  <a
+                    href={link.url}
+                    class="card block p-6 transition-transform hover:scale-105"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <h3 class="mb-2 text-lg font-bold" style="color: var(--brand)">
+                      {link.name}
+                    </h3>
+                    <p class="text-sm" style="color: var(--muted)">
+                      {link.description}
+                    </p>
+                  </a>
+                ))}
+              </div>
+            </section>
+          ))
+        }
+      </div>
+
+      <div class="mt-12 rounded-xl p-6" style="background: var(--surface)">
+        <h3 class="mb-3 text-lg font-bold" style="color: var(--fg)">申请友链</h3>
+        <p class="text-sm" style="color: var(--muted)">
+          如果你希望与我们交换友情链接，请通过 GitHub Issues 联系我们。
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>

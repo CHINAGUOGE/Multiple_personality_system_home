@@ -1,0 +1,88 @@
+---
+import Layout from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import Card from '../components/Card.astro';
+---
+
+<Layout title="加入社区 — MPS Team CN" description="了解如何加入 MPS Team CN 社区">
+  <Nav />
+
+  <main class="py-20">
+    <div class="mx-auto max-w-4xl px-6">
+      <h1 class="mb-8 text-4xl font-bold md:text-5xl" style="color: var(--fg)">加入社区</h1>
+
+      <div class="mb-12">
+        <p class="text-lg leading-relaxed" style="color: var(--muted)">
+          MPS Team CN
+          欢迎所有对多意识体现象感兴趣、愿意以科学与同理心参与讨论的朋友。无论你是多意识体个体、支持者、研究者还是单纯好奇的探索者，我们都欢迎你的加入。
+        </p>
+      </div>
+
+      <section class="mb-12">
+        <h2 class="mb-6 text-2xl font-bold" style="color: var(--fg)">参与方式</h2>
+        <div class="grid gap-6 md:grid-cols-2">
+          <Card
+            title="访问 Wiki"
+            description="浏览我们的知识库，了解多意识体的基础知识、常见误区与科学研究"
+          />
+          <Card
+            title="参与讨论"
+            description="在社区论坛或讨论组中分享你的想法、经验与问题"
+          />
+          <Card
+            title="贡献内容"
+            description="帮助改进 Wiki 内容、翻译文献或撰写科普文章"
+          />
+          <Card
+            title="反馈建议"
+            description="通过 GitHub Issues 或社区渠道提供反馈与改进建议"
+          />
+        </div>
+      </section>
+
+      <section class="mb-12">
+        <h2 class="mb-6 text-2xl font-bold" style="color: var(--fg)">社区规范</h2>
+        <div class="space-y-3" style="color: var(--muted)">
+          <p><strong>1. 尊重与包容</strong>：尊重每个人的独特性与观点，保持友善与理性</p>
+          <p><strong>2. 科学态度</strong>：基于实证研究进行讨论，避免伪科学与误导性内容</p>
+          <p><strong>3. 隐私保护</strong>：尊重他人隐私，未经许可不分享他人信息</p>
+          <p><strong>4. 去污名化</strong>：使用准确、中立的语言，避免污名化表达</p>
+        </div>
+      </section>
+
+      <section class="mb-12">
+        <h2 class="mb-6 text-2xl font-bold" style="color: var(--fg)">联系我们</h2>
+        <div class="rounded-xl p-6" style="background: var(--surface)">
+          <p class="mb-4" style="color: var(--muted)">
+            你可以通过以下方式联系我们或加入讨论：
+          </p>
+          <ul class="space-y-2" style="color: var(--muted)">
+            <li>
+              <a
+                href="https://wiki.mpsteam.cn/"
+                class="text-brand hover:underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                访问 Wiki
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://github.com/mpsteam"
+                class="text-brand hover:underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                GitHub 组织
+              </a>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>

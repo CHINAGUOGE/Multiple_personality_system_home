@@ -1,0 +1,44 @@
+:root {
+  /* Brand Colors - 与 wiki.mpsteam.cn 统一配色 */
+  --brand: #4fc08d; /* 主色：青绿色（Teal） */
+  --brand-600: #3da576; /* 主色深色版本 */
+  --brand-hover: #5cd4a0; /* 主色悬停效果 */
+  --accent: #8b9eff; /* 强调色：柔和紫蓝 */
+  --accent-hover: #a0aeff; /* 强调色悬停效果 */
+
+  /* Background & Foreground */
+  --bg: #ffffff;
+  --fg: #0f172a; /* 文字 */
+  --muted: #64748b; /* 次要文字 */
+
+  /* Surfaces */
+  --surface: #f8fafc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+
+  /* State */
+  --ok: #16a34a;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+
+  /* Radius & Shadow */
+  --radius: 12px; /* 与 Wiki 圆角统一 */
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* 与 Wiki 阴影统一 */
+  --shadow-hover: 0 8px 24px rgba(79, 192, 141, 0.15); /* 悬停阴影 */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* 与 Wiki 深色模式统一 */
+    --bg: #141b23; /* Wiki 深色背景 */
+    --fg: #e7edf7; /* Wiki 深色文字 */
+    --surface: #1e2532; /* 与 Wiki 代码背景一致 */
+    --card: #1e2532;
+    --border: #2d3748;
+    --muted: #94a3b8;
+
+    /* 深色模式下的阴影 */
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 8px 24px rgba(79, 192, 141, 0.25);
+  }
+}

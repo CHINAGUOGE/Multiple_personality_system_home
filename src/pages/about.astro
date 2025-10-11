@@ -1,0 +1,84 @@
+---
+import Layout from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="关于我们 — MPS Team CN" description="了解 MPS Team CN 的使命、愿景与团队">
+  <Nav />
+
+  <main class="py-20">
+    <div class="mx-auto max-w-4xl px-6">
+      <h1 class="mb-8 text-4xl font-bold md:text-5xl" style="color: var(--fg)">关于我们</h1>
+
+      <div class="prose prose-lg">
+        <section class="mb-12">
+          <h2 class="mb-4 text-2xl font-bold" style="color: var(--fg)">我们的使命</h2>
+          <p style="color: var(--muted)">
+            MPS Team CN
+            致力于为中文社区提供科学、严谨、易懂的多意识体（Multiplicity）相关知识，促进公众对多意识体现象的正确理解，消除误解与污名化。
+          </p>
+        </section>
+
+        <section class="mb-12">
+          <h2 class="mb-4 text-2xl font-bold" style="color: var(--fg)">我们的愿景</h2>
+          <p style="color: var(--muted)">
+            我们希望建立一个包容、友善、基于实证的社区，为多意识体个体及其支持者提供知识、资源与交流空间，推动社会对多样性心理现象的理解与接纳。
+          </p>
+        </section>
+
+        <section class="mb-12">
+          <h2 class="mb-4 text-2xl font-bold" style="color: var(--fg)">核心价值</h2>
+          <ul class="space-y-4">
+            <li class="flex items-start gap-3">
+              <span class="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style="background: var(--brand); color: white; font-size: 0.75rem; font-weight: bold;">✓</span>
+              <div>
+                <strong class="block" style="color: var(--fg)">科学严谨</strong>
+                <span style="color: var(--muted)">基于实证研究与专业文献</span>
+              </div>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style="background: var(--brand); color: white; font-size: 0.75rem; font-weight: bold;">✓</span>
+              <div>
+                <strong class="block" style="color: var(--fg)">去污名化</strong>
+                <span style="color: var(--muted)">用客观理性消除误解</span>
+              </div>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style="background: var(--brand); color: white; font-size: 0.75rem; font-weight: bold;">✓</span>
+              <div>
+                <strong class="block" style="color: var(--fg)">尊重包容</strong>
+                <span style="color: var(--muted)">重视每个个体的独特性</span>
+              </div>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style="background: var(--brand); color: white; font-size: 0.75rem; font-weight: bold;">✓</span>
+              <div>
+                <strong class="block" style="color: var(--fg)">开放透明</strong>
+                <span style="color: var(--muted)">公开透明的社区治理</span>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+        <section class="mb-12">
+          <h2 class="mb-4 text-2xl font-bold" style="color: var(--fg)">加入我们</h2>
+          <p style="color: var(--muted)">
+            我们欢迎所有对多意识体现象感兴趣、愿意以科学与同理心参与讨论的朋友加入我们的社区。
+          </p>
+          <div class="mt-6">
+            <a
+              href="/join"
+              class="inline-flex items-center justify-center rounded-xl px-6 py-3 text-white"
+              style="background: var(--brand)"
+            >
+              了解如何加入
+            </a>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>

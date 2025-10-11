@@ -1,0 +1,28 @@
+{
+  "hero": {
+    "title": "理解多意识体，从科学与同理出发",
+    "subtitle": "我们提供面向大众与从业者的客观科普与社区导航，严谨而温暖。",
+    "primaryCta": {
+      "text": "进入 Wiki",
+      "href": "https://wiki.mpsteam.cn/"
+    },
+    "secondaryCta": {
+      "text": "了解我们",
+      "href": "/about"
+    }
+  },
+  "features": [
+    {
+      "title": "科学严谨",
+      "description": "基于实证研究与专业文献，提供准确、可靠的多意识体知识。"
+    },
+    {
+      "title": "去污名化",
+      "description": "用客观、理性的视角消除误解，促进社会对多意识体的正确认识。"
+    },
+    {
+      "title": "社区支持",
+      "description": "为多意识体个体与关注者提供友善、包容的交流与支持空间。"
+    }
+  ]
+}
