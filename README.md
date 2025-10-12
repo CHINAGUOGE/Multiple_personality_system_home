@@ -51,7 +51,7 @@ npm run lint:fix
 
 - 官网: https://mpsteam.cn
 - Wiki: https://wiki.mpsteam.cn
-- GitHub: https://github.com/mpsteam
+- GitHub: https://github.com/mps-team-cn
 
 ## 协议
 
