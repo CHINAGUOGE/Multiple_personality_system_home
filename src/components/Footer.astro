@@ -4,6 +4,7 @@ const currentYear = new Date().getFullYear();
 const links = [
   { text: '关于我们', href: '/about' },
   { text: '加入社区', href: '/join' },
+  { text: '联系我们', href: '/contact' },
   { text: '友情链接', href: '/links' },
   { text: 'Wiki', href: 'https://wiki.mpsteam.cn/' },
   { text: 'GitHub', href: 'https://github.com/mps-team-cn' },
@@ -41,12 +42,63 @@ const links = [
         </ul>
       </div>
 
-      <!-- Info -->
+      <!-- Contact Info -->
       <div>
         <h3 class="mb-4 text-sm font-semibold uppercase" style="color: var(--fg)">联系方式</h3>
-        <p class="text-sm leading-relaxed" style="color: var(--muted)">
-          通过 GitHub Issues 或社区渠道联系我们
-        </p>
+        <ul class="space-y-3">
+          <li class="flex items-start gap-2">
+            <svg
+              class="mt-0.5 h-4 w-4 flex-shrink-0"
+              style="color: var(--brand)"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              ></path>
+            </svg>
+            <div>
+              <div class="text-xs font-medium" style="color: var(--fg)">官方联系</div>
+              <a
+                href="mailto:contact@mpsteam.cn"
+                class="text-sm transition-colors hover:underline"
+                style="color: var(--muted)"
+              >
+                contact@mpsteam.cn
+              </a>
+            </div>
+          </li>
+          <li class="flex items-start gap-2">
+            <svg
+              class="mt-0.5 h-4 w-4 flex-shrink-0"
+              style="color: var(--accent)"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+              ></path>
+            </svg>
+            <div>
+              <div class="text-xs font-medium" style="color: var(--fg)">信息反馈</div>
+              <a
+                href="mailto:support@mpsteam.cn"
+                class="text-sm transition-colors hover:underline"
+                style="color: var(--muted)"
+              >
+                support@mpsteam.cn
+              </a>
+            </div>
+          </li>
+        </ul>
       </div>
     </div>
 
