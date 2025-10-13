@@ -2,13 +2,14 @@
 export interface Props {
   title: string;
   subtitle: string;
+  manifesto?: string;
   primaryHref: string;
   primaryText: string;
   secondaryHref: string;
   secondaryText: string;
 }
 
-const { title, subtitle, primaryHref, primaryText, secondaryHref, secondaryText } = Astro.props;
+const { title, subtitle, manifesto, primaryHref, primaryText, secondaryHref, secondaryText } = Astro.props;
 ---
 
 <section class="py-20 md:py-32">
@@ -22,6 +23,17 @@ const { title, subtitle, primaryHref, primaryText, secondaryHref, secondaryText 
     <p class="mx-auto mt-6 max-w-3xl text-lg md:text-xl" style="color: var(--muted)">
       {subtitle}
     </p>
+
+    {manifesto && (
+      <div class="mx-auto mt-12 max-w-4xl">
+        <blockquote class="manifesto-quote">
+          <p class="manifesto-text">
+            {manifesto}
+          </p>
+        </blockquote>
+      </div>
+    )}
+
     <div class="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
       <a
         href={primaryHref}
@@ -40,3 +52,43 @@ const { title, subtitle, primaryHref, primaryText, secondaryHref, secondaryText 
     </div>
   </div>
 </section>
+
+<style>
+  .manifesto-quote {
+    position: relative;
+    padding: 2rem 1.5rem;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg,
+      rgba(107, 124, 255, 0.05) 0%,
+      rgba(255, 122, 182, 0.05) 100%
+    );
+    border-left: 4px solid var(--brand);
+  }
+
+  .manifesto-text {
+    font-size: 1.125rem;
+    line-height: 1.8;
+    font-weight: 500;
+    font-style: italic;
+    color: var(--fg);
+    letter-spacing: 0.01em;
+  }
+
+  @media (min-width: 768px) {
+    .manifesto-text {
+      font-size: 1.25rem;
+    }
+  }
+
+  .manifesto-quote::before {
+    content: '"';
+    position: absolute;
+    top: 0.5rem;
+    left: 1rem;
+    font-size: 4rem;
+    line-height: 1;
+    opacity: 0.1;
+    color: var(--brand);
+    font-family: Georgia, serif;
+  }
+</style>
