@@ -1,8 +1,11 @@
 ---
 import Layout from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
 ---
 
 <Layout title="联系我们 - MPS Team CN">
+  <Nav />
   <!-- Hero Section -->
   <section class="py-16" style="background: var(--surface)">
     <div class="mx-auto max-w-4xl px-6 text-center">
@@ -167,4 +170,5 @@ import Layout from '../layouts/Base.astro';
       </div>
     </div>
   </section>
+  <Footer />
 </Layout>
