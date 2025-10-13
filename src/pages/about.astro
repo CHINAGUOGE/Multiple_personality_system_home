@@ -2,9 +2,29 @@
 import Layout from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
+import { getBreadcrumbSchema } from '../utils/seo';
+
+const breadcrumbs = [
+  { name: '首页', url: '/' },
+  { name: '关于我们', url: '/about' },
+];
 ---
 
-<Layout title="关于我们 — MPS Team CN" description="了解 MPS Team CN 的使命、愿景与团队">
+<Layout
+  title="关于我们"
+  description="了解 MPS Team CN 的使命、愿景与核心价值。我们致力于为中文社区提供科学、严谨、易懂的多意识体相关知识，促进公众对多意识体现象的正确理解。"
+  canonical="/about"
+  keywords={[
+    '关于我们',
+    'MPS Team CN',
+    '团队介绍',
+    '使命愿景',
+    '多意识体科普',
+    '心理健康教育',
+    '社区建设',
+  ]}
+  structuredData={[getBreadcrumbSchema(breadcrumbs)]}
+>
   <Nav />
 
   <main class="py-20">

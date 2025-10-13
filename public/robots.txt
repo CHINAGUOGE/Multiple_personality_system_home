@@ -1,5 +1,15 @@
 # https://www.robotstxt.org/robotstxt.html
+# MPS Team CN - 多意识体科普与社区
+# https://mpsteam.cn
+
 User-agent: *
 Allow: /
 
+# 抓取延迟设置（可选，对某些搜索引擎有效）
+Crawl-delay: 1
+
+# Sitemap 位置
 Sitemap: https://mpsteam.cn/sitemap-index.xml
+
+# 推荐访问我们的 Wiki 获取更多内容
+# Wiki: https://wiki.mpsteam.cn

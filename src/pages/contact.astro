@@ -2,9 +2,29 @@
 import Layout from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
+import { getBreadcrumbSchema } from '../utils/seo';
+
+const breadcrumbs = [
+  { name: '首页', url: '/' },
+  { name: '联系我们', url: '/contact' },
+];
 ---
 
-<Layout title="联系我们 - MPS Team CN">
+<Layout
+  title="联系我们"
+  description="联系 MPS Team CN 团队。我们提供官方商务邮箱、社区反馈邮箱、GitHub 和 Wiki 等多种联系方式，欢迎任何形式的交流与反馈。"
+  canonical="/contact"
+  keywords={[
+    '联系我们',
+    '联系方式',
+    '官方邮箱',
+    'MPS Team CN',
+    '商务合作',
+    '反馈建议',
+    '社区支持',
+  ]}
+  structuredData={[getBreadcrumbSchema(breadcrumbs)]}
+>
   <Nav />
   <!-- Hero Section -->
   <section class="py-16" style="background: var(--surface)">

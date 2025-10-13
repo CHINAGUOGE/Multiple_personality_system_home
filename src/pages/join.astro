@@ -3,9 +3,29 @@ import Layout from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import Card from '../components/Card.astro';
+import { getBreadcrumbSchema } from '../utils/seo';
+
+const breadcrumbs = [
+  { name: '首页', url: '/' },
+  { name: '加入社区', url: '/join' },
+];
 ---
 
-<Layout title="加入社区 — MPS Team CN" description="了解如何加入 MPS Team CN 社区">
+<Layout
+  title="加入社区"
+  description="加入 MPS Team CN 社区，与我们一起推动多意识体科普事业。无论你是多意识体个体、支持者、研究者还是单纯好奇的探索者，我们都欢迎你的加入。"
+  canonical="/join"
+  keywords={[
+    '加入社区',
+    '社区参与',
+    'MPS 社区',
+    '贡献指南',
+    '志愿者招募',
+    '社区规范',
+    '多意识体交流',
+  ]}
+  structuredData={[getBreadcrumbSchema(breadcrumbs)]}
+>
   <Nav />
 
   <main class="py-20">
