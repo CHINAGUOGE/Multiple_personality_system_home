@@ -1,13 +1,15 @@
 {
-  "name": "MPS Team CN",
-  "short_name": "MPS Team",
-  "description": "�S�n>:",
+  "name": "MPS Team CN - 多意识体科普与社区",
+  "short_name": "MPS Team CN",
+  "description": "我们提供面向大众与从业者的客观科普与社区导航，严谨而温暖。",
   "start_url": "/",
   "display": "standalone",
   "theme_color": "#6b7cff",
   "background_color": "#ffffff",
   "lang": "zh-CN",
-  "orientation": "portrait-primary",
+  "dir": "ltr",
+  "orientation": "any",
+  "scope": "/",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
