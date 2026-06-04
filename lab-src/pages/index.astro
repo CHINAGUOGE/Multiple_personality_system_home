@@ -2,15 +2,18 @@
 const title = 'MPSTEAM Lab';
 const description = 'MPS Team CN 的实验项目与小游戏集合。';
 const currentYear = new Date().getFullYear();
+const mainSite = 'https://mpsteam.cn';
+const labSite = 'https://lab.mpsteam.cn';
 
 const navItems = [
-  { text: '主页', href: 'https://www.mpsteam.cn/' },
-  { text: '关于我们', href: 'https://www.mpsteam.cn/about' },
-  { text: '加入社区', href: 'https://www.mpsteam.cn/join' },
+  { text: '主页', href: `${mainSite}/` },
+  { text: '关于我们', href: `${mainSite}/about` },
+  { text: '加入社区', href: `${mainSite}/join` },
   { text: 'Wiki', href: 'https://wiki.mpsteam.cn/', external: true },
+  { text: 'Lab', href: `${labSite}/`, active: true },
   { text: 'GitHub', href: 'https://github.com/mps-team-cn', external: true },
-  { text: '友情链接', href: 'https://www.mpsteam.cn/links' },
-  { text: '联系我们', href: 'https://www.mpsteam.cn/contact' },
+  { text: '友情链接', href: `${mainSite}/links` },
+  { text: '联系我们', href: `${mainSite}/contact` },
 ];
 
 const projects = [
@@ -31,18 +34,19 @@ const projects = [
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <meta name="theme-color" content="#4fc08d" />
-    <link rel="icon" type="image/png" href="https://www.mpsteam.cn/favicon.png" />
+    <link rel="icon" type="image/png" href={`${mainSite}/favicon.png`} />
     <title>{title} - 实验项目集合</title>
   </head>
   <body>
     <nav class="site-nav" aria-label="主导航">
       <div class="nav-inner">
-        <a class="brand" href="https://www.mpsteam.cn/">MPS Team CN</a>
+        <a class="brand" href={`${mainSite}/`}>MPS Team CN</a>
         <div class="nav-links" aria-label="桌面导航">
           {
             navItems.map((item) => (
               <a
                 href={item.href}
+                class={item.active ? 'active' : undefined}
                 target={item.external ? '_blank' : undefined}
                 rel={item.external ? 'noopener noreferrer' : undefined}
               >
@@ -50,7 +54,6 @@ const projects = [
               </a>
             ))
           }
-          <a class="active" href="/">Lab</a>
         </div>
       </div>
     </nav>
@@ -66,7 +69,7 @@ const projects = [
           </p>
           <div class="actions" aria-label="主要操作">
             <a class="button primary" href="race/">进入横线赛车</a>
-            <a class="button secondary" href="https://www.mpsteam.cn/">返回主站</a>
+            <a class="button secondary" href={`${mainSite}/`}>返回主站</a>
           </div>
         </div>
       </section>
@@ -105,9 +108,9 @@ const projects = [
         <div>
           <h2>快速链接</h2>
           <ul>
-            <li><a href="https://www.mpsteam.cn/about">关于我们</a></li>
-            <li><a href="https://www.mpsteam.cn/join">加入社区</a></li>
-            <li><a href="https://www.mpsteam.cn/contact">联系我们</a></li>
+            <li><a href={`${mainSite}/about`}>关于我们</a></li>
+            <li><a href={`${mainSite}/join`}>加入社区</a></li>
+            <li><a href={`${mainSite}/contact`}>联系我们</a></li>
             <li><a href="https://wiki.mpsteam.cn/">Wiki</a></li>
           </ul>
         </div>
