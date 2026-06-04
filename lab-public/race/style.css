@@ -712,6 +712,13 @@ select {
     grid-template-columns: 1fr;
   }
 
+  #racePage > .page-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
   #shopPage > .page-header {
     margin: -10px -10px 8px;
     padding: 10px;
@@ -721,8 +728,26 @@ select {
     font-size: 22px;
   }
 
+  #racePage > .page-header h1 {
+    font-size: 20px;
+  }
+
+  #racePage > .page-header p {
+    margin-top: 0;
+    font-size: 12px;
+  }
+
   .header-stat {
     min-width: 0;
+  }
+
+  #racePage > .page-header .header-stat {
+    min-width: 104px;
+    padding: 5px 7px;
+  }
+
+  #racePage > .page-header .header-stat strong {
+    font-size: 15px;
   }
 
   .summary-grid,
@@ -731,6 +756,21 @@ select {
   .fixed-shop-grid,
   .race-actions {
     grid-template-columns: 1fr;
+  }
+
+  #racePage .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    margin-bottom: 6px;
+  }
+
+  #racePage .summary-item {
+    gap: 1px;
+    padding: 6px 7px;
+  }
+
+  #racePage .summary-item strong {
+    font-size: 14px;
   }
 
   .group-box,
