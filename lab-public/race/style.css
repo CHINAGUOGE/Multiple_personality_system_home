@@ -173,6 +173,16 @@ select {
   margin-bottom: 8px;
 }
 
+#shopPage > .page-header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  margin: -8px -8px 8px;
+  padding: 8px;
+  background: #d4d0c8;
+  border-bottom: 2px groove #fff;
+}
+
 .page-header h1,
 .page-header p,
 .shop-section h2,
@@ -700,6 +710,11 @@ select {
   .page-header {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  #shopPage > .page-header {
+    margin: -10px -10px 8px;
+    padding: 10px;
   }
 
   .page-header h1 {
