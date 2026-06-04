@@ -619,6 +619,29 @@ function formatPartType(type) {
   return PART_TYPE_LABELS[type] || type;
 }
 
+function getPartRarity(part) {
+  return PART_RARITY_LABELS[part && part.rarity] ? part.rarity : 'common';
+}
+
+function formatPartRarity(part) {
+  return PART_RARITY_LABELS[getPartRarity(part)];
+}
+
+function renderPartRarity(part) {
+  const rarity = getPartRarity(part);
+  return `<span class="part-quality part-quality-${rarity}">${PART_RARITY_LABELS[rarity]}</span>`;
+}
+
+function renderPartName(part, includeId = false) {
+  const rarity = getPartRarity(part);
+  const label = includeId ? `#${part.id} ${part.name}` : part.name;
+  return `<span class="part-quality part-quality-${rarity}">${label}</span>`;
+}
+
+function formatPartOption(part) {
+  return `[${formatPartRarity(part)}] #${part.id} ${part.name}`;
+}
+
 function getRaceTier() {
   return (
     RACE_TIERS.slice()
@@ -706,6 +729,7 @@ function createSaveData() {
       id: part.id,
       name: part.name,
       type: part.type,
+      rarity: getPartRarity(part),
       price: part.price,
       effectText: part.effectText,
       changes: { ...part.changes },
@@ -744,6 +768,7 @@ function sanitizeSaveData(data) {
           id,
           name: String(part.name || '未命名零件'),
           type: part.type,
+          rarity: PART_RARITY_LABELS[part.rarity] ? part.rarity : 'common',
           price: Math.floor(price),
           effectText: String(part.effectText || '-'),
           changes,
@@ -1227,8 +1252,9 @@ function renderShop() {
   gameState.shopItems.forEach((part, index) => {
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td>${part.name}</td>
+      <td>${renderPartName(part)}</td>
       <td>${formatPartType(part.type)}</td>
+      <td>${renderPartRarity(part)}</td>
       <td>${part.effectText}</td>
       <td>${part.price} 元</td>
       <td></td>
@@ -1311,11 +1337,13 @@ function renderGarage() {
     parts.forEach((part) => {
       const option = document.createElement('option');
       option.value = String(part.id);
-      option.textContent = `#${part.id} ${part.name}`;
+      option.textContent = formatPartOption(part);
+      option.className = `part-quality-${getPartRarity(part)}`;
       select.appendChild(option);
     });
 
     select.value = equippedPart ? String(equippedPart.id) : '';
+    select.className = equippedPart ? `part-quality-${getPartRarity(equippedPart)}` : '';
     select.addEventListener('change', () => changeEquipment(type, select.value));
     selectCell.appendChild(select);
 
@@ -1330,15 +1358,16 @@ function renderGarage() {
 
   if (gameState.inventory.length === 0) {
     const emptyRow = document.createElement('tr');
-    emptyRow.innerHTML = `<td colspan="4">仓库空。比赛后去商店买零件。</td>`;
+    emptyRow.innerHTML = `<td colspan="5">仓库空。比赛后去商店买零件。</td>`;
     el.garageInventoryBody.appendChild(emptyRow);
   } else {
     gameState.inventory.forEach((part) => {
       const equipped = gameState.equippedParts[part.type] === part.id;
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td>#${part.id} ${part.name}</td>
+        <td>${renderPartName(part, true)}</td>
         <td>${formatPartType(part.type)}</td>
+        <td>${renderPartRarity(part)}</td>
         <td>${equipped ? '已装车' : '仓库'}</td>
         <td></td>
       `;

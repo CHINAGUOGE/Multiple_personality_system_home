@@ -380,6 +380,26 @@ select {
   background: #fff;
 }
 
+.part-quality {
+  font-weight: bold;
+}
+
+.part-quality-common {
+  color: #303030;
+}
+
+.part-quality-uncommon {
+  color: #1f8f2e;
+}
+
+.part-quality-rare {
+  color: #1f55d6;
+}
+
+.part-quality-legendary {
+  color: #b75b00;
+}
+
 .shop-table button,
 .garage-table button {
   min-width: 54px;
