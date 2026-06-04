@@ -672,13 +672,16 @@ select {
   .app-window {
     width: 100%;
     min-height: 100svh;
+    padding-top: 44px;
     border: 0;
     box-shadow: none;
   }
 
   .title-bar {
-    position: sticky;
+    position: fixed;
     top: 0;
+    right: 0;
+    left: 0;
     z-index: 11;
     min-height: 44px;
     padding: 8px 12px;
