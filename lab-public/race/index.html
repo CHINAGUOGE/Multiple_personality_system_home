@@ -26,123 +26,208 @@
         <button type="button">帮助(H)</button>
       </nav>
 
-      <section class="toolbar" aria-label="游戏操作">
-        <button id="registerBtn" type="button">报名比赛</button>
-        <button id="startBtn" type="button" disabled>起步 / 踩油门</button>
-        <button id="nextBtn" type="button" disabled>下一场比赛</button>
-        <button id="garageBtn" type="button">车库</button>
-        <button id="shopBtn" type="button">商店</button>
-        <button id="saveBtn" type="button">保存</button>
-        <button id="loadBtn" type="button">读取</button>
-        <button id="restartBtn" type="button">重开</button>
-      </section>
+      <nav class="page-tabs" aria-label="页面导航">
+        <button id="raceTab" class="is-active" type="button" data-page="race" aria-controls="racePage">赛事</button>
+        <button id="shopTab" type="button" data-page="shop" aria-controls="shopPage">商店</button>
+        <button id="storageTab" type="button" data-page="storage" aria-controls="storagePage">仓库</button>
+      </nav>
 
-      <div class="content-grid">
-        <section class="group-box race-box">
-          <h1>比赛窗口</h1>
-          <div class="race-layout">
-            <aside class="light-panel" aria-label="起跑灯">
-              <div id="redLight" class="light red"></div>
-              <div id="yellowLight" class="light yellow"></div>
-              <div id="greenLight" class="light green"></div>
-              <div id="lightLabel" class="light-label">未报名</div>
-            </aside>
-
-            <div class="track-panel">
-              <div class="marker start-marker">START</div>
-              <div class="marker finish-marker">FINISH</div>
-              <div id="lanes" class="lanes"></div>
+      <div class="page-shell">
+        <section id="racePage" class="app-page is-active" data-page="race">
+          <header class="page-header">
+            <div>
+              <h1>横线赛车经营赛</h1>
+              <p>v1.2</p>
             </div>
-          </div>
-          <div class="race-status">
-            <span>状态：<strong id="phaseText">待机</strong></span>
-            <span>赛事等级：<strong id="raceTierText">街边练习赛</strong></span>
-            <span>报名费：<strong id="entryFeeText">200</strong> 元</span>
-            <span>电脑强度：<strong id="opponentPowerText">1.00</strong></span>
-          </div>
+            <div class="header-stat">
+              <span>当前资金</span>
+              <strong id="cashStat">1500 元</strong>
+            </div>
+          </header>
+
+          <section class="summary-grid" aria-label="赛事摘要">
+            <div class="summary-item">
+              <span>当前车辆</span>
+              <strong id="currentVehicleText">玩家破车</strong>
+            </div>
+            <div class="summary-item">
+              <span>比赛状态</span>
+              <strong id="phaseText">待机</strong>
+            </div>
+            <div class="summary-item">
+              <span>赛事等级</span>
+              <strong id="raceTierText">街边练习赛</strong>
+            </div>
+            <div class="summary-item">
+              <span>报名费</span>
+              <strong><span id="entryFeeText">200</span> 元</strong>
+            </div>
+          </section>
+
+          <section class="group-box race-box">
+            <h2>赛道区域</h2>
+            <div class="race-layout">
+              <aside class="light-panel" aria-label="起跑灯">
+                <div id="redLight" class="light red"></div>
+                <div id="yellowLight" class="light yellow"></div>
+                <div id="greenLight" class="light green"></div>
+                <div id="lightLabel" class="light-label">未报名</div>
+              </aside>
+
+              <div class="track-panel">
+                <div class="marker start-marker">START</div>
+                <div class="marker finish-marker">FINISH</div>
+                <div id="lanes" class="lanes"></div>
+              </div>
+            </div>
+            <div class="race-status">
+              <span>电脑强度：<strong id="opponentPowerText">1.00</strong></span>
+              <span>比赛次数：<strong id="raceCountStat">0</strong></span>
+              <span>上场名次：<strong id="lastRankStat">-</strong></span>
+            </div>
+          </section>
+
+          <section class="race-actions" aria-label="赛事操作">
+            <button id="registerBtn" type="button">报名比赛</button>
+            <button id="startBtn" type="button" disabled>起步 / 踩油门</button>
+            <button id="nextBtn" type="button" disabled>下一场比赛</button>
+          </section>
+
+          <section class="result-panel" aria-live="polite">
+            <h2>比赛结果提示</h2>
+            <p id="resultMessage">先报名比赛，等绿灯后点击起步。</p>
+          </section>
+
+          <section class="group-box stats-box">
+            <h2>当前车辆属性</h2>
+            <dl class="stats-list">
+              <div><dt>引擎</dt><dd id="engineStat"></dd></div>
+              <div><dt>轮胎</dt><dd id="tireStat"></dd></div>
+              <div><dt>变速箱</dt><dd id="gearboxStat"></dd></div>
+              <div><dt>稳定性</dt><dd id="stabilityStat"></dd></div>
+              <div><dt>重量</dt><dd id="weightStat"></dd></div>
+              <div><dt>马力</dt><dd id="hpStat"></dd></div>
+              <div><dt>赛事等级</dt><dd id="raceTierStat"></dd></div>
+            </dl>
+          </section>
+
+          <section class="group-box log-box">
+            <h2>比赛记录</h2>
+            <pre id="logOutput" class="log-output" aria-live="polite"></pre>
+          </section>
         </section>
 
-        <aside class="group-box stats-box">
-          <h2>玩家车辆状态</h2>
-          <table class="stats-table">
-            <tbody>
-              <tr><th>引擎</th><td id="engineStat"></td></tr>
-              <tr><th>轮胎</th><td id="tireStat"></td></tr>
-              <tr><th>变速箱</th><td id="gearboxStat"></td></tr>
-              <tr><th>稳定性</th><td id="stabilityStat"></td></tr>
-              <tr><th>重量</th><td id="weightStat"></td></tr>
-              <tr><th>马力</th><td id="hpStat"></td></tr>
-              <tr><th>现金</th><td id="cashStat"></td></tr>
-              <tr><th>比赛次数</th><td id="raceCountStat"></td></tr>
-              <tr><th>赛事等级</th><td id="raceTierStat"></td></tr>
-              <tr><th>上场名次</th><td id="lastRankStat"></td></tr>
-            </tbody>
-          </table>
-        </aside>
+        <section id="shopPage" class="app-page" data-page="shop" hidden>
+          <header class="page-header">
+            <div>
+              <h1>商店</h1>
+              <p>车辆消费与升级</p>
+            </div>
+            <div class="header-stat">
+              <span>当前资金</span>
+              <strong id="shopCashStat">1500 元</strong>
+            </div>
+          </header>
 
-        <section id="shopPanel" class="group-box shop-box">
-          <h2>随机零件商店</h2>
-          <div class="table-scroll">
-            <table class="shop-table">
-              <thead>
-                <tr>
-                  <th>零件名称</th>
-                  <th>类型</th>
-                  <th>等级</th>
-                  <th>效果</th>
-                  <th>价格</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody id="shopBody"></tbody>
-            </table>
-          </div>
+          <section class="shop-section" aria-label="车辆服务">
+            <h2>车辆服务</h2>
+            <div class="card-grid fixed-shop-grid">
+              <article class="shop-card">
+                <div>
+                  <h3>购买车辆</h3>
+                  <p>当前版本仅开放基础车辆。</p>
+                  <strong>价格：未开放</strong>
+                </div>
+                <button type="button" disabled>暂无可购车辆</button>
+                <small>原因：1.2 版本没有多车辆数据模型</small>
+              </article>
+              <article class="shop-card">
+                <div>
+                  <h3>升级车辆</h3>
+                  <p>购买随机零件后会自动进入仓库，空槽会自动装备。</p>
+                  <strong>价格：见零件卡片</strong>
+                </div>
+                <button type="button" disabled>选择下方零件</button>
+                <small>效果：提升引擎、轮胎、变速箱、马力等属性</small>
+              </article>
+              <article class="shop-card">
+                <div>
+                  <h3>维修车辆</h3>
+                  <p>当前车辆没有耐久损耗。</p>
+                  <strong>价格：0 元</strong>
+                </div>
+                <button type="button" disabled>无需维修</button>
+                <small>原因：没有车辆损坏状态</small>
+              </article>
+            </div>
+          </section>
+
+          <section id="shopPanel" class="shop-section">
+            <h2>随机零件商店</h2>
+            <div id="shopBody" class="card-grid shop-cards"></div>
+          </section>
         </section>
 
-        <section id="garagePanel" class="group-box garage-box is-hidden">
-          <h2>车库 / 零件槽位</h2>
-          <p class="panel-note">每种类型只能装备一个部件。旧部件留在仓库；未装备零件可按原价 8 折出售。</p>
-          <div class="table-scroll">
-            <table class="garage-table">
-              <thead>
-                <tr>
-                  <th>槽位</th>
-                  <th>当前装备</th>
-                  <th>效果</th>
-                </tr>
-              </thead>
-              <tbody id="garageSlotsBody"></tbody>
-            </table>
-          </div>
+        <section id="storagePage" class="app-page" data-page="storage" hidden>
+          <header class="page-header">
+            <div>
+              <h1>仓库</h1>
+              <p>车辆、零件与系统操作</p>
+            </div>
+            <div class="header-stat">
+              <span>当前资金</span>
+              <strong id="storageCashStat">1500 元</strong>
+            </div>
+          </header>
 
-          <h3 class="sub-heading">仓库库存</h3>
-          <div class="table-scroll">
-            <table class="garage-table">
-              <thead>
-                <tr>
-                  <th>零件名称</th>
-                  <th>类型</th>
-                  <th>等级</th>
-                  <th>状态</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody id="garageInventoryBody"></tbody>
-            </table>
-          </div>
-        </section>
+          <section class="storage-current">
+            <article class="vehicle-card is-current">
+              <div>
+                <span class="current-badge">当前车辆</span>
+                <h2>玩家破车</h2>
+                <p>基础车辆。当前版本只有这一辆可用车辆。</p>
+              </div>
+              <button type="button" disabled>已选中</button>
+            </article>
+          </section>
 
-        <section class="group-box log-box">
-          <h2>比赛记录</h2>
-          <pre id="logOutput" class="log-output" aria-live="polite"></pre>
+          <section id="garagePanel" class="storage-section">
+            <h2>车辆属性</h2>
+            <dl class="stats-list storage-stats">
+              <div><dt>引擎</dt><dd id="storageEngineStat"></dd></div>
+              <div><dt>轮胎</dt><dd id="storageTireStat"></dd></div>
+              <div><dt>变速箱</dt><dd id="storageGearboxStat"></dd></div>
+              <div><dt>稳定性</dt><dd id="storageStabilityStat"></dd></div>
+              <div><dt>重量</dt><dd id="storageWeightStat"></dd></div>
+              <div><dt>马力</dt><dd id="storageHpStat"></dd></div>
+            </dl>
+
+            <h2>零件槽位</h2>
+            <p class="panel-note">每种类型只能装备一个部件。旧部件留在仓库；未装备零件可按原价 8 折出售。</p>
+            <div id="garageSlotsBody" class="slot-list"></div>
+
+            <h2>已拥有车辆与零件</h2>
+            <div class="owned-list">
+              <article class="inventory-card is-current">
+                <div>
+                  <h3>玩家破车</h3>
+                  <p>当前选中车辆</p>
+                </div>
+                <button type="button" disabled>当前</button>
+              </article>
+              <div id="garageInventoryBody" class="inventory-list"></div>
+            </div>
+          </section>
+
+          <section class="system-actions" aria-label="系统操作">
+            <button id="saveBtn" type="button">保存</button>
+            <button id="loadBtn" type="button">读取</button>
+            <button id="restartBtn" type="button">重开</button>
+          </section>
         </section>
       </div>
     </main>
   </div>
-
-  <aside class="rotate-hint" role="status" aria-live="polite">
-    请旋转手机横屏游玩
-  </aside>
 
   <script src="./game.js"></script>
 </body>
