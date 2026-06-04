@@ -27,10 +27,13 @@
 
       <section class="toolbar" aria-label="游戏操作">
         <button id="registerBtn" type="button">报名比赛</button>
-        <button id="startBtn" type="button" disabled>开始比赛</button>
+        <button id="startBtn" type="button" disabled>起步 / 踩油门</button>
         <button id="nextBtn" type="button" disabled>下一场比赛</button>
         <button id="garageBtn" type="button">车库</button>
         <button id="shopBtn" type="button">商店</button>
+        <button id="saveBtn" type="button">保存</button>
+        <button id="loadBtn" type="button">读取</button>
+        <button id="restartBtn" type="button">重开</button>
         <button id="exitBtn" type="button">退出</button>
       </section>
 
@@ -53,6 +56,7 @@
           </div>
           <div class="race-status">
             <span>状态：<strong id="phaseText">待机</strong></span>
+            <span>赛事等级：<strong id="raceTierText">街边练习赛</strong></span>
             <span>报名费：<strong id="entryFeeText">200</strong> 元</span>
             <span>电脑强度：<strong id="opponentPowerText">1.00</strong></span>
           </div>
@@ -70,6 +74,7 @@
               <tr><th>马力</th><td id="hpStat"></td></tr>
               <tr><th>现金</th><td id="cashStat"></td></tr>
               <tr><th>比赛次数</th><td id="raceCountStat"></td></tr>
+              <tr><th>赛事等级</th><td id="raceTierStat"></td></tr>
               <tr><th>上场名次</th><td id="lastRankStat"></td></tr>
             </tbody>
           </table>
@@ -77,46 +82,52 @@
 
         <section id="shopPanel" class="group-box shop-box">
           <h2>随机零件商店</h2>
-          <table class="shop-table">
-            <thead>
-              <tr>
-                <th>零件名称</th>
-                <th>类型</th>
-                <th>效果</th>
-                <th>价格</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="shopBody"></tbody>
-          </table>
+          <div class="table-scroll">
+            <table class="shop-table">
+              <thead>
+                <tr>
+                  <th>零件名称</th>
+                  <th>类型</th>
+                  <th>效果</th>
+                  <th>价格</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="shopBody"></tbody>
+            </table>
+          </div>
         </section>
 
         <section id="garagePanel" class="group-box garage-box is-hidden">
           <h2>车库 / 零件槽位</h2>
           <p class="panel-note">每种类型只能装备一个部件。旧部件留在仓库；未装备零件可按原价 8 折出售。</p>
-          <table class="garage-table">
-            <thead>
-              <tr>
-                <th>槽位</th>
-                <th>当前装备</th>
-                <th>效果</th>
-              </tr>
-            </thead>
-            <tbody id="garageSlotsBody"></tbody>
-          </table>
+          <div class="table-scroll">
+            <table class="garage-table">
+              <thead>
+                <tr>
+                  <th>槽位</th>
+                  <th>当前装备</th>
+                  <th>效果</th>
+                </tr>
+              </thead>
+              <tbody id="garageSlotsBody"></tbody>
+            </table>
+          </div>
 
           <h3 class="sub-heading">仓库库存</h3>
-          <table class="garage-table">
-            <thead>
-              <tr>
-                <th>零件名称</th>
-                <th>类型</th>
-                <th>状态</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="garageInventoryBody"></tbody>
-          </table>
+          <div class="table-scroll">
+            <table class="garage-table">
+              <thead>
+                <tr>
+                  <th>零件名称</th>
+                  <th>类型</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="garageInventoryBody"></tbody>
+            </table>
+          </div>
         </section>
 
         <section class="group-box log-box">

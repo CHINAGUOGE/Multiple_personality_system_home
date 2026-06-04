@@ -109,6 +109,7 @@ select {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
   padding: 4px 6px;
   border-bottom: 1px solid #808080;
 }
@@ -141,6 +142,7 @@ select {
 
 .group-box {
   position: relative;
+  min-width: 0;
   padding: 18px 8px 8px;
   background: #d4d0c8;
   border: 2px groove #fff;
@@ -355,6 +357,13 @@ select {
   min-height: 190px;
 }
 
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  border: 2px inset #fff;
+  background: #fff;
+}
+
 .shop-table th,
 .garage-table th {
   background: #0a246a;
@@ -432,5 +441,60 @@ select {
   .track-panel {
     padding-left: 50px;
     padding-right: 40px;
+  }
+}
+
+@media (max-width: 640px) {
+  .desktop {
+    padding: 8px;
+  }
+
+  .app-window {
+    width: calc(100vw - 16px);
+  }
+
+  button {
+    min-height: 34px;
+    padding: 5px 10px;
+  }
+
+  button:active:not(:disabled) {
+    padding: 6px 9px 4px 11px;
+  }
+
+  .menu-bar button {
+    min-height: 28px;
+  }
+
+  .content-grid {
+    padding: 6px;
+  }
+
+  .race-box {
+    overflow-x: auto;
+  }
+
+  .race-layout {
+    grid-template-columns: 82px minmax(500px, 1fr);
+    min-width: 596px;
+  }
+
+  .light-panel {
+    grid-template-columns: 1fr;
+    min-height: 286px;
+  }
+
+  .track-panel {
+    min-width: 500px;
+  }
+
+  .shop-table,
+  .garage-table {
+    min-width: 620px;
+  }
+
+  .shop-table button,
+  .garage-table button {
+    min-height: 34px;
   }
 }

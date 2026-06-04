@@ -18,6 +18,7 @@ const ENTRY_FEE = 200;
 const PART_SELL_RATE = 0.8;
 const FINISH = 100;
 const TICK_MS = 45;
+const STORAGE_KEY = "mpsteam-race-save-v1";
 
 const BASE_PLAYER_STATS = {
   engine: 10,
@@ -41,6 +42,12 @@ const PART_TYPE_LABELS = {
   Stability: "稳定件"
 };
 
+const RACE_TIERS = [
+  { minRaceCount: 0, label: "街边练习赛" },
+  { minRaceCount: 5, label: "城郊挑战赛" },
+  { minRaceCount: 12, label: "地下高速赛" }
+];
+
 const PART_POOL = [
   { name: "高压火花塞", type: "Engine", price: 600, effectText: "引擎 +8，稳定性 -2", changes: { engine: 8, stability: -2 } },
   { name: "运动轮胎", type: "Tire", price: 750, effectText: "轮胎 +6，稳定性 +1", changes: { tire: 6, stability: 1 } },
@@ -60,6 +67,13 @@ const PART_POOL = [
   { name: "街边进气套件", type: "Intake", price: 620, effectText: "马力 +7，稳定性 -1", changes: { hp: 7, stability: -1 } }
 ];
 
+function createEmptyEquippedParts() {
+  return EQUIPMENT_SLOTS.reduce((slots, type) => {
+    slots[type] = null;
+    return slots;
+  }, {});
+}
+
 const gameState = {
   phase: "idle",
   cash: 1500,
@@ -71,13 +85,12 @@ const gameState = {
   countdownTimers: [],
   raceTimer: null,
   raceStartedAt: 0,
+  lastRaceTickAt: 0,
+  raceAccumulator: 0,
   shopItems: [],
   panelReturnPhase: "idle",
   inventory: [],
-  equippedParts: EQUIPMENT_SLOTS.reduce((slots, type) => {
-    slots[type] = null;
-    return slots;
-  }, {}),
+  equippedParts: createEmptyEquippedParts(),
   nextPartId: 1,
   cars: [],
   player: { ...BASE_PLAYER_STATS }
@@ -89,6 +102,9 @@ const el = {
   nextBtn: document.getElementById("nextBtn"),
   garageBtn: document.getElementById("garageBtn"),
   shopBtn: document.getElementById("shopBtn"),
+  saveBtn: document.getElementById("saveBtn"),
+  loadBtn: document.getElementById("loadBtn"),
+  restartBtn: document.getElementById("restartBtn"),
   exitBtn: document.getElementById("exitBtn"),
   lanes: document.getElementById("lanes"),
   shopPanel: document.getElementById("shopPanel"),
@@ -102,6 +118,7 @@ const el = {
   greenLight: document.getElementById("greenLight"),
   lightLabel: document.getElementById("lightLabel"),
   phaseText: document.getElementById("phaseText"),
+  raceTierText: document.getElementById("raceTierText"),
   entryFeeText: document.getElementById("entryFeeText"),
   opponentPowerText: document.getElementById("opponentPowerText"),
   engineStat: document.getElementById("engineStat"),
@@ -112,6 +129,7 @@ const el = {
   hpStat: document.getElementById("hpStat"),
   cashStat: document.getElementById("cashStat"),
   raceCountStat: document.getElementById("raceCountStat"),
+  raceTierStat: document.getElementById("raceTierStat"),
   lastRankStat: document.getElementById("lastRankStat")
 };
 
@@ -137,6 +155,13 @@ function pickRandomItems(pool, count) {
 
 function formatPartType(type) {
   return PART_TYPE_LABELS[type] || type;
+}
+
+function getRaceTier() {
+  return RACE_TIERS
+    .slice()
+    .reverse()
+    .find((tier) => gameState.raceCount >= tier.minRaceCount) || RACE_TIERS[0];
 }
 
 function getPartById(partId) {
@@ -178,6 +203,103 @@ function getPartSellPrice(part) {
   return Math.floor(part.price * PART_SELL_RATE);
 }
 
+function createSaveData() {
+  return {
+    cash: gameState.cash,
+    raceCount: gameState.raceCount,
+    lastRank: gameState.lastRank,
+    inventory: gameState.inventory.map((part) => ({
+      id: part.id,
+      name: part.name,
+      type: part.type,
+      price: part.price,
+      effectText: part.effectText,
+      changes: { ...part.changes }
+    })),
+    equippedParts: { ...gameState.equippedParts },
+    nextPartId: gameState.nextPartId
+  };
+}
+
+function sanitizeSaveData(data) {
+  if (!data || typeof data !== "object") {
+    return null;
+  }
+
+  const inventory = Array.isArray(data.inventory) ? data.inventory.reduce((parts, part) => {
+    if (!part || typeof part !== "object" || !EQUIPMENT_SLOTS.includes(part.type)) {
+      return parts;
+    }
+
+    const id = Number(part.id);
+    const price = Number(part.price);
+    if (!Number.isInteger(id) || id <= 0 || !Number.isFinite(price) || price < 0) {
+      return parts;
+    }
+
+    const changes = {};
+    Object.keys(BASE_PLAYER_STATS).forEach((key) => {
+      const value = Number(part.changes && part.changes[key]);
+      if (Number.isFinite(value) && value !== 0) {
+        changes[key] = value;
+      }
+    });
+
+    parts.push({
+      id,
+      name: String(part.name || "未命名零件"),
+      type: part.type,
+      price: Math.floor(price),
+      effectText: String(part.effectText || "-"),
+      changes
+    });
+    return parts;
+  }, []) : [];
+
+  const equippedParts = createEmptyEquippedParts();
+  const equippedData = data.equippedParts && typeof data.equippedParts === "object" ? data.equippedParts : {};
+  EQUIPMENT_SLOTS.forEach((type) => {
+    const partId = Number(equippedData[type]);
+    const part = inventory.find((item) => item.id === partId && item.type === type);
+    equippedParts[type] = part ? part.id : null;
+  });
+
+  const maxPartId = inventory.reduce((maxId, part) => Math.max(maxId, part.id), 0);
+  const nextPartId = Math.max(Number(data.nextPartId) || 1, maxPartId + 1);
+
+  return {
+    cash: Math.max(0, Math.floor(Number(data.cash) || 0)),
+    raceCount: Math.max(0, Math.floor(Number(data.raceCount) || 0)),
+    lastRank: String(data.lastRank || "-"),
+    inventory,
+    equippedParts,
+    nextPartId
+  };
+}
+
+function applyPersistentState(data) {
+  gameState.cash = data.cash;
+  gameState.raceCount = data.raceCount;
+  gameState.lastRank = data.lastRank;
+  gameState.inventory = data.inventory;
+  gameState.equippedParts = data.equippedParts;
+  gameState.nextPartId = data.nextPartId;
+  recalculatePlayerStats();
+}
+
+function refreshAfterPersistentChange() {
+  clearRaceTimers();
+  gameState.reactionTime = null;
+  gameState.playerStarted = false;
+  gameState.panelReturnPhase = "idle";
+  resetCars();
+  refreshShop();
+  renderGarage();
+  setLights("none");
+  setPhase("idle");
+  updateStats();
+}
+
 function isRaceLockedPhase(phase) {
   return ["countdown_red", "countdown_yellow", "countdown_green", "racing"].includes(phase);
 }
@@ -212,6 +334,9 @@ function updateButtons() {
   el.nextBtn.disabled = !canPrepareNextRace;
   el.garageBtn.disabled = !canOpenPanels;
   el.shopBtn.disabled = !canShowShop;
+  el.saveBtn.disabled = countdownOrRace;
+  el.loadBtn.disabled = countdownOrRace;
+  el.restartBtn.disabled = countdownOrRace;
   el.exitBtn.disabled = phase === "idle" || countdownOrRace;
 
   const canShop = isPostRacePhase(phase);
@@ -263,6 +388,8 @@ function updateStats() {
   el.hpStat.textContent = `${player.hp} hp`;
   el.cashStat.textContent = `${gameState.cash} 元`;
   el.raceCountStat.textContent = gameState.raceCount;
+  el.raceTierText.textContent = getRaceTier().label;
+  el.raceTierStat.textContent = getRaceTier().label;
   el.lastRankStat.textContent = gameState.lastRank;
   el.entryFeeText.textContent = ENTRY_FEE;
   el.opponentPowerText.textContent = getOpponentPower().toFixed(2);
@@ -344,7 +471,14 @@ function getPlayerPower() {
 }
 
 function getOpponentPower() {
-  return 1 + gameState.raceCount * 0.14;
+  const count = gameState.raceCount;
+  if (count < 5) {
+    return 1 + count * 0.1;
+  }
+  if (count < 12) {
+    return 1.45 + (count - 5) * 0.07;
+  }
+  return Math.min(2.35, 1.95 + (count - 12) * 0.035);
 }
 
 function getOpponentCarPower(id) {
@@ -375,7 +509,7 @@ function registerRace() {
   updateStats();
 
   addLog(`报名费 ${ENTRY_FEE} 元`);
-  addLog("等待绿灯……红灯期间点击会抢跑。");
+  addLog("等待绿灯……红灯或黄灯点击“起步 / 踩油门”会抢跑。");
 
   setPhase("countdown_red");
   setLights("red");
@@ -383,14 +517,14 @@ function registerRace() {
   gameState.countdownTimers.push(setTimeout(() => {
     setPhase("countdown_yellow");
     setLights("yellow");
-    addLog("黄灯……别急。");
+    addLog("黄灯……还不能踩，黄灯点击也算抢跑。");
   }, 900));
 
   gameState.countdownTimers.push(setTimeout(() => {
     setPhase("countdown_green");
     setLights("green");
     gameState.greenAt = performance.now();
-    addLog("绿灯！电脑车已经起跑！");
+    addLog("绿灯！电脑车已经起跑，快点“起步 / 踩油门”！");
     startRaceMotion();
   }, 1850));
 }
@@ -409,12 +543,13 @@ function pressStart() {
 }
 
 function handleFalseStart() {
+  const falseStartPhase = gameState.phase;
   clearRaceTimers();
   gameState.playerStarted = false;
   gameState.lastRank = "犯规";
   setPhase("false_start");
   setLights("red");
-  addLog("闯红灯！抢跑犯规！");
+  addLog(`${falseStartPhase === "countdown_yellow" ? "黄灯" : "红灯"}抢跑犯规！`);
   addLog("本场成绩无效，奖金 0 元，报名费不退。");
   finishPostRace();
 }
@@ -425,6 +560,8 @@ function startRaceMotion() {
   }
 
   gameState.raceStartedAt = performance.now();
+  gameState.lastRaceTickAt = gameState.raceStartedAt;
+  gameState.raceAccumulator = 0;
   gameState.cars.forEach((car) => {
     if (!car.isPlayer) {
       car.started = true;
@@ -433,7 +570,25 @@ function startRaceMotion() {
   });
 
   setPhase("racing");
-  gameState.raceTimer = setInterval(tickRace, TICK_MS);
+  gameState.raceTimer = requestAnimationFrame(raceLoop);
+}
+
+function raceLoop(now) {
+  if (!gameState.raceTimer || gameState.phase !== "racing") {
+    return;
+  }
+
+  gameState.raceAccumulator += now - gameState.lastRaceTickAt;
+  gameState.lastRaceTickAt = now;
+
+  while (gameState.raceAccumulator >= TICK_MS && gameState.raceTimer && gameState.phase === "racing") {
+    tickRace();
+    gameState.raceAccumulator -= TICK_MS;
+  }
+
+  if (gameState.raceTimer && gameState.phase === "racing") {
+    gameState.raceTimer = requestAnimationFrame(raceLoop);
+  }
 }
 
 function startPlayerCar() {
@@ -586,17 +741,20 @@ function buyPart(index) {
 
   gameState.cash -= part.price;
   const ownedPart = createOwnedPart(part);
-  const replacedPart = getEquippedPart(ownedPart.type);
+  const equippedPart = getEquippedPart(ownedPart.type);
   gameState.inventory.push(ownedPart);
-  gameState.equippedParts[ownedPart.type] = ownedPart.id;
-  recalculatePlayerStats();
+  if (!equippedPart) {
+    gameState.equippedParts[ownedPart.type] = ownedPart.id;
+    recalculatePlayerStats();
+  }
   part.bought = true;
 
   addLog(`购买 ${part.name}，${part.effectText}，花费 ${part.price} 元。`);
-  if (replacedPart) {
-    addLog(`${formatPartType(ownedPart.type)}槽：${replacedPart.name} 已换成 ${ownedPart.name}。`);
+  addLog(`${ownedPart.name} 已进入仓库。`);
+  if (equippedPart) {
+    addLog(`${formatPartType(ownedPart.type)}槽已有 ${equippedPart.name}，如需替换请去车库手动换装。`);
   } else {
-    addLog(`${ownedPart.name} 已装到${formatPartType(ownedPart.type)}槽。`);
+    addLog(`${formatPartType(ownedPart.type)}槽为空，已自动装备 ${ownedPart.name}。`);
   }
   updateStats();
   renderShop();
@@ -724,14 +882,110 @@ function sellPart(partId) {
   renderGarage();
 }
 
+function saveGame() {
+  if (isRaceLockedPhase(gameState.phase)) {
+    addLog("比赛进行中不能保存，请等本场结束。");
+    return;
+  }
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(createSaveData()));
+    addLog("存档已保存到浏览器。");
+  } catch (error) {
+    addLog("存档失败：浏览器拒绝写入 localStorage。");
+  }
+}
+
+function loadGame() {
+  if (isRaceLockedPhase(gameState.phase)) {
+    addLog("比赛进行中不能读取，请等本场结束。");
+    return;
+  }
+
+  let rawData = null;
+  try {
+    rawData = localStorage.getItem(STORAGE_KEY);
+  } catch (error) {
+    addLog("读取失败：浏览器拒绝访问 localStorage。");
+    return;
+  }
+
+  if (!rawData) {
+    addLog("没有找到本地存档。");
+    return;
+  }
+
+  let parsedData = null;
+  try {
+    parsedData = JSON.parse(rawData);
+  } catch (error) {
+    addLog("读取失败：存档数据格式损坏。");
+    return;
+  }
+
+  const saveData = sanitizeSaveData(parsedData);
+  if (!saveData) {
+    addLog("读取失败：存档数据不完整。");
+    return;
+  }
+
+  applyPersistentState(saveData);
+  refreshAfterPersistentChange();
+  addLog("存档已读取，车库、商店、状态栏和日志已刷新。");
+}
+
+function resetPersistentState() {
+  gameState.cash = 1500;
+  gameState.raceCount = 0;
+  gameState.lastRank = "-";
+  gameState.greenAt = 0;
+  gameState.reactionTime = null;
+  gameState.playerStarted = false;
+  gameState.panelReturnPhase = "idle";
+  gameState.inventory = [];
+  gameState.equippedParts = createEmptyEquippedParts();
+  gameState.nextPartId = 1;
+  recalculatePlayerStats();
+}
+
+function restartGame() {
+  if (isRaceLockedPhase(gameState.phase)) {
+    addLog("比赛进行中不能重开，请等本场结束。");
+    return;
+  }
+
+  if (!window.confirm("确定要重开吗？当前进度和本地存档都会被清除。")) {
+    return;
+  }
+
+  if (!window.confirm("再次确认：真的要重开横线赛车经营赛吗？")) {
+    return;
+  }
+
+  clearRaceTimers();
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (error) {
+    addLog("本地存档清除失败，但当前进度会重置。");
+  }
+
+  resetPersistentState();
+  el.logOutput.textContent = "";
+  refreshAfterPersistentChange();
+  addLog("游戏已重开。");
+  addLog("先报名比赛，等绿灯后点“起步 / 踩油门”。");
+}
+
 function clearRaceTimers() {
   gameState.countdownTimers.forEach((timer) => clearTimeout(timer));
   gameState.countdownTimers = [];
 
   if (gameState.raceTimer) {
-    clearInterval(gameState.raceTimer);
+    cancelAnimationFrame(gameState.raceTimer);
     gameState.raceTimer = null;
   }
+  gameState.lastRaceTickAt = 0;
+  gameState.raceAccumulator = 0;
 }
 
 function showGarageInfo() {
@@ -767,6 +1021,9 @@ function bindEvents() {
   el.nextBtn.addEventListener("click", nextRace);
   el.garageBtn.addEventListener("click", showGarageInfo);
   el.shopBtn.addEventListener("click", showShopInfo);
+  el.saveBtn.addEventListener("click", saveGame);
+  el.loadBtn.addEventListener("click", loadGame);
+  el.restartBtn.addEventListener("click", restartGame);
   el.exitBtn.addEventListener("click", exitGame);
 }
 
@@ -779,7 +1036,7 @@ function init() {
   setLights("none");
   updateStats();
   addLog("横线赛车经营赛启动。");
-  addLog("先报名比赛，等绿灯后点开始比赛。");
+  addLog("先报名比赛，等绿灯后点“起步 / 踩油门”。红灯或黄灯点击会抢跑。");
 }
 
 init();
