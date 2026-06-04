@@ -659,6 +659,11 @@ select {
 }
 
 @media (max-width: 767px) {
+  :root {
+    --mobile-title-bar-height: 44px;
+    --mobile-page-header-offset: 72px;
+  }
+
   body {
     min-height: 100svh;
     font-size: 14px;
@@ -672,7 +677,7 @@ select {
   .app-window {
     width: 100%;
     min-height: 100svh;
-    padding-top: 44px;
+    padding-top: var(--mobile-title-bar-height);
     border: 0;
     box-shadow: none;
   }
@@ -683,7 +688,7 @@ select {
     right: 0;
     left: 0;
     z-index: 11;
-    min-height: 44px;
+    min-height: var(--mobile-title-bar-height);
     padding: 8px 12px;
   }
 
@@ -718,32 +723,34 @@ select {
     grid-template-columns: 1fr;
   }
 
-  #racePage > .page-header {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 6px;
-  }
-
+  #racePage,
   #shopPage,
   #storagePage {
-    padding-top: 72px;
+    padding-top: var(--mobile-page-header-offset);
   }
 
-  #shopPage > .page-header,
-  #storagePage > .page-header {
+  .app-page > .page-header {
     position: fixed;
-    top: 44px;
+    top: var(--mobile-title-bar-height);
     right: 0;
     left: 0;
     z-index: 9;
-    grid-template-columns: minmax(0, 1fr) minmax(118px, auto);
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 8px;
     margin: 0;
     padding: 8px 10px;
     background: #d4d0c8;
     border-bottom: 2px groove #fff;
+  }
+
+  #shopPage > .page-header,
+  #storagePage > .page-header {
+    grid-template-columns: minmax(0, 1fr) minmax(118px, auto);
+  }
+
+  #racePage > .page-header {
+    gap: 6px;
   }
 
   #shopPage > .page-header .header-stat,
