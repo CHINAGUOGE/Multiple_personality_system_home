@@ -722,15 +722,25 @@ select {
     margin-bottom: 6px;
   }
 
+  #shopPage,
+  #storagePage {
+    padding-top: 72px;
+  }
+
   #shopPage > .page-header,
   #storagePage > .page-header {
+    position: fixed;
     top: 44px;
+    right: 0;
+    left: 0;
     z-index: 9;
     grid-template-columns: minmax(0, 1fr) minmax(118px, auto);
     align-items: center;
     gap: 8px;
-    margin: -10px -10px 8px;
+    margin: 0;
     padding: 8px 10px;
+    background: #d4d0c8;
+    border-bottom: 2px groove #fff;
   }
 
   #shopPage > .page-header .header-stat,
