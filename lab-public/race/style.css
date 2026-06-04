@@ -746,6 +746,9 @@ select {
 
   #shopPage > .page-header,
   #storagePage > .page-header {
+    position: fixed;
+    top: var(--mobile-title-bar-height);
+    margin: 0;
     grid-template-columns: minmax(0, 1fr) minmax(118px, auto);
   }
 
