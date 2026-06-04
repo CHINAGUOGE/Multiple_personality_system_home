@@ -4,11 +4,13 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const distDir = fileURLToPath(new URL('../dist-lab', import.meta.url));
+const defaultToken = '4adbb7f0b91f404d8355f01e02e97967';
 const token =
   process.env.LAB_CLOUDFLARE_WEB_ANALYTICS_TOKEN ||
   process.env.PUBLIC_LAB_CLOUDFLARE_WEB_ANALYTICS_TOKEN ||
   process.env.CLOUDFLARE_WEB_ANALYTICS_TOKEN ||
-  process.env.PUBLIC_CLOUDFLARE_WEB_ANALYTICS_TOKEN;
+  process.env.PUBLIC_CLOUDFLARE_WEB_ANALYTICS_TOKEN ||
+  defaultToken;
 
 if (!token) {
   console.log('Lab Web Analytics token not set; skipping injection.');
