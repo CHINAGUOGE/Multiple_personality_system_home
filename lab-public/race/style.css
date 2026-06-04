@@ -677,6 +677,9 @@ select {
   }
 
   .title-bar {
+    position: sticky;
+    top: 0;
+    z-index: 11;
     min-height: 44px;
     padding: 8px 12px;
   }
@@ -719,9 +722,25 @@ select {
     margin-bottom: 6px;
   }
 
-  #shopPage > .page-header {
+  #shopPage > .page-header,
+  #storagePage > .page-header {
+    top: 44px;
+    z-index: 9;
+    grid-template-columns: minmax(0, 1fr) minmax(118px, auto);
+    align-items: center;
+    gap: 8px;
     margin: -10px -10px 8px;
-    padding: 10px;
+    padding: 8px 10px;
+  }
+
+  #shopPage > .page-header .header-stat,
+  #storagePage > .page-header .header-stat {
+    padding: 5px 7px;
+  }
+
+  #shopPage > .page-header .header-stat strong,
+  #storagePage > .page-header .header-stat strong {
+    font-size: 15px;
   }
 
   .page-header h1 {
