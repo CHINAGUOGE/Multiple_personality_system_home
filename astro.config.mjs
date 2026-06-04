@@ -1,14 +1,14 @@
 import { defineConfig } from 'astro/config';
-import tailwind from '@astrojs/tailwind';
 import sitemap from '@astrojs/sitemap';
+import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
   site: 'https://mpsteam.cn',
+  vite: {
+    plugins: [tailwindcss()],
+  },
   integrations: [
-    tailwind({
-      applyBaseStyles: false,
-    }),
     sitemap({
       // 自定义 sitemap 配置
       changefreq: 'weekly',

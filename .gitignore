@@ -6,6 +6,9 @@ dist-lab/
 # dependencies
 node_modules/
 
+# generated Astro files
+.astro/
+
 # logs
 npm-debug.log*
 yarn-debug.log*
