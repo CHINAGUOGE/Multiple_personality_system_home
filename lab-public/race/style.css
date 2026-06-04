@@ -55,6 +55,10 @@ select {
   padding: 14px;
 }
 
+.rotate-hint {
+  display: none;
+}
+
 .app-window {
   width: min(1120px, calc(100vw - 28px));
   margin: 0 auto;
@@ -496,5 +500,271 @@ select {
   .shop-table button,
   .garage-table button {
     min-height: 34px;
+  }
+}
+
+@media (max-width: 900px) and (orientation: portrait) {
+  body {
+    display: grid;
+    min-height: 100svh;
+    padding: 12px;
+    place-items: center;
+  }
+
+  .desktop {
+    display: contents;
+    padding: 0;
+  }
+
+  .app-window {
+    display: none;
+  }
+
+  .rotate-hint {
+    display: grid;
+    width: min(320px, calc(100vw - 32px));
+    min-height: 118px;
+    padding: 22px 18px;
+    place-items: center;
+    color: #000;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    background: #d4d0c8;
+    border: 2px solid;
+    border-color: #fff #1f1f1f #1f1f1f #fff;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  body {
+    min-height: 100svh;
+    font-size: 11px;
+    overflow: auto;
+  }
+
+  .desktop {
+    padding: 4px;
+  }
+
+  .app-window {
+    width: calc(100vw - 8px);
+    max-height: calc(100svh - 8px);
+    overflow: auto;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+  }
+
+  .title-bar {
+    height: 22px;
+    padding: 2px 3px;
+  }
+
+  .title-icon {
+    width: 14px;
+    height: 14px;
+    margin-right: 4px;
+  }
+
+  .window-buttons span {
+    width: 17px;
+    height: 15px;
+    font-size: 10px;
+  }
+
+  .menu-bar {
+    padding: 1px 4px;
+  }
+
+  .menu-bar button {
+    min-height: 18px;
+    padding: 0 7px;
+  }
+
+  .toolbar {
+    flex-wrap: nowrap;
+    gap: 3px;
+    padding: 3px 4px;
+    overflow-x: auto;
+  }
+
+  .toolbar button {
+    flex: 0 0 auto;
+    min-height: 25px;
+    padding: 2px 6px;
+    white-space: nowrap;
+  }
+
+  .toolbar button:active:not(:disabled) {
+    padding: 3px 5px 1px 7px;
+  }
+
+  #garageBtn,
+  #shopBtn,
+  #saveBtn,
+  #loadBtn,
+  #restartBtn {
+    order: 1;
+  }
+
+  #registerBtn,
+  #startBtn,
+  #nextBtn {
+    order: 2;
+    min-width: 76px;
+    font-weight: bold;
+  }
+
+  #registerBtn {
+    margin-left: auto;
+  }
+
+  .content-grid {
+    grid-template-columns: minmax(0, 1fr) 178px;
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .group-box {
+    padding: 14px 5px 5px;
+  }
+
+  .race-box,
+  .stats-box {
+    min-height: 0;
+  }
+
+  .race-box {
+    overflow-x: visible;
+  }
+
+  .race-layout {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .light-panel {
+    grid-template-columns: 1fr;
+    gap: 3px;
+    min-height: 164px;
+    padding: 5px 3px;
+  }
+
+  .light {
+    width: 22px;
+    height: 22px;
+  }
+
+  .light-label {
+    width: 36px;
+    margin-top: 2px;
+    padding: 2px;
+    font-size: 10px;
+  }
+
+  .track-panel {
+    min-width: 0;
+    min-height: 164px;
+    padding: 9px 30px 8px 42px;
+  }
+
+  .lanes {
+    gap: 6px;
+  }
+
+  .lane {
+    height: 24px;
+  }
+
+  .lane-label {
+    left: -38px;
+    top: 5px;
+    width: 34px;
+  }
+
+  .car {
+    top: 5px;
+    width: 27px;
+    height: 15px;
+  }
+
+  .car::before {
+    left: 5px;
+    top: -4px;
+    width: 11px;
+    height: 5px;
+  }
+
+  .marker {
+    top: 3px;
+    bottom: 6px;
+    width: 28px;
+    font-size: 9px;
+  }
+
+  .start-marker {
+    left: 6px;
+  }
+
+  .finish-marker {
+    right: 6px;
+  }
+
+  .race-status {
+    gap: 6px;
+    margin-top: 4px;
+    padding: 3px;
+  }
+
+  .stats-table th,
+  .stats-table td,
+  .shop-table th,
+  .shop-table td,
+  .garage-table th,
+  .garage-table td {
+    padding: 2px 3px;
+  }
+
+  .stats-table th {
+    width: 60px;
+  }
+
+  .shop-box,
+  .garage-box,
+  .log-box {
+    min-height: 84px;
+  }
+
+  .shop-table,
+  .garage-table {
+    min-width: 0;
+  }
+
+  .table-scroll {
+    max-height: 96px;
+  }
+
+  .shop-table button,
+  .garage-table button {
+    min-width: 42px;
+    min-height: 22px;
+    padding: 1px 5px;
+  }
+
+  .panel-note {
+    margin-bottom: 4px;
+    padding: 3px;
+  }
+
+  .sub-heading {
+    margin: 5px 0 3px;
+  }
+
+  .log-output {
+    height: 70px;
+    padding: 4px;
+    font-size: 11px;
+    line-height: 1.3;
   }
 }

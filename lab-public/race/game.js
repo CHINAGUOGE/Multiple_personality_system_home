@@ -11,6 +11,7 @@ const PHASE_LABELS = {
   false_start: '抢跑犯规',
   shop: '商店',
   garage: '车库',
+  game_over: '游戏失败',
 };
 
 const PRIZES = [1200, 800, 500, 200, 100];
@@ -567,7 +568,6 @@ const el = {
   saveBtn: document.getElementById('saveBtn'),
   loadBtn: document.getElementById('loadBtn'),
   restartBtn: document.getElementById('restartBtn'),
-  exitBtn: document.getElementById('exitBtn'),
   lanes: document.getElementById('lanes'),
   shopPanel: document.getElementById('shopPanel'),
   shopBody: document.getElementById('shopBody'),
@@ -664,6 +664,37 @@ function createOwnedPart(part) {
 
 function getPartSellPrice(part) {
   return Math.floor(part.price * PART_SELL_RATE);
+}
+
+function isSamePart(part, ownedPart) {
+  return part.name === ownedPart.name && part.type === ownedPart.type;
+}
+
+function hasOwnedPart(part) {
+  return gameState.inventory.some((ownedPart) => isSamePart(part, ownedPart));
+}
+
+function isVehicleStripped() {
+  return EQUIPMENT_SLOTS.every((type) => !gameState.equippedParts[type]);
+}
+
+function shouldFailForNoEntryFee() {
+  return gameState.cash < ENTRY_FEE && isVehicleStripped();
+}
+
+function checkGameFailure() {
+  if (!shouldFailForNoEntryFee()) {
+    return false;
+  }
+
+  if (gameState.phase !== 'game_over') {
+    setPhase('game_over');
+    setLights('none');
+    addLog('游戏失败：车辆已无装备，现金不足以支付报名费。');
+    addLog('请点击“重开”重新开始。');
+  }
+
+  return true;
 }
 
 function createSaveData() {
@@ -794,26 +825,29 @@ function updateButtons() {
   const canOpenPanels = !countdownOrRace;
   const canPrepareNextRace = isPostRacePhase(phase) || phase === 'garage';
   const canShowShop = isPostRacePhase(phase) || garageFromPostRace;
+  const gameOver = phase === 'game_over';
 
   el.registerBtn.disabled = phase !== 'idle';
   el.startBtn.disabled = !countdownOrRace || gameState.playerStarted;
   el.nextBtn.disabled = !canPrepareNextRace;
-  el.garageBtn.disabled = !canOpenPanels;
-  el.shopBtn.disabled = !canShowShop;
-  el.saveBtn.disabled = countdownOrRace;
+  el.garageBtn.disabled = !canOpenPanels || gameOver;
+  el.shopBtn.disabled = !canShowShop || gameOver;
+  el.saveBtn.disabled = countdownOrRace || gameOver;
   el.loadBtn.disabled = countdownOrRace;
   el.restartBtn.disabled = countdownOrRace;
-  el.exitBtn.disabled = phase === 'idle' || countdownOrRace;
 
   const canShop = isPostRacePhase(phase);
   const canGarage = phase === 'garage';
 
   Array.from(el.shopBody.querySelectorAll('button')).forEach((button) => {
     const index = Number(button.dataset.index);
+    const part = gameState.shopItems[index];
     button.disabled =
       !canShop ||
-      gameState.shopItems[index].bought ||
-      gameState.cash < gameState.shopItems[index].price;
+      !part ||
+      part.bought ||
+      hasOwnedPart(part) ||
+      gameState.cash < part.price;
   });
 
   Array.from(el.garageSlotsBody.querySelectorAll('select')).forEach((select) => {
@@ -823,12 +857,16 @@ function updateButtons() {
   Array.from(el.garageInventoryBody.querySelectorAll('button')).forEach((button) => {
     const part = getPartById(Number(button.dataset.partId));
     const equipped = part && gameState.equippedParts[part.type] === part.id;
-    button.disabled = !canGarage || !part || equipped;
+    button.disabled =
+      !canGarage ||
+      !part ||
+      (button.dataset.action === 'sell' && equipped) ||
+      (button.dataset.action === 'unequip' && !equipped);
   });
 }
 
 function updateVisiblePanel() {
-  const showGarage = gameState.phase === 'garage';
+  const showGarage = gameState.phase === 'garage' || gameState.phase === 'game_over';
   el.shopPanel.classList.toggle('is-hidden', showGarage);
   el.garagePanel.classList.toggle('is-hidden', !showGarage);
 }
@@ -965,8 +1003,11 @@ function getOpponentCarPower(id) {
 
 function registerRace() {
   if (gameState.cash < ENTRY_FEE) {
+    if (checkGameFailure()) {
+      return;
+    }
     addLog('现金不足，连报名费都交不起。');
-    addLog('可以进车库卖掉未装备零件，仓库回收价为原价 8 折。');
+    addLog('可以进车库卸下或卖掉零件，仓库回收价为原价 8 折。');
     return;
   }
 
@@ -1195,7 +1236,7 @@ function renderShop() {
 
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = part.bought ? '已买' : '购买';
+    button.textContent = part.bought || hasOwnedPart(part) ? '已拥有' : '购买';
     button.dataset.index = String(index);
     button.addEventListener('click', () => buyPart(index));
     row.lastElementChild.appendChild(button);
@@ -1208,6 +1249,12 @@ function renderShop() {
 function buyPart(index) {
   const part = gameState.shopItems[index];
   if (!part || part.bought) {
+    return;
+  }
+
+  if (hasOwnedPart(part)) {
+    addLog(`${part.name} 已经拥有，不能重复购买。`);
+    renderShop();
     return;
   }
 
@@ -1298,9 +1345,16 @@ function renderGarage() {
 
       const sellButton = document.createElement('button');
       sellButton.type = 'button';
-      sellButton.textContent = equipped ? '先卸下' : `出售 ${getPartSellPrice(part)} 元`;
+      sellButton.textContent = equipped ? '卸下' : `出售 ${getPartSellPrice(part)} 元`;
       sellButton.dataset.partId = String(part.id);
-      sellButton.addEventListener('click', () => sellPart(part.id));
+      sellButton.dataset.action = equipped ? 'unequip' : 'sell';
+      sellButton.addEventListener('click', () => {
+        if (equipped) {
+          unequipPart(part.id);
+        } else {
+          sellPart(part.id);
+        }
+      });
       row.lastElementChild.appendChild(sellButton);
       el.garageInventoryBody.appendChild(row);
     });
@@ -1333,6 +1387,25 @@ function changeEquipment(type, value) {
 
   updateStats();
   renderGarage();
+  checkGameFailure();
+}
+
+function unequipPart(partId) {
+  if (gameState.phase !== 'garage') {
+    return;
+  }
+
+  const part = getPartById(partId);
+  if (!part || gameState.equippedParts[part.type] !== part.id) {
+    return;
+  }
+
+  gameState.equippedParts[part.type] = null;
+  recalculatePlayerStats();
+  addLog(`${formatPartType(part.type)}槽卸下 ${part.name}。`);
+  updateStats();
+  renderGarage();
+  checkGameFailure();
 }
 
 function sellPart(partId) {
@@ -1359,6 +1432,7 @@ function sellPart(partId) {
   addLog(`现金余额：${gameState.cash} 元`);
   updateStats();
   renderGarage();
+  checkGameFailure();
 }
 
 function saveGame() {
@@ -1489,11 +1563,6 @@ function showShopInfo() {
   addLog('已切到商店。比赛后商品会随机刷新。');
 }
 
-function exitGame() {
-  clearRaceTimers();
-  addLog('退出按钮被按下。浏览器版不会关闭窗口，请直接关闭标签页。');
-}
-
 function bindEvents() {
   el.registerBtn.addEventListener('click', registerRace);
   el.startBtn.addEventListener('click', pressStart);
@@ -1503,7 +1572,6 @@ function bindEvents() {
   el.saveBtn.addEventListener('click', saveGame);
   el.loadBtn.addEventListener('click', loadGame);
   el.restartBtn.addEventListener('click', restartGame);
-  el.exitBtn.addEventListener('click', exitGame);
 }
 
 function init() {
