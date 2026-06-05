@@ -56,6 +56,7 @@ function resetPersistentState() {
   gameState.cash = 1500;
   gameState.raceCount = 0;
   gameState.lastRank = '-';
+  gameState.difficulty = DEFAULT_DIFFICULTY;
   gameState.greenAt = 0;
   gameState.reactionTime = null;
   gameState.playerStarted = false;
