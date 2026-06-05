@@ -204,8 +204,8 @@ function getCurrentLootPool() {
   return LOOT_POOLS[getDifficultyKey()] || LOOT_POOLS[DEFAULT_DIFFICULTY];
 }
 
-// 当前难度商店出现率：仅由 LOOT_POOLS + PART_RARITY_WEIGHTS 决定，
-// 不参与 dropRateMultiplier。返回该稀有度整体出现率（百分比）。
+// 当前难度商店基础出现率：仅由 LOOT_POOLS + PART_RARITY_WEIGHTS 决定，
+// 不参与 dropRateMultiplier，也不包含“已拥有零件降权”影响。
 function getRarityShopRate(rarity) {
   const pool = getCurrentLootPool();
   if (!pool.includes(rarity)) {
@@ -218,7 +218,7 @@ function getRarityShopRate(rarity) {
   return ((PART_RARITY_WEIGHTS[rarity] || 0) / totalWeight) * 100;
 }
 
-// 单件商店出现率 = 该稀有度出现率 / 当前池内同稀有度零件数。
+// 单件商店基础出现率 = 该稀有度出现率 / 当前池内同稀有度零件数。
 function getPartShopRate(part) {
   const rarity = getPartRarity(part);
   const pool = getCurrentLootPool();
@@ -240,6 +240,18 @@ function formatShopRate(rate) {
     return '<0.1%';
   }
   return `${rate.toFixed(rate < 1 ? 2 : 1)}%`;
+}
+
+function formatReactionTime(reactionTime) {
+  return reactionTime === null ? '--' : `${reactionTime.toFixed(3)} 秒`;
+}
+
+function formatReactionRecordText(bestReactionTime, lastReactionTime) {
+  return `${formatReactionTime(bestReactionTime)} / ${formatReactionTime(lastReactionTime)}`;
+}
+
+function formatWinStreakText(currentWinStreak, bestWinStreak) {
+  return `当前 ${currentWinStreak} / 最高 ${bestWinStreak}`;
 }
 
 function setDifficulty(key) {
@@ -353,6 +365,10 @@ function createSaveData() {
     cash: gameState.cash,
     raceCount: gameState.raceCount,
     lastRank: gameState.lastRank,
+    bestReactionTime: gameState.bestReactionTime,
+    lastReactionTime: gameState.lastReactionTime,
+    currentWinStreak: gameState.currentWinStreak,
+    bestWinStreak: gameState.bestWinStreak,
     difficulty: getDifficultyKey(),
     inventory: gameState.inventory.map((part) => ({
       id: part.id,
@@ -422,6 +438,16 @@ function sanitizeSaveData(data) {
     cash: Math.max(0, Math.floor(Number(data.cash) || 0)),
     raceCount: Math.max(0, Math.floor(Number(data.raceCount) || 0)),
     lastRank: String(data.lastRank || '-'),
+    bestReactionTime:
+      Number.isFinite(Number(data.bestReactionTime)) && Number(data.bestReactionTime) >= 0
+        ? Number(data.bestReactionTime)
+        : null,
+    lastReactionTime:
+      Number.isFinite(Number(data.lastReactionTime)) && Number(data.lastReactionTime) >= 0
+        ? Number(data.lastReactionTime)
+        : null,
+    currentWinStreak: Math.max(0, Math.floor(Number(data.currentWinStreak) || 0)),
+    bestWinStreak: Math.max(0, Math.floor(Number(data.bestWinStreak) || 0)),
     difficulty: DIFFICULTIES[data.difficulty] ? data.difficulty : DEFAULT_DIFFICULTY,
     inventory,
     equippedParts,
@@ -433,6 +459,13 @@ function applyPersistentState(data) {
   gameState.cash = data.cash;
   gameState.raceCount = data.raceCount;
   gameState.lastRank = data.lastRank;
+  gameState.bestReactionTime = data.bestReactionTime ?? null;
+  gameState.lastReactionTime = data.lastReactionTime ?? null;
+  gameState.currentWinStreak = data.currentWinStreak ?? 0;
+  gameState.bestWinStreak = Math.max(
+    gameState.currentWinStreak,
+    data.bestWinStreak ?? 0
+  );
   gameState.difficulty = DIFFICULTIES[data.difficulty] ? data.difficulty : DEFAULT_DIFFICULTY;
   gameState.inventory = data.inventory;
   gameState.equippedParts = data.equippedParts;
@@ -635,9 +668,25 @@ function updateStats() {
     el.atlasCashStat.textContent = `${gameState.cash} 元`;
   }
   el.raceCountStat.textContent = gameState.raceCount;
-  el.raceTierText.textContent = getRaceTier().label;
+  if (el.raceTierText) {
+    el.raceTierText.textContent = getRaceTier().label;
+  }
   el.lastRankStat.textContent = gameState.lastRank;
-  el.entryFeeText.textContent = getEntryFee();
+  if (el.entryFeeText) {
+    el.entryFeeText.textContent = getEntryFee();
+  }
+  if (el.bestReactionText) {
+    el.bestReactionText.textContent = formatReactionRecordText(
+      gameState.bestReactionTime,
+      gameState.lastReactionTime
+    );
+  }
+  if (el.winStreakText) {
+    el.winStreakText.textContent = formatWinStreakText(
+      gameState.currentWinStreak,
+      gameState.bestWinStreak
+    );
+  }
   el.registerBtn.textContent = `报名比赛（${getEntryFee()} 元）`;
   el.opponentPowerText.textContent = getOpponentPower().toFixed(2);
   el.currentVehicleText.textContent = '玩家破车';
