@@ -328,7 +328,7 @@ select {
   position: relative;
   min-width: 0;
   min-height: 286px;
-  padding: 14px 42px 12px 54px;
+  padding: 14px 42px 12px 94px;
   overflow: hidden;
   background: #c0c0c0;
   border: 2px inset #fff;
@@ -360,6 +360,7 @@ select {
   left: -48px;
   top: 11px;
   width: 42px;
+  white-space: nowrap;
   text-align: right;
 }
 
@@ -1186,7 +1187,7 @@ select {
 
   .track-panel {
     min-height: 230px;
-    padding: 12px 34px 10px 46px;
+    padding: 12px 34px 10px 78px;
   }
 
   .lanes {
@@ -1202,6 +1203,7 @@ select {
     top: 8px;
     width: 34px;
     font-size: 12px;
+    white-space: nowrap;
   }
 
   .marker {
@@ -1256,7 +1258,7 @@ select {
   .track-panel {
     min-height: 210px;
     padding-right: 30px;
-    padding-left: 42px;
+    padding-left: 74px;
   }
 
   .car {
