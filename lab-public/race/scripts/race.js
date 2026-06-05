@@ -225,6 +225,7 @@ function handleFalseStart() {
   const falseStartPhase = gameState.phase;
   clearRaceTimers();
   gameState.reactionTime = null;
+  gameState.lastReactionTime = null;
   gameState.playerStarted = false;
   gameState.currentWinStreak = 0;
   gameState.lastRank = '犯规';
