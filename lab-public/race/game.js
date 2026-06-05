@@ -729,7 +729,7 @@ function renderPartChangeList(changes) {
     <div class="part-change-groups">
       ${
         items.good.length
-          ? `<div class="part-change-group"><span>好处</span><div class="part-change-list">${items.good.join(
+          ? `<div class="part-change-group"><span>增益</span><div class="part-change-list">${items.good.join(
               ''
             )}</div></div>`
           : ''
