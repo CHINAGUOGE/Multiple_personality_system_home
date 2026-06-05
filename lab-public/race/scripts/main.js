@@ -12,23 +12,56 @@ function shouldIgnoreRaceShortcut(event) {
   );
 }
 
+function blurAfterPointerClick(event, node = event.currentTarget) {
+  if (event.detail > 0 && node && typeof node.blur === 'function') {
+    node.blur();
+  }
+}
+
 function bindEvents() {
-  el.registerBtn.addEventListener('click', registerRace);
-  el.startBtn.addEventListener('click', pressStart);
-  el.nextBtn.addEventListener('click', nextRace);
-  el.saveBtn.addEventListener('click', saveGame);
-  el.loadBtn.addEventListener('click', loadGame);
-  el.restartBtn.addEventListener('click', restartGame);
+  el.registerBtn.addEventListener('click', (event) => {
+    registerRace();
+    blurAfterPointerClick(event);
+  });
+  el.startBtn.addEventListener('click', (event) => {
+    pressStart();
+    blurAfterPointerClick(event);
+  });
+  el.nextBtn.addEventListener('click', (event) => {
+    nextRace();
+    blurAfterPointerClick(event);
+  });
+  el.saveBtn.addEventListener('click', (event) => {
+    saveGame();
+    blurAfterPointerClick(event);
+  });
+  el.loadBtn.addEventListener('click', (event) => {
+    loadGame();
+    blurAfterPointerClick(event);
+  });
+  el.restartBtn.addEventListener('click', (event) => {
+    restartGame();
+    blurAfterPointerClick(event);
+  });
   el.tabs.forEach((tab) => {
-    tab.addEventListener('click', () => setActivePage(tab.dataset.page));
+    tab.addEventListener('click', (event) => {
+      setActivePage(tab.dataset.page);
+      blurAfterPointerClick(event, tab);
+    });
   });
 
   if (el.difficultyOpenBtn) {
-    el.difficultyOpenBtn.addEventListener('click', openDifficultyModal);
+    el.difficultyOpenBtn.addEventListener('click', (event) => {
+      openDifficultyModal();
+      blurAfterPointerClick(event);
+    });
   }
 
   if (el.difficultyCloseBtn) {
-    el.difficultyCloseBtn.addEventListener('click', closeDifficultyModal);
+    el.difficultyCloseBtn.addEventListener('click', (event) => {
+      closeDifficultyModal();
+      blurAfterPointerClick(event);
+    });
   }
 
   if (el.difficultyModal) {
@@ -72,6 +105,7 @@ function bindEvents() {
       if (button && !button.disabled) {
         setDifficulty(button.dataset.difficulty);
         closeDifficultyModal();
+        blurAfterPointerClick(event, button);
       }
     });
   }
