@@ -694,7 +694,9 @@ function updateStats() {
   if (el.raceTierText) {
     el.raceTierText.textContent = getRaceTier().label;
   }
-  el.lastRankStat.textContent = formatLastRankReportText(gameState.lastRank);
+  if (el.lastRankStat) {
+    el.lastRankStat.textContent = formatLastRankReportText(gameState.lastRank);
+  }
   if (el.lastReactionStat) {
     el.lastReactionStat.textContent = formatCompactReactionTime(gameState.lastReactionTime);
   }
