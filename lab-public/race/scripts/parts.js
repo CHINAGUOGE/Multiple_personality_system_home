@@ -87,8 +87,14 @@ function buyPart(index) {
 }
 
 function renderGarage() {
+  renderTuning();
+  renderStorage();
+}
+
+function renderTuning() {
   el.garageSlotsBody.innerHTML = '';
-  el.garageInventoryBody.innerHTML = '';
+  el.tuningEquippedBody.innerHTML = '';
+  el.tuningUnequippedBody.innerHTML = '';
 
   EQUIPMENT_SLOTS.forEach((type) => {
     const parts = gameState.inventory.filter((part) => part.type === type);
@@ -171,20 +177,91 @@ function renderGarage() {
     el.garageSlotsBody.appendChild(card);
   });
 
-  if (gameState.inventory.length === 0) {
-    const emptyCard = document.createElement('article');
-    emptyCard.className = 'inventory-card';
-    emptyCard.innerHTML = `
-      <div>
-        <h3>暂无零件</h3>
-        <p>去商店购买零件后会显示在这里。</p>
+  const equippedItems = gameState.inventory.filter(
+    (part) => gameState.equippedParts[part.type] === part.id
+  );
+  const unequippedItems = gameState.inventory.filter(
+    (part) => gameState.equippedParts[part.type] !== part.id
+  );
+
+  if (equippedItems.length === 0) {
+    el.tuningEquippedBody.appendChild(
+      createTuningEmptyCard('暂无已装备零件', '在上方槽位选择零件后会显示在这里。')
+    );
+  } else {
+    equippedItems.forEach((part) => {
+      el.tuningEquippedBody.appendChild(createTuningPartCard(part, true));
+    });
+  }
+
+  if (unequippedItems.length === 0) {
+    el.tuningUnequippedBody.appendChild(
+      createTuningEmptyCard('暂无未装备零件', '去商店购买零件后会显示在这里。')
+    );
+  } else {
+    unequippedItems.forEach((part) => {
+      el.tuningUnequippedBody.appendChild(createTuningPartCard(part, false));
+    });
+  }
+
+  updateButtons();
+}
+
+function createTuningEmptyCard(title, hint) {
+  const card = document.createElement('article');
+  card.className = 'inventory-card';
+  card.innerHTML = `
+    <div>
+      <h3>${title}</h3>
+      <p>${hint}</p>
+    </div>
+  `;
+  return card;
+}
+
+function createTuningPartCard(part, equipped) {
+  const equippedPart = getEquippedPart(part.type);
+  const card = document.createElement('article');
+  card.className = `inventory-card${equipped ? ' is-current' : ''}`;
+  card.innerHTML = `
+    <div>
+      <div class="card-title-row">
+        <h3>${renderPartName(part, true)}</h3>
+        ${renderPartRarity(part)}
       </div>
-    `;
-    el.garageInventoryBody.appendChild(emptyCard);
+      <p>类型：${formatPartType(part.type)}</p>
+      ${renderPartComparison(part, equippedPart)}
+      <small>${equipped ? '当前车辆已装备' : '仓库零件，可装备或出售'}</small>
+    </div>
+  `;
+
+  const actionButton = document.createElement('button');
+  actionButton.type = 'button';
+  actionButton.dataset.partId = String(part.id);
+  if (equipped) {
+    actionButton.textContent = '卸下';
+    actionButton.dataset.action = 'unequip';
+    actionButton.addEventListener('click', () => unequipPart(part.id));
+  } else {
+    actionButton.textContent = `出售 ${getPartSellPrice(part)} 元`;
+    actionButton.dataset.action = 'sell';
+    actionButton.addEventListener('click', () => sellPart(part.id));
+  }
+  card.appendChild(actionButton);
+  return card;
+}
+
+function renderStorage() {
+  el.storageInventoryBody.innerHTML = '';
+  el.storageMaterialsBody.innerHTML = '';
+
+  if (gameState.inventory.length === 0) {
+    el.storageInventoryBody.appendChild(
+      createTuningEmptyCard('暂无零件', '去商店购买零件后会显示在这里。')
+    );
   } else {
     gameState.inventory.forEach((part) => {
       const equipped = gameState.equippedParts[part.type] === part.id;
-      const equippedPart = getEquippedPart(part.type);
       const card = document.createElement('article');
       card.className = `inventory-card${equipped ? ' is-current' : ''}`;
       card.innerHTML = `
@@ -194,33 +271,21 @@ function renderGarage() {
             ${renderPartRarity(part)}
           </div>
           <p>类型：${formatPartType(part.type)}</p>
-          ${renderPartComparison(part, equippedPart)}
-          <small>${equipped ? '当前车辆已装备' : '仓库零件，可出售'}</small>
+          <p>效果：${part.effectText}</p>
+          <small>${equipped ? '已装备在当前车辆' : '仓库库存零件'}</small>
         </div>
       `;
-
-      const sellButton = document.createElement('button');
-      sellButton.type = 'button';
-      sellButton.textContent = equipped ? '卸下' : `出售 ${getPartSellPrice(part)} 元`;
-      sellButton.dataset.partId = String(part.id);
-      sellButton.dataset.action = equipped ? 'unequip' : 'sell';
-      sellButton.addEventListener('click', () => {
-        if (equipped) {
-          unequipPart(part.id);
-        } else {
-          sellPart(part.id);
-        }
-      });
-      card.appendChild(sellButton);
-      el.garageInventoryBody.appendChild(card);
+      el.storageInventoryBody.appendChild(card);
     });
   }
 
-  updateButtons();
+  el.storageMaterialsBody.appendChild(
+    createTuningEmptyCard('暂无材料', '材料系统尚未开放，敬请期待。')
+  );
 }
 
 function changeEquipment(type, value) {
-  if (!canManageStorage()) {
+  if (!canManageTuning()) {
     return;
   }
 
@@ -247,7 +312,7 @@ function changeEquipment(type, value) {
 }
 
 function unequipPart(partId) {
-  if (!canManageStorage()) {
+  if (!canManageTuning()) {
     return;
   }
 
@@ -265,7 +330,7 @@ function unequipPart(partId) {
 }
 
 function sellPart(partId) {
-  if (!canManageStorage()) {
+  if (!canManageTuning()) {
     return;
   }
 

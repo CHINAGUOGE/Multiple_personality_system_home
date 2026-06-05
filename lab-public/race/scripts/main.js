@@ -14,6 +14,7 @@ function bindEvents() {
 
 function init() {
   bindEvents();
+  el.registerBtn.textContent = `报名比赛（${ENTRY_FEE} 元）`;
   resetCars();
   refreshShop();
   renderGarage();

@@ -140,7 +140,7 @@ select {
 
 .page-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   padding: 8px;
   border-bottom: 1px solid #808080;
@@ -173,7 +173,8 @@ select {
   margin-bottom: 8px;
 }
 
-#shopPage > .page-header {
+#shopPage > .page-header,
+#tuningPage > .page-header {
   position: sticky;
   top: 0;
   z-index: 4;
@@ -838,6 +839,7 @@ select {
 
   #racePage,
   #shopPage,
+  #tuningPage,
   #storagePage {
     padding-top: var(--mobile-page-header-offset);
   }
@@ -858,6 +860,7 @@ select {
   }
 
   #shopPage > .page-header,
+  #tuningPage > .page-header,
   #storagePage > .page-header {
     position: fixed;
     top: var(--mobile-title-bar-height);
@@ -870,11 +873,13 @@ select {
   }
 
   #shopPage > .page-header .header-stat,
+  #tuningPage > .page-header .header-stat,
   #storagePage > .page-header .header-stat {
     padding: 5px 7px;
   }
 
   #shopPage > .page-header .header-stat strong,
+  #tuningPage > .page-header .header-stat strong,
   #storagePage > .page-header .header-stat strong {
     font-size: 15px;
   }

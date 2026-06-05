@@ -351,9 +351,9 @@ function canUseShop() {
   return !isRaceLockedPhase(gameState.phase) && gameState.phase !== 'game_over';
 }
 
-function canManageStorage() {
+function canManageTuning() {
   return (
-    gameState.activePage === 'storage' &&
+    gameState.activePage === 'tuning' &&
     !isRaceLockedPhase(gameState.phase) &&
     gameState.phase !== 'game_over'
   );
@@ -428,22 +428,26 @@ function updateButtons() {
   });
 
   Array.from(el.garageSlotsBody.querySelectorAll('select')).forEach((select) => {
-    select.disabled = !canManageStorage() || select.options.length <= 1;
+    select.disabled = !canManageTuning() || select.options.length <= 1;
   });
 
   Array.from(el.garageSlotsBody.querySelectorAll('[data-action="equip-slot"]')).forEach(
     (button) => {
       const part = getPartById(Number(button.dataset.partId));
       const equipped = part && gameState.equippedParts[part.type] === part.id;
-      button.disabled = !canManageStorage() || !part || equipped;
+      button.disabled = !canManageTuning() || !part || equipped;
     }
   );
 
-  Array.from(el.garageInventoryBody.querySelectorAll('button')).forEach((button) => {
+  const inventoryButtons = [
+    ...el.tuningEquippedBody.querySelectorAll('button'),
+    ...el.tuningUnequippedBody.querySelectorAll('button'),
+  ];
+  inventoryButtons.forEach((button) => {
     const part = getPartById(Number(button.dataset.partId));
     const equipped = part && gameState.equippedParts[part.type] === part.id;
     button.disabled =
-      !canManageStorage() ||
+      !canManageTuning() ||
       !part ||
       (button.dataset.action === 'sell' && equipped) ||
       (button.dataset.action === 'unequip' && !equipped);
@@ -489,19 +493,13 @@ function updateStats() {
   el.hpStat.textContent = `${player.hp} hp`;
   el.cashStat.textContent = `${gameState.cash} 元`;
   el.shopCashStat.textContent = `${gameState.cash} 元`;
+  el.tuningCashStat.textContent = `${gameState.cash} 元`;
   el.storageCashStat.textContent = `${gameState.cash} 元`;
   el.raceCountStat.textContent = gameState.raceCount;
   el.raceTierText.textContent = getRaceTier().label;
-  el.raceTierStat.textContent = getRaceTier().label;
   el.lastRankStat.textContent = gameState.lastRank;
   el.entryFeeText.textContent = ENTRY_FEE;
   el.opponentPowerText.textContent = getOpponentPower().toFixed(2);
   el.currentVehicleText.textContent = '玩家破车';
-  el.storageEngineStat.textContent = player.engine;
-  el.storageTireStat.textContent = player.tire;
-  el.storageGearboxStat.textContent = player.gearbox;
-  el.storageStabilityStat.textContent = player.stability;
-  el.storageWeightStat.textContent = `${player.weight} kg`;
-  el.storageHpStat.textContent = `${player.hp} hp`;
   updateButtons();
 }

@@ -15,7 +15,7 @@
       <main class="app-window" aria-label="横线赛车经营赛">
         <div class="title-bar">
           <span class="title-icon"></span>
-          <span>横线赛车经营赛 v1.2</span>
+          <span>横线赛车经营赛 v1.3</span>
           <div class="window-buttons" aria-hidden="true">
             <span>_</span>
             <span>□</span>
@@ -40,6 +40,9 @@
             赛事
           </button>
           <button id="shopTab" type="button" data-page="shop" aria-controls="shopPage">商店</button>
+          <button id="tuningTab" type="button" data-page="tuning" aria-controls="tuningPage">
+            改装
+          </button>
           <button id="storageTab" type="button" data-page="storage" aria-controls="storagePage">
             仓库
           </button>
@@ -50,7 +53,7 @@
             <header class="page-header">
               <div>
                 <h1>横线赛车经营赛</h1>
-                <p>v1.2</p>
+                <p>v1.3</p>
               </div>
               <div class="header-stat">
                 <span>当前资金</span>
@@ -101,7 +104,7 @@
             </section>
 
             <section class="race-actions" aria-label="赛事操作">
-              <button id="registerBtn" type="button">报名比赛</button>
+              <button id="registerBtn" type="button">报名比赛（200 元）</button>
               <button id="startBtn" type="button" disabled>起步 / 踩油门</button>
               <button id="nextBtn" type="button" disabled>下一场比赛</button>
             </section>
@@ -109,40 +112,6 @@
             <section class="result-panel" aria-live="polite">
               <h2>比赛结果提示</h2>
               <p id="resultMessage">先报名比赛，等绿灯后点击起步。</p>
-            </section>
-
-            <section class="group-box stats-box">
-              <h2>当前车辆属性</h2>
-              <dl class="stats-list">
-                <div>
-                  <dt>引擎</dt>
-                  <dd id="engineStat"></dd>
-                </div>
-                <div>
-                  <dt>轮胎</dt>
-                  <dd id="tireStat"></dd>
-                </div>
-                <div>
-                  <dt>变速箱</dt>
-                  <dd id="gearboxStat"></dd>
-                </div>
-                <div>
-                  <dt>稳定性</dt>
-                  <dd id="stabilityStat"></dd>
-                </div>
-                <div>
-                  <dt>重量</dt>
-                  <dd id="weightStat"></dd>
-                </div>
-                <div>
-                  <dt>马力</dt>
-                  <dd id="hpStat"></dd>
-                </div>
-                <div>
-                  <dt>赛事等级</dt>
-                  <dd id="raceTierStat"></dd>
-                </div>
-              </dl>
             </section>
 
             <section class="group-box log-box">
@@ -202,11 +171,77 @@
             </section>
           </section>
 
+          <section id="tuningPage" class="app-page" data-page="tuning" hidden>
+            <header class="page-header">
+              <div>
+                <h1>改装</h1>
+                <p>车辆属性与零件装备</p>
+              </div>
+              <div class="header-stat">
+                <span>当前资金</span>
+                <strong id="tuningCashStat">1500 元</strong>
+              </div>
+            </header>
+
+            <section class="storage-current">
+              <article class="vehicle-card is-current">
+                <div>
+                  <span class="current-badge">当前车辆</span>
+                  <h2>玩家破车</h2>
+                  <p>基础车辆。当前版本只有这一辆可用车辆。</p>
+                </div>
+                <button type="button" disabled>已选中</button>
+              </article>
+            </section>
+
+            <section class="storage-section">
+              <h2>当前车辆属性</h2>
+              <dl class="stats-list storage-stats">
+                <div>
+                  <dt>引擎</dt>
+                  <dd id="engineStat"></dd>
+                </div>
+                <div>
+                  <dt>轮胎</dt>
+                  <dd id="tireStat"></dd>
+                </div>
+                <div>
+                  <dt>变速箱</dt>
+                  <dd id="gearboxStat"></dd>
+                </div>
+                <div>
+                  <dt>稳定性</dt>
+                  <dd id="stabilityStat"></dd>
+                </div>
+                <div>
+                  <dt>重量</dt>
+                  <dd id="weightStat"></dd>
+                </div>
+                <div>
+                  <dt>马力</dt>
+                  <dd id="hpStat"></dd>
+                </div>
+              </dl>
+
+              <h2>零件槽位</h2>
+              <p class="panel-note">
+                每种类型只能装备一个部件。旧部件留在仓库；未装备零件可按原价 8 折出售。
+              </p>
+              <div id="garageSlotsBody" class="slot-list"></div>
+
+              <h2>已装备零件</h2>
+              <div id="tuningEquippedBody" class="inventory-list"></div>
+
+              <h2>未装备零件</h2>
+              <div id="tuningUnequippedBody" class="inventory-list"></div>
+            </section>
+          </section>
+
           <section id="storagePage" class="app-page" data-page="storage" hidden>
             <header class="page-header">
               <div>
                 <h1>仓库</h1>
-                <p>车辆、零件与系统操作</p>
+                <p>库存与存档管理</p>
               </div>
               <div class="header-stat">
                 <span>当前资金</span>
@@ -225,52 +260,14 @@
               </article>
             </section>
 
-            <section id="garagePanel" class="storage-section">
-              <h2>车辆属性</h2>
-              <dl class="stats-list storage-stats">
-                <div>
-                  <dt>引擎</dt>
-                  <dd id="storageEngineStat"></dd>
-                </div>
-                <div>
-                  <dt>轮胎</dt>
-                  <dd id="storageTireStat"></dd>
-                </div>
-                <div>
-                  <dt>变速箱</dt>
-                  <dd id="storageGearboxStat"></dd>
-                </div>
-                <div>
-                  <dt>稳定性</dt>
-                  <dd id="storageStabilityStat"></dd>
-                </div>
-                <div>
-                  <dt>重量</dt>
-                  <dd id="storageWeightStat"></dd>
-                </div>
-                <div>
-                  <dt>马力</dt>
-                  <dd id="storageHpStat"></dd>
-                </div>
-              </dl>
+            <section class="storage-section">
+              <h2>已拥有零件</h2>
+              <p class="panel-note">仓库只用于查看库存，装备与出售请到「改装」页操作。</p>
+              <div id="storageInventoryBody" class="inventory-list"></div>
 
-              <h2>零件槽位</h2>
-              <p class="panel-note">
-                每种类型只能装备一个部件。旧部件留在仓库；未装备零件可按原价 8 折出售。
-              </p>
-              <div id="garageSlotsBody" class="slot-list"></div>
-
-              <h2>已拥有车辆与零件</h2>
-              <div class="owned-list">
-                <article class="inventory-card is-current">
-                  <div>
-                    <h3>玩家破车</h3>
-                    <p>当前选中车辆</p>
-                  </div>
-                  <button type="button" disabled>当前</button>
-                </article>
-                <div id="garageInventoryBody" class="inventory-list"></div>
-              </div>
+              <h2>材料</h2>
+              <p class="panel-note">材料系统尚未开放，后续「制作」玩法会用到。</p>
+              <div id="storageMaterialsBody" class="inventory-list"></div>
             </section>
 
             <section class="system-actions" aria-label="系统操作">
