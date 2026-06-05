@@ -194,10 +194,38 @@ function pressStart() {
   startPlayerCar();
 }
 
+function updateBestReactionRecord(reactionSeconds) {
+  if (!Number.isFinite(reactionSeconds) || reactionSeconds < 0) {
+    return;
+  }
+
+  if (
+    gameState.bestReactionTime === null ||
+    reactionSeconds < gameState.bestReactionTime
+  ) {
+    gameState.bestReactionTime = reactionSeconds;
+    addLog(`刷新最快反应记录：${gameState.bestReactionTime.toFixed(3)} 秒！`);
+  }
+}
+
+function updateWinStreak(playerRank) {
+  if (playerRank === 1) {
+    gameState.currentWinStreak += 1;
+    gameState.bestWinStreak = Math.max(
+      gameState.bestWinStreak,
+      gameState.currentWinStreak
+    );
+    return;
+  }
+
+  gameState.currentWinStreak = 0;
+}
+
 function handleFalseStart() {
   const falseStartPhase = gameState.phase;
   clearRaceTimers();
   gameState.playerStarted = false;
+  gameState.currentWinStreak = 0;
   gameState.lastRank = '犯规';
   setPhase('false_start');
   setLights('red');
@@ -259,6 +287,7 @@ function startPlayerCar() {
   playerCar.started = true;
   playerCar.reactionPenalty = slowPenalty;
   playerCar.launchBonus = playerCar.power.launch + reactionBonus;
+  updateBestReactionRecord(reactionSeconds);
 
   addLog(`你起步反应时间：${reactionSeconds.toFixed(3)} 秒`);
   if (reactionSeconds < 0.25) {
@@ -330,6 +359,7 @@ function completeRace() {
   gameState.cash += prize;
   gameState.raceCount += 1;
   gameState.lastRank = `第 ${playerRank} 名`;
+  updateWinStreak(playerRank);
   setPhase('finished');
   setLights('none');
 
