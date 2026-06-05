@@ -224,6 +224,7 @@ function updateWinStreak(playerRank) {
 function handleFalseStart() {
   const falseStartPhase = gameState.phase;
   clearRaceTimers();
+  gameState.reactionTime = null;
   gameState.playerStarted = false;
   gameState.currentWinStreak = 0;
   gameState.lastRank = '犯规';
