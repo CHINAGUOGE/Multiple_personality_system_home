@@ -52,6 +52,17 @@ const PART_TYPE_LABELS = {
   Stability: '稳定件',
 };
 
+const PART_STAT_ORDER = ['engine', 'tire', 'gearbox', 'stability', 'weight', 'hp'];
+
+const PART_STAT_LABELS = {
+  engine: '引擎',
+  tire: '轮胎',
+  gearbox: '变速箱',
+  stability: '稳定性',
+  weight: '重量',
+  hp: '马力',
+};
+
 const PART_RARITY_LABELS = {
   common: '普通',
   uncommon: '少见',
@@ -651,8 +662,118 @@ function renderPartName(part, includeId = false) {
   return `<span class="part-quality part-quality-${rarity}">${label}</span>`;
 }
 
-function formatPartOption(part) {
-  return `[${formatPartRarity(part)}] #${part.id} ${part.name}`;
+function getPartStatValue(part, key) {
+  return Number((part && part.changes && part.changes[key]) || 0);
+}
+
+function getPartComparisonChanges(part, equippedPart) {
+  return PART_STAT_ORDER.reduce((changes, key) => {
+    const value =
+      getPartStatValue(part, key) - (equippedPart ? getPartStatValue(equippedPart, key) : 0);
+
+    if (value !== 0) {
+      changes[key] = value;
+    }
+
+    return changes;
+  }, {});
+}
+
+function getPartChangeTone(key, value) {
+  if (value === 0) {
+    return 'neutral';
+  }
+
+  if (key === 'weight') {
+    return value < 0 ? 'good' : 'bad';
+  }
+
+  return value > 0 ? 'good' : 'bad';
+}
+
+function formatSignedPartChange(key, value) {
+  const sign = value > 0 ? '+' : '';
+  const unit = key === 'weight' ? 'kg' : '';
+  return `${PART_STAT_LABELS[key] || key} ${sign}${value}${unit}`;
+}
+
+function formatPartChangeText(changes) {
+  const items = PART_STAT_ORDER.filter((key) => changes[key]).map((key) =>
+    formatSignedPartChange(key, changes[key])
+  );
+
+  return items.length > 0 ? items.join('，') : '属性无变化';
+}
+
+function renderPartChangeList(changes) {
+  const items = PART_STAT_ORDER.filter((key) => changes[key]).reduce(
+    (groups, key) => {
+      const value = changes[key];
+      const tone = getPartChangeTone(key, value);
+      const item = `<span class="part-change part-change-${tone}">${formatSignedPartChange(
+        key,
+        value
+      )}</span>`;
+
+      groups[tone].push(item);
+      return groups;
+    },
+    { good: [], bad: [], neutral: [] }
+  );
+
+  if (!items.good.length && !items.bad.length && !items.neutral.length) {
+    return '<span class="part-change part-change-neutral">属性无变化</span>';
+  }
+
+  return `
+    <div class="part-change-groups">
+      ${
+        items.good.length
+          ? `<div class="part-change-group"><span>好处</span><div class="part-change-list">${items.good.join(
+              ''
+            )}</div></div>`
+          : ''
+      }
+      ${
+        items.bad.length
+          ? `<div class="part-change-group"><span>代价</span><div class="part-change-list">${items.bad.join(
+              ''
+            )}</div></div>`
+          : ''
+      }
+      ${
+        items.neutral.length
+          ? `<div class="part-change-group"><span>其它</span><div class="part-change-list">${items.neutral.join(
+              ''
+            )}</div></div>`
+          : ''
+      }
+    </div>
+  `;
+}
+
+function renderPartComparison(part, equippedPart) {
+  const isCurrent = equippedPart && equippedPart.id === part.id;
+  const referencePart = isCurrent ? null : equippedPart;
+  const label = isCurrent ? '当前效果' : equippedPart ? '相对当前' : '自身效果';
+  const changes = getPartComparisonChanges(part, referencePart);
+
+  return `
+    <div class="part-compare">
+      <small class="part-compare-label">${label}</small>
+      ${renderPartChangeList(changes)}
+    </div>
+  `;
+}
+
+function formatPartOption(part, equippedPart = null) {
+  if (equippedPart && equippedPart.id === part.id) {
+    return `[${formatPartRarity(part)}] #${part.id} ${part.name}（当前已装备）`;
+  }
+
+  return `[${formatPartRarity(part)}] #${part.id} ${part.name}（${formatPartChangeText(
+    getPartComparisonChanges(part, equippedPart)
+  )}）`;
 }
 
 function getRaceTier() {
@@ -928,6 +1049,14 @@ function updateButtons() {
   Array.from(el.garageSlotsBody.querySelectorAll('select')).forEach((select) => {
     select.disabled = !canManageStorage() || select.options.length <= 1;
   });
+
+  Array.from(el.garageSlotsBody.querySelectorAll('[data-action="equip-slot"]')).forEach(
+    (button) => {
+      const part = getPartById(Number(button.dataset.partId));
+      const equipped = part && gameState.equippedParts[part.type] === part.id;
+      button.disabled = !canManageStorage() || !part || equipped;
+    }
+  );
 
   Array.from(el.garageInventoryBody.querySelectorAll('button')).forEach((button) => {
     const part = getPartById(Number(button.dataset.partId));
@@ -1419,7 +1548,7 @@ function renderGarage() {
     parts.forEach((part) => {
       const option = document.createElement('option');
       option.value = String(part.id);
-      option.textContent = formatPartOption(part);
+      option.textContent = formatPartOption(part, equippedPart);
       option.className = `part-quality-${getPartRarity(part)}`;
       select.appendChild(option);
     });
@@ -1432,11 +1561,53 @@ function renderGarage() {
     details.innerHTML = `
       <h3>${formatPartType(type)}</h3>
       <p>${equippedPart ? `当前：${renderPartName(equippedPart, true)}` : '当前：未装备'}</p>
-      <small>${equippedPart ? equippedPart.effectText : '没有装备效果'}</small>
+      ${
+        equippedPart
+          ? renderPartComparison(equippedPart, equippedPart)
+          : '<small>没有装备效果</small>'
+      }
     `;
+
+    const choices = document.createElement('div');
+    choices.className = 'slot-choices';
+    if (parts.length > 0) {
+      choices.innerHTML = `
+        <small class="part-compare-label">可选零件对比</small>
+        <ul class="part-option-list">
+          ${parts
+            .map((part) => {
+              const equipped = equippedPart && equippedPart.id === part.id;
+              return `
+                <li class="part-option-row${equipped ? ' is-current' : ''}">
+                  <div class="part-option-heading">
+                    ${renderPartName(part, true)}
+                    <button
+                      type="button"
+                      class="part-option-button"
+                      data-action="equip-slot"
+                      data-part-id="${part.id}"
+                      ${equipped ? 'disabled' : ''}
+                    >
+                      ${equipped ? '已装备' : '装备'}
+                    </button>
+                  </div>
+                  ${renderPartComparison(part, equippedPart)}
+                </li>
+              `;
+            })
+            .join('')}
+        </ul>
+      `;
+    } else {
+      choices.innerHTML = '<small>当前槽位还没有可用零件。</small>';
+    }
+    Array.from(choices.querySelectorAll('[data-action="equip-slot"]')).forEach((button) => {
+      button.addEventListener('click', () => changeEquipment(type, button.dataset.partId));
+    });
 
     card.appendChild(details);
     card.appendChild(select);
+    card.appendChild(choices);
     el.garageSlotsBody.appendChild(card);
   });
 
@@ -1453,6 +1624,7 @@ function renderGarage() {
   } else {
     gameState.inventory.forEach((part) => {
       const equipped = gameState.equippedParts[part.type] === part.id;
+      const equippedPart = getEquippedPart(part.type);
       const card = document.createElement('article');
       card.className = `inventory-card${equipped ? ' is-current' : ''}`;
       card.innerHTML = `
@@ -1462,7 +1634,7 @@ function renderGarage() {
             ${renderPartRarity(part)}
           </div>
           <p>类型：${formatPartType(part.type)}</p>
-          <p>效果：${part.effectText}</p>
+          ${renderPartComparison(part, equippedPart)}
           <small>${equipped ? '当前车辆已装备' : '仓库零件，可出售'}</small>
         </div>
       `;
