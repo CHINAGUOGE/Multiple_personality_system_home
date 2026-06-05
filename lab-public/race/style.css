@@ -824,6 +824,85 @@ select {
   border: 1px solid #808080;
 }
 
+.difficulty-current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.difficulty-current-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.difficulty-current-info span {
+  color: #404040;
+  font-size: 12px;
+}
+
+.difficulty-current-info strong {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.difficulty-current-info small {
+  color: #404040;
+  line-height: 1.3;
+}
+
+.difficulty-current button {
+  flex: 0 0 auto;
+}
+
+/* ===== v1.4 难度伪弹窗 ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(10, 36, 106, 0.45);
+}
+
+.modal-window {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  background: #d4d0c8;
+  border: 2px solid;
+  border-color: #fff #1f1f1f #1f1f1f #fff;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+}
+
+.modal-window .title-bar {
+  position: static;
+}
+
+.window-buttons button {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 20px;
+  min-height: 0;
+  padding: 0;
+  color: #000;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1;
+  background: #d4d0c8;
+  border: 1px solid;
+  border-color: #fff #404040 #404040 #fff;
+  box-shadow: none;
+}
+
+.modal-body {
+  padding: 14px;
+}
+
 /* ===== v1.4 装备图鉴 ===== */
 .atlas-list {
   display: grid;

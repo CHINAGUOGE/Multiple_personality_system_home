@@ -245,6 +245,22 @@ function setDifficulty(key) {
   autoSaveGame();
 }
 
+function openDifficultyModal() {
+  if (!el.difficultyModal) {
+    return;
+  }
+  if (isRaceLockedPhase(gameState.phase) || gameState.phase === 'game_over') {
+    return;
+  }
+  el.difficultyModal.hidden = false;
+}
+
+function closeDifficultyModal() {
+  if (el.difficultyModal) {
+    el.difficultyModal.hidden = true;
+  }
+}
+
 function getPartById(partId) {
   return gameState.inventory.find((part) => part.id === partId) || null;
 }
@@ -544,6 +560,12 @@ function updateButtons() {
 
   if (el.difficultyChoices) {
     const canChangeDifficulty = !countdownOrRace && !gameOver;
+    if (el.difficultyOpenBtn) {
+      el.difficultyOpenBtn.disabled = !canChangeDifficulty;
+    }
+    if (!canChangeDifficulty) {
+      closeDifficultyModal();
+    }
     Array.from(el.difficultyChoices.querySelectorAll('button')).forEach((button) => {
       const isActive = button.dataset.difficulty === getDifficultyKey();
       button.disabled = !canChangeDifficulty || isActive;
@@ -606,11 +628,20 @@ function updateStats() {
 }
 
 function renderDifficulty() {
+  const activeKey = getDifficultyKey();
+  const activeConfig = DIFFICULTIES[activeKey];
+
+  if (el.difficultyCurrentName && activeConfig) {
+    el.difficultyCurrentName.textContent = activeConfig.name;
+  }
+  if (el.difficultyCurrentMeta && activeConfig) {
+    el.difficultyCurrentMeta.textContent = `奖金×${activeConfig.rewardMultiplier} · 强度×${activeConfig.opponentMultiplier}`;
+  }
+
   if (!el.difficultyChoices) {
     return;
   }
 
-  const activeKey = getDifficultyKey();
   el.difficultyChoices.innerHTML = '';
 
   DIFFICULTY_ORDER.forEach((key) => {

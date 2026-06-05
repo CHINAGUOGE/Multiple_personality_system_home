@@ -11,11 +11,34 @@ function bindEvents() {
     tab.addEventListener('click', () => setActivePage(tab.dataset.page));
   });
 
+  if (el.difficultyOpenBtn) {
+    el.difficultyOpenBtn.addEventListener('click', openDifficultyModal);
+  }
+
+  if (el.difficultyCloseBtn) {
+    el.difficultyCloseBtn.addEventListener('click', closeDifficultyModal);
+  }
+
+  if (el.difficultyModal) {
+    el.difficultyModal.addEventListener('click', (event) => {
+      if (event.target === el.difficultyModal) {
+        closeDifficultyModal();
+      }
+    });
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && el.difficultyModal && !el.difficultyModal.hidden) {
+      closeDifficultyModal();
+    }
+  });
+
   if (el.difficultyChoices) {
     el.difficultyChoices.addEventListener('click', (event) => {
       const button = event.target.closest('button[data-difficulty]');
       if (button && !button.disabled) {
         setDifficulty(button.dataset.difficulty);
+        closeDifficultyModal();
       }
     });
   }

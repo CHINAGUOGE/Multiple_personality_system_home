@@ -85,12 +85,16 @@
 
             <section class="group-box difficulty-box">
               <h2>比赛难度</h2>
-              <div
-                id="difficultyChoices"
-                class="difficulty-choices"
-                role="group"
-                aria-label="选择比赛难度"
-              ></div>
+              <div class="difficulty-current">
+                <div class="difficulty-current-info">
+                  <span>当前难度</span>
+                  <strong id="difficultyCurrentName">标准</strong>
+                  <small id="difficultyCurrentMeta">奖金×1 · 强度×1</small>
+                </div>
+                <button id="difficultyOpenBtn" type="button" aria-haspopup="dialog">
+                  更改难度
+                </button>
+              </div>
               <p class="difficulty-note">
                 难度影响电脑强度、奖金倍率与商店奖池范围。比赛进行中不可更改。
               </p>
@@ -315,6 +319,34 @@
           </section>
         </div>
       </main>
+    </div>
+
+    <div id="difficultyModal" class="modal-overlay" hidden>
+      <div
+        class="modal-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="difficultyModalTitle"
+      >
+        <div class="title-bar">
+          <span class="title-icon"></span>
+          <span id="difficultyModalTitle">选择比赛难度</span>
+          <div class="window-buttons">
+            <button id="difficultyCloseBtn" type="button" aria-label="关闭">×</button>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div
+            id="difficultyChoices"
+            class="difficulty-choices"
+            role="group"
+            aria-label="选择比赛难度"
+          ></div>
+          <p class="difficulty-note">
+            难度影响电脑强度、奖金倍率与商店奖池范围。比赛进行中不可更改。
+          </p>
+        </div>
+      </div>
     </div>
 
     <script src="./game.js"></script>
