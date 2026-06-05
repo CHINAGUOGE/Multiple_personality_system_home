@@ -109,8 +109,12 @@ function registerRace() {
     if (checkGameFailure()) {
       return;
     }
-    addLog('现金不足，连报名费都交不起。');
-    addLog('可以进仓库卸下或卖掉零件，仓库回收价为原价 8 折。');
+    addLog(`现金不足以支付「${getDifficulty().name}」难度报名费 ${getEntryFee()} 元。`);
+    if (gameState.cash >= getMinEntryFee()) {
+      addLog('可降低难度以减少报名费，或进仓库卸下/卖掉零件。');
+    } else {
+      addLog('可以进仓库卸下或卖掉零件，仓库回收价为原价 8 折。');
+    }
     return;
   }
 

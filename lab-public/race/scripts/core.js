@@ -195,6 +195,11 @@ function getDifficultyEntryFee(key) {
   return Math.round((ENTRY_FEE * multiplier) / 10) * 10;
 }
 
+// 全难度最低报名费：判定真正失败用最低值，避免高难度报名费把可降难度的进度误判为失败。
+function getMinEntryFee() {
+  return Math.min(...DIFFICULTY_ORDER.map((key) => getDifficultyEntryFee(key)));
+}
+
 function getCurrentLootPool() {
   return LOOT_POOLS[getDifficultyKey()] || LOOT_POOLS[DEFAULT_DIFFICULTY];
 }
@@ -325,7 +330,7 @@ function isVehicleStripped() {
 }
 
 function shouldFailForNoEntryFee() {
-  return gameState.cash < getEntryFee() && isVehicleStripped();
+  return gameState.cash < getMinEntryFee() && isVehicleStripped();
 }
 
 function checkGameFailure() {
@@ -336,7 +341,7 @@ function checkGameFailure() {
   if (gameState.phase !== 'game_over') {
     setPhase('game_over');
     setLights('none');
-    addLog('游戏失败：车辆已无装备，现金不足以支付报名费。');
+    addLog('游戏失败：车辆已无装备，现金不足以支付最低难度报名费。');
     addLog('请点击“重开”重新开始。');
   }
 

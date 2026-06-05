@@ -682,4 +682,46 @@ const PART_POOL = [
     effectText: '马力 +58，引擎 +22，稳定性 -20，重量 +24kg',
     changes: { hp: 58, engine: 22, stability: -20, weight: 24 },
   },
+
+  // ===== 各类型神话补全：轮胎 / 变速箱 / 进气 / 排气 / 稳定件 =====
+  {
+    name: '赛道之神热熔胎',
+    type: 'Tire',
+    price: 5400,
+    rarity: 'mythic',
+    effectText: '轮胎 +24，稳定性 +16，重量 +20kg',
+    changes: { tire: 24, stability: 16, weight: 20 },
+  },
+  {
+    name: '零延迟序列变速箱',
+    type: 'Gearbox',
+    price: 5600,
+    rarity: 'mythic',
+    effectText: '变速箱 +30，引擎 +10，稳定性 -12，重量 +6kg',
+    changes: { gearbox: 30, engine: 10, stability: -12, weight: 6 },
+  },
+  {
+    name: '赛用氮氧加速系统',
+    type: 'Intake',
+    price: 5400,
+    rarity: 'mythic',
+    effectText: '马力 +46，引擎 +12，稳定性 -22，重量 +4kg',
+    changes: { hp: 46, engine: 12, stability: -22, weight: 4 },
+  },
+  {
+    name: '钛合金全段排气总成',
+    type: 'Exhaust',
+    price: 5800,
+    rarity: 'mythic',
+    effectText: '马力 +44，引擎 +18，稳定性 -12，重量 -18kg',
+    changes: { hp: 44, engine: 18, stability: -12, weight: -18 },
+  },
+  {
+    name: '主动液压悬挂系统',
+    type: 'Stability',
+    price: 5600,
+    rarity: 'mythic',
+    effectText: '稳定性 +32，轮胎 +6，重量 +34kg，马力 -4',
+    changes: { stability: 32, tire: 6, weight: 34, hp: -4 },
+  },
 ];
