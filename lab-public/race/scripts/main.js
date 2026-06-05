@@ -10,6 +10,15 @@ function bindEvents() {
   el.tabs.forEach((tab) => {
     tab.addEventListener('click', () => setActivePage(tab.dataset.page));
   });
+
+  if (el.difficultyChoices) {
+    el.difficultyChoices.addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-difficulty]');
+      if (button && !button.disabled) {
+        setDifficulty(button.dataset.difficulty);
+      }
+    });
+  }
 }
 
 function init() {
@@ -18,12 +27,15 @@ function init() {
   resetCars();
   refreshShop();
   renderGarage();
+  renderDifficulty();
+  renderAtlas();
   setPhase('idle');
   setActivePage('race');
   setLights('none');
   updateStats();
   addLog('横线赛车经营赛启动。');
   addLog('先报名比赛，等绿灯后点“起步 / 踩油门”。红灯或黄灯点击会抢跑。');
+  gameState.ready = true;
 }
 
 init();
