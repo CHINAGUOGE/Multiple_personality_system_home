@@ -12,12 +12,11 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   color: #000;
-  font-family: Tahoma, "SimSun", "宋体", sans-serif;
+  font-family: Tahoma, 'SimSun', '宋体', sans-serif;
   font-size: 13px;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    #3a6ea5;
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), #3a6ea5;
   background-size: 18px 18px;
 }
 
@@ -32,7 +31,9 @@ button {
   background: #d4d0c8;
   border: 2px solid;
   border-color: #fff #404040 #404040 #fff;
-  box-shadow: inset 1px 1px #dfdfdf, inset -1px -1px #808080;
+  box-shadow:
+    inset 1px 1px #dfdfdf,
+    inset -1px -1px #808080;
   cursor: default;
 }
 
@@ -140,7 +141,7 @@ select {
 
 .page-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   padding: 8px;
   border-bottom: 1px solid #808080;
@@ -327,7 +328,7 @@ select {
   position: relative;
   min-width: 0;
   min-height: 286px;
-  padding: 14px 42px 12px 54px;
+  padding: 14px 42px 12px 94px;
   overflow: hidden;
   background: #c0c0c0;
   border: 2px inset #fff;
@@ -346,7 +347,7 @@ select {
 }
 
 .lane::after {
-  content: "";
+  content: '';
   position: absolute;
   right: 0;
   left: 0;
@@ -359,6 +360,7 @@ select {
   left: -48px;
   top: 11px;
   width: 42px;
+  white-space: nowrap;
   text-align: right;
 }
 
@@ -374,7 +376,7 @@ select {
 }
 
 .car::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 6px;
   top: -5px;
@@ -385,7 +387,7 @@ select {
 }
 
 .car::after {
-  content: "";
+  content: '';
   position: absolute;
   right: 4px;
   left: 4px;
@@ -484,7 +486,7 @@ select {
   padding: 8px;
   overflow: auto;
   color: #00ff00;
-  font-family: "Lucida Console", Consolas, monospace;
+  font-family: 'Lucida Console', Consolas, monospace;
   font-size: 12px;
   line-height: 1.45;
   white-space: pre-wrap;
@@ -636,16 +638,20 @@ select {
   color: #303030;
 }
 
-.part-quality-uncommon {
-  color: #1f8f2e;
-}
-
 .part-quality-rare {
   color: #1f55d6;
 }
 
+.part-quality-epic {
+  color: #8a2be2;
+}
+
 .part-quality-legendary {
   color: #b75b00;
+}
+
+.part-quality-mythic {
+  color: #d6175b;
 }
 
 .current-badge {
@@ -760,6 +766,211 @@ select {
   border: 2px groove #fff;
 }
 
+/* ===== v1.4 难度选择 ===== */
+.difficulty-box {
+  padding-top: 28px;
+}
+
+.difficulty-box > h2 {
+  position: absolute;
+  top: -9px;
+  left: 10px;
+  padding: 0 4px;
+  font: inherit;
+  font-weight: bold;
+  background: #d4d0c8;
+}
+
+.difficulty-choices {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.difficulty-button {
+  display: grid;
+  gap: 3px;
+  min-height: 56px;
+  padding: 7px 6px;
+  text-align: center;
+}
+
+.difficulty-name {
+  font-size: 14px;
+}
+
+.difficulty-meta {
+  color: #404040;
+  font-size: 11px;
+  font-weight: normal;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.difficulty-button.is-active {
+  color: #fff;
+  background: #0a246a;
+  border-color: #7da0d8 #001342 #001342 #7da0d8;
+  box-shadow: inset 1px 1px rgba(255, 255, 255, 0.32);
+}
+
+.difficulty-button.is-active .difficulty-meta {
+  color: #d7e2f7;
+}
+
+.difficulty-note {
+  margin: 8px 0 0;
+  padding: 7px;
+  background: #ffffe1;
+  border: 1px solid #808080;
+}
+
+.difficulty-current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.difficulty-current-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.difficulty-current-info span {
+  color: #404040;
+  font-size: 12px;
+}
+
+.difficulty-current-info strong {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.difficulty-current-info small {
+  color: #404040;
+  line-height: 1.3;
+}
+
+.difficulty-current button {
+  flex: 0 0 auto;
+}
+
+/* ===== v1.4 难度伪弹窗 ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(10, 36, 106, 0.45);
+}
+
+.modal-window {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  background: #d4d0c8;
+  border: 2px solid;
+  border-color: #fff #1f1f1f #1f1f1f #fff;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+}
+
+.modal-window .title-bar {
+  position: static;
+}
+
+.window-buttons button {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 20px;
+  min-height: 0;
+  padding: 0;
+  color: #000;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1;
+  background: #d4d0c8;
+  border: 1px solid;
+  border-color: #fff #404040 #404040 #fff;
+  box-shadow: none;
+}
+
+.modal-body {
+  padding: 14px;
+}
+
+/* ===== v1.4 装备图鉴 ===== */
+.atlas-list {
+  display: grid;
+  gap: 12px;
+}
+
+.atlas-group-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.atlas-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.atlas-card {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px;
+  background: #fff;
+  border: 2px solid #9b9b9b;
+  border-radius: 6px;
+}
+
+.atlas-card.is-out-of-pool {
+  background: #f1f1f1;
+  border-style: dashed;
+}
+
+.atlas-card-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.atlas-card-head h4 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.atlas-rate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 4px 6px;
+  background: #eef2fa;
+  border: 1px solid #c4cfe6;
+  border-radius: 4px;
+}
+
+.atlas-rate-label {
+  color: #404040;
+  font-size: 12px;
+}
+
+.atlas-rate-value {
+  font-weight: bold;
+}
+
 @media (max-width: 900px) {
   .summary-grid,
   .stats-list,
@@ -769,6 +980,10 @@ select {
 
   .slot-list {
     grid-template-columns: 1fr;
+  }
+
+  .difficulty-choices {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -817,8 +1032,8 @@ select {
     bottom: 0;
     left: 0;
     z-index: 10;
-    gap: 0;
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    gap: 2px;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
     background: #d4d0c8;
     border-top: 1px solid #808080;
     border-bottom: 0;
@@ -826,6 +1041,8 @@ select {
 
   .page-tabs button {
     min-height: 48px;
+    padding: 6px 2px;
+    font-size: 13px;
   }
 
   .page-shell {
@@ -840,7 +1057,8 @@ select {
   #racePage,
   #shopPage,
   #tuningPage,
-  #storagePage {
+  #storagePage,
+  #atlasPage {
     padding-top: var(--mobile-page-header-offset);
   }
 
@@ -861,7 +1079,8 @@ select {
 
   #shopPage > .page-header,
   #tuningPage > .page-header,
-  #storagePage > .page-header {
+  #storagePage > .page-header,
+  #atlasPage > .page-header {
     position: fixed;
     top: var(--mobile-title-bar-height);
     margin: 0;
@@ -874,13 +1093,15 @@ select {
 
   #shopPage > .page-header .header-stat,
   #tuningPage > .page-header .header-stat,
-  #storagePage > .page-header .header-stat {
+  #storagePage > .page-header .header-stat,
+  #atlasPage > .page-header .header-stat {
     padding: 5px 7px;
   }
 
   #shopPage > .page-header .header-stat strong,
   #tuningPage > .page-header .header-stat strong,
-  #storagePage > .page-header .header-stat strong {
+  #storagePage > .page-header .header-stat strong,
+  #atlasPage > .page-header .header-stat strong {
     font-size: 15px;
   }
 
@@ -966,7 +1187,7 @@ select {
 
   .track-panel {
     min-height: 230px;
-    padding: 12px 34px 10px 46px;
+    padding: 12px 34px 10px 78px;
   }
 
   .lanes {
@@ -982,6 +1203,7 @@ select {
     top: 8px;
     width: 34px;
     font-size: 12px;
+    white-space: nowrap;
   }
 
   .marker {
@@ -1022,17 +1244,30 @@ select {
     position: static;
     grid-template-columns: 1fr;
   }
+
+  .difficulty-choices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .atlas-cards {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 380px) {
   .track-panel {
     min-height: 210px;
     padding-right: 30px;
-    padding-left: 42px;
+    padding-left: 74px;
   }
 
   .car {
     width: 28px;
     height: 16px;
+  }
+
+  .page-tabs button {
+    padding: 6px 1px;
+    font-size: 12px;
   }
 }

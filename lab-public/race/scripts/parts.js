@@ -1,12 +1,62 @@
 'use strict';
 
+// 先按 PART_RARITY_WEIGHTS 抽稀有度，再在该稀有度内等概率抽零件，去重。
+// 这样实际出现率与图鉴展示（getRarityShopRate / getPartShopRate）一致，
+// 不会被各稀有度零件数量差异稀释。商店概率不参与 dropRateMultiplier。
+function pickWeightedParts(pool, count) {
+  const buckets = new Map();
+  pool.forEach((part) => {
+    const rarity = getPartRarity(part);
+    if (!buckets.has(rarity)) {
+      buckets.set(rarity, []);
+    }
+    buckets.get(rarity).push(part);
+  });
+
+  const picked = [];
+
+  while (picked.length < count && buckets.size > 0) {
+    const rarities = Array.from(buckets.keys());
+    const totalWeight = rarities.reduce(
+      (sum, rarity) => sum + (PART_RARITY_WEIGHTS[rarity] || 0),
+      0
+    );
+    if (totalWeight <= 0) {
+      break;
+    }
+
+    let roll = Math.random() * totalWeight;
+    let chosenRarity = rarities[rarities.length - 1];
+    for (let i = 0; i < rarities.length; i += 1) {
+      roll -= PART_RARITY_WEIGHTS[rarities[i]] || 0;
+      if (roll <= 0) {
+        chosenRarity = rarities[i];
+        break;
+      }
+    }
+
+    const partsInRarity = buckets.get(chosenRarity);
+    const index = Math.floor(Math.random() * partsInRarity.length);
+    picked.push(partsInRarity.splice(index, 1)[0]);
+    if (partsInRarity.length === 0) {
+      buckets.delete(chosenRarity);
+    }
+  }
+
+  return picked;
+}
+
 function refreshShop() {
-  const count = Math.floor(randomBetween(4, 7));
-  gameState.shopItems = pickRandomItems(PART_POOL, count).map((part) => ({
+  const pool = getCurrentLootPool();
+  const available = PART_POOL.filter((part) => pool.includes(getPartRarity(part)));
+  const count = Math.min(available.length, Math.floor(randomBetween(4, 7)));
+
+  gameState.shopItems = pickWeightedParts(available, count).map((part) => ({
     ...part,
     bought: false,
   }));
   renderShop();
+  autoSaveGame();
 }
 
 function renderShop() {
@@ -84,6 +134,7 @@ function buyPart(index) {
   updateStats();
   renderShop();
   renderGarage();
+  autoSaveGame();
 }
 
 function renderGarage() {
@@ -309,6 +360,7 @@ function changeEquipment(type, value) {
   updateStats();
   renderGarage();
   checkGameFailure();
+  autoSaveGame();
 }
 
 function unequipPart(partId) {
@@ -327,6 +379,7 @@ function unequipPart(partId) {
   updateStats();
   renderGarage();
   checkGameFailure();
+  autoSaveGame();
 }
 
 function sellPart(partId) {
@@ -354,4 +407,70 @@ function sellPart(partId) {
   updateStats();
   renderGarage();
   checkGameFailure();
+  autoSaveGame();
+}
+
+// 装备图鉴：只读展示，按零件类型分组。
+// 所有出现率数值从配置计算（getPartShopRate），不在模板写死。
+function renderAtlas() {
+  if (!el.atlasBody) {
+    return;
+  }
+
+  const difficulty = getDifficulty();
+  const pool = getCurrentLootPool();
+
+  if (el.atlasDifficultyText) {
+    const poolNames = pool.map((rarity) => PART_RARITY_LABELS[rarity]).join(' / ');
+    el.atlasDifficultyText.textContent = `当前难度「${difficulty.name}」：商店奖池 ${poolNames}`;
+  }
+
+  el.atlasBody.innerHTML = '';
+
+  EQUIPMENT_SLOTS.forEach((type) => {
+    const parts = PART_POOL.filter((part) => part.type === type);
+    if (parts.length === 0) {
+      return;
+    }
+
+    const sorted = parts
+      .slice()
+      .sort(
+        (a, b) =>
+          PART_RARITY_ORDER.indexOf(getPartRarity(a)) - PART_RARITY_ORDER.indexOf(getPartRarity(b))
+      );
+
+    const group = document.createElement('section');
+    group.className = 'atlas-group';
+
+    const heading = document.createElement('h3');
+    heading.className = 'atlas-group-title';
+    heading.textContent = `${formatPartType(type)}（${parts.length} 件）`;
+    group.appendChild(heading);
+
+    const list = document.createElement('div');
+    list.className = 'atlas-cards';
+
+    sorted.forEach((part) => {
+      const rate = getPartShopRate(part);
+      const inPool = pool.includes(getPartRarity(part));
+      const card = document.createElement('article');
+      card.className = `atlas-card${inPool ? '' : ' is-out-of-pool'}`;
+      card.innerHTML = `
+        <div class="atlas-card-head">
+          <h4>${renderPartName(part)}</h4>
+          ${renderPartRarity(part)}
+        </div>
+        <div class="atlas-rate">
+          <span class="atlas-rate-label">当前难度商店出现率</span>
+          <span class="atlas-rate-value">${inPool ? formatShopRate(rate) : '本难度不出现'}</span>
+        </div>
+        ${renderPartChangeList(part.changes)}
+      `;
+      list.appendChild(card);
+    });
+
+    group.appendChild(list);
+    el.atlasBody.appendChild(group);
+  });
 }

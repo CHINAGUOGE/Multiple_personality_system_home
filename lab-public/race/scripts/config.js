@@ -65,16 +65,77 @@ const PART_STAT_LABELS = {
 
 const PART_RARITY_LABELS = {
   common: '普通',
-  uncommon: '少见',
   rare: '稀有',
+  epic: '史诗',
   legendary: '传说',
+  mythic: '神话',
 };
 
+const PART_RARITY_ORDER = ['common', 'rare', 'epic', 'legendary', 'mythic'];
+
 const PART_RARITY_WEIGHTS = {
-  common: 64,
-  uncommon: 26,
-  rare: 8,
-  legendary: 2,
+  common: 70,
+  rare: 22,
+  epic: 6,
+  legendary: 1.6,
+  mythic: 0.4,
+};
+
+// 旧存档/旧数据的稀有度迁移表：uncommon 统一并入 rare。
+const PART_RARITY_MIGRATIONS = {
+  uncommon: 'rare',
+};
+
+const DIFFICULTIES = {
+  easy: {
+    name: '休闲',
+    opponentMultiplier: 0.9,
+    rewardMultiplier: 0.8,
+    dropRateMultiplier: 1.2,
+    entryFeeMultiplier: 0.8,
+  },
+  normal: {
+    name: '标准',
+    opponentMultiplier: 1.0,
+    rewardMultiplier: 1.0,
+    dropRateMultiplier: 1.0,
+    entryFeeMultiplier: 1.0,
+  },
+  hard: {
+    name: '挑战',
+    opponentMultiplier: 1.4,
+    rewardMultiplier: 1.25,
+    dropRateMultiplier: 0.85,
+    entryFeeMultiplier: 1.3,
+  },
+  expert: {
+    name: '专家',
+    opponentMultiplier: 1.85,
+    rewardMultiplier: 1.6,
+    dropRateMultiplier: 0.65,
+    entryFeeMultiplier: 1.7,
+  },
+  nightmare: {
+    name: '噩梦',
+    opponentMultiplier: 2.5,
+    rewardMultiplier: 2.2,
+    dropRateMultiplier: 0.45,
+    entryFeeMultiplier: 2.4,
+  },
+};
+
+const DIFFICULTY_ORDER = ['easy', 'normal', 'hard', 'expert', 'nightmare'];
+const DEFAULT_DIFFICULTY = 'normal';
+
+// 各难度商店奖池允许出现的稀有度范围。
+// 商店出现概率仅由 LOOT_POOLS + PART_RARITY_WEIGHTS 决定；
+// dropRateMultiplier 不参与商店概率，预留给后续比赛掉落系统。
+const LOOT_POOLS = {
+  easy: ['common', 'rare'],
+  normal: ['common', 'rare', 'epic'],
+  hard: ['rare', 'epic', 'legendary'],
+  expert: ['rare', 'epic', 'legendary'],
+  nightmare: ['epic', 'legendary', 'mythic'],
 };
 
 const RACE_TIERS = [
@@ -112,7 +173,7 @@ const PART_POOL = [
     name: '强化缸垫',
     type: 'Engine',
     price: 850,
-    rarity: 'uncommon',
+    rarity: 'rare',
     effectText: '引擎 +7，马力 +6，重量 +4kg',
     changes: { engine: 7, hp: 6, weight: 4 },
   },
@@ -120,7 +181,7 @@ const PART_POOL = [
     name: '高压燃油泵',
     type: 'Engine',
     price: 1250,
-    rarity: 'uncommon',
+    rarity: 'epic',
     effectText: '引擎 +10，马力 +10，稳定性 -3',
     changes: { engine: 10, hp: 10, stability: -3 },
   },
@@ -169,7 +230,7 @@ const PART_POOL = [
     name: '半热熔胎',
     type: 'Tire',
     price: 1100,
-    rarity: 'uncommon',
+    rarity: 'epic',
     effectText: '轮胎 +10，稳定性 +2，重量 +6kg',
     changes: { tire: 10, stability: 2, weight: 6 },
   },
@@ -218,7 +279,7 @@ const PART_POOL = [
     name: '改装变速箱',
     type: 'Gearbox',
     price: 900,
-    rarity: 'uncommon',
+    rarity: 'rare',
     effectText: '变速箱 +8',
     changes: { gearbox: 8 },
   },
@@ -234,7 +295,7 @@ const PART_POOL = [
     name: '密齿齿比组',
     type: 'Gearbox',
     price: 1350,
-    rarity: 'uncommon',
+    rarity: 'epic',
     effectText: '变速箱 +11，马力 +3，重量 +5kg',
     changes: { gearbox: 11, hp: 3, weight: 5 },
   },
@@ -283,7 +344,7 @@ const PART_POOL = [
     name: '玻璃纤维门板',
     type: 'Body',
     price: 980,
-    rarity: 'uncommon',
+    rarity: 'rare',
     effectText: '重量 -32kg，稳定性 -4',
     changes: { weight: -32, stability: -4 },
   },
@@ -291,7 +352,7 @@ const PART_POOL = [
     name: '铆钉宽体套件',
     type: 'Body',
     price: 1200,
-    rarity: 'uncommon',
+    rarity: 'rare',
     effectText: '稳定性 +5，轮胎 +3，重量 +18kg',
     changes: { stability: 5, tire: 3, weight: 18 },
   },
@@ -340,7 +401,7 @@ const PART_POOL = [
     name: '冷风箱',
     type: 'Intake',
     price: 980,
-    rarity: 'uncommon',
+    rarity: 'rare',
     effectText: '马力 +10，稳定性 +1，重量 +5kg',
     changes: { hp: 10, stability: 1, weight: 5 },
   },
@@ -348,7 +409,7 @@ const PART_POOL = [
     name: '大口径节气门',
     type: 'Intake',
     price: 1300,
-    rarity: 'uncommon',
+    rarity: 'epic',
     effectText: '马力 +14，引擎 +4，稳定性 -3',
     changes: { hp: 14, engine: 4, stability: -3 },
   },
@@ -397,7 +458,7 @@ const PART_POOL = [
     name: '回压调校排气',
     type: 'Exhaust',
     price: 960,
-    rarity: 'uncommon',
+    rarity: 'rare',
     effectText: '马力 +9，稳定性 +2，重量 +4kg',
     changes: { hp: 9, stability: 2, weight: 4 },
   },
@@ -454,7 +515,7 @@ const PART_POOL = [
     name: '双涡管套件',
     type: 'Turbo',
     price: 1850,
-    rarity: 'uncommon',
+    rarity: 'epic',
     effectText: '马力 +20，引擎 +8，稳定性 -5，重量 +12kg',
     changes: { hp: 20, engine: 8, stability: -5, weight: 12 },
   },
@@ -511,7 +572,7 @@ const PART_POOL = [
     name: '四轮定位券',
     type: 'Stability',
     price: 760,
-    rarity: 'uncommon',
+    rarity: 'rare',
     effectText: '稳定性 +8，轮胎 +2',
     changes: { stability: 8, tire: 2 },
   },
@@ -519,7 +580,7 @@ const PART_POOL = [
     name: '防火墙补强板',
     type: 'Stability',
     price: 950,
-    rarity: 'uncommon',
+    rarity: 'epic',
     effectText: '稳定性 +10，重量 +18kg',
     changes: { stability: 10, weight: 18 },
   },
@@ -538,5 +599,129 @@ const PART_POOL = [
     rarity: 'legendary',
     effectText: '稳定性 +22，重量 +42kg，轮胎 +4',
     changes: { stability: 22, weight: 42, tire: 4 },
+  },
+
+  // ===== v1.4 新增改装件：均带取舍副作用，优先补 epic / legendary / mythic =====
+  {
+    name: '锻造高压活塞',
+    type: 'Engine',
+    price: 2050,
+    rarity: 'epic',
+    effectText: '引擎 +18，马力 +14，稳定性 -7',
+    changes: { engine: 18, hp: 14, stability: -7 },
+  },
+  {
+    name: '航空燃料调校机',
+    type: 'Engine',
+    price: 5200,
+    rarity: 'mythic',
+    effectText: '引擎 +32，马力 +44，稳定性 -16，重量 +22kg',
+    changes: { engine: 32, hp: 44, stability: -16, weight: 22 },
+  },
+  {
+    name: '全热熔光头胎',
+    type: 'Tire',
+    price: 2150,
+    rarity: 'epic',
+    effectText: '轮胎 +15，稳定性 +9，重量 +10kg',
+    changes: { tire: 15, stability: 9, weight: 10 },
+  },
+  {
+    name: '碳陶刹车套装',
+    type: 'Stability',
+    price: 3300,
+    rarity: 'legendary',
+    effectText: '稳定性 +18，重量 -8kg，马力 -3',
+    changes: { stability: 18, weight: -8, hp: -3 },
+  },
+  {
+    name: '主动差速控制器',
+    type: 'Gearbox',
+    price: 2300,
+    rarity: 'epic',
+    effectText: '变速箱 +16，稳定性 +4，重量 +6kg',
+    changes: { gearbox: 16, stability: 4, weight: 6 },
+  },
+  {
+    name: '镁合金竞技壳',
+    type: 'Body',
+    price: 4600,
+    rarity: 'mythic',
+    effectText: '重量 -90kg，稳定性 -8，马力 +8',
+    changes: { weight: -90, stability: -8, hp: 8 },
+  },
+  {
+    name: '一级方程式头段',
+    type: 'Exhaust',
+    price: 3600,
+    rarity: 'legendary',
+    effectText: '马力 +28，引擎 +9，稳定性 -7，重量 -10kg',
+    changes: { hp: 28, engine: 9, stability: -7, weight: -10 },
+  },
+  {
+    name: '氮气加速瓶',
+    type: 'Intake',
+    price: 2400,
+    rarity: 'epic',
+    effectText: '马力 +24，引擎 +6，稳定性 -10',
+    changes: { hp: 24, engine: 6, stability: -10 },
+  },
+  {
+    name: '可变截面涡轮',
+    type: 'Turbo',
+    price: 3700,
+    rarity: 'epic',
+    effectText: '马力 +30，引擎 +12，稳定性 -6，重量 +9kg',
+    changes: { hp: 30, engine: 12, stability: -6, weight: 9 },
+  },
+  {
+    name: '军规增压核心',
+    type: 'Turbo',
+    price: 6200,
+    rarity: 'mythic',
+    effectText: '马力 +58，引擎 +22，稳定性 -20，重量 +24kg',
+    changes: { hp: 58, engine: 22, stability: -20, weight: 24 },
+  },
+
+  // ===== 各类型神话补全：轮胎 / 变速箱 / 进气 / 排气 / 稳定件 =====
+  {
+    name: '赛道之神热熔胎',
+    type: 'Tire',
+    price: 5400,
+    rarity: 'mythic',
+    effectText: '轮胎 +24，稳定性 +16，重量 +20kg',
+    changes: { tire: 24, stability: 16, weight: 20 },
+  },
+  {
+    name: '零延迟序列变速箱',
+    type: 'Gearbox',
+    price: 5600,
+    rarity: 'mythic',
+    effectText: '变速箱 +30，引擎 +10，稳定性 -12，重量 +6kg',
+    changes: { gearbox: 30, engine: 10, stability: -12, weight: 6 },
+  },
+  {
+    name: '赛用氮氧加速系统',
+    type: 'Intake',
+    price: 5400,
+    rarity: 'mythic',
+    effectText: '马力 +46，引擎 +12，稳定性 -22，重量 +4kg',
+    changes: { hp: 46, engine: 12, stability: -22, weight: 4 },
+  },
+  {
+    name: '钛合金全段排气总成',
+    type: 'Exhaust',
+    price: 5800,
+    rarity: 'mythic',
+    effectText: '马力 +44，引擎 +18，稳定性 -12，重量 -18kg',
+    changes: { hp: 44, engine: 18, stability: -12, weight: -18 },
+  },
+  {
+    name: '主动液压悬挂系统',
+    type: 'Stability',
+    price: 5600,
+    rarity: 'mythic',
+    effectText: '稳定性 +32，轮胎 +6，重量 +34kg，马力 -4',
+    changes: { stability: 32, tire: 6, weight: 34, hp: -4 },
   },
 ];

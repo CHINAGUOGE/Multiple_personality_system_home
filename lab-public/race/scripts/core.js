@@ -24,8 +24,18 @@ function formatPartType(type) {
   return PART_TYPE_LABELS[type] || type;
 }
 
+function normalizeRarity(rarity) {
+  if (PART_RARITY_LABELS[rarity]) {
+    return rarity;
+  }
+  if (PART_RARITY_MIGRATIONS[rarity]) {
+    return PART_RARITY_MIGRATIONS[rarity];
+  }
+  return 'common';
+}
+
 function getPartRarity(part) {
-  return PART_RARITY_LABELS[part && part.rarity] ? part.rarity : 'common';
+  return normalizeRarity(part && part.rarity);
 }
 
 function formatPartRarity(part) {
@@ -165,6 +175,109 @@ function getRaceTier() {
   );
 }
 
+function getDifficultyKey() {
+  return DIFFICULTIES[gameState.difficulty] ? gameState.difficulty : DEFAULT_DIFFICULTY;
+}
+
+function getDifficulty() {
+  return DIFFICULTIES[getDifficultyKey()];
+}
+
+// 报名费按当前难度倍率缩放，向上取整到 10 元。
+function getEntryFee() {
+  return getDifficultyEntryFee(getDifficultyKey());
+}
+
+// 指定难度的报名费（用于按钮对比展示）。
+function getDifficultyEntryFee(key) {
+  const config = DIFFICULTIES[key] || DIFFICULTIES[DEFAULT_DIFFICULTY];
+  const multiplier = (config && config.entryFeeMultiplier) || 1;
+  return Math.round((ENTRY_FEE * multiplier) / 10) * 10;
+}
+
+// 全难度最低报名费：判定真正失败用最低值，避免高难度报名费把可降难度的进度误判为失败。
+function getMinEntryFee() {
+  return Math.min(...DIFFICULTY_ORDER.map((key) => getDifficultyEntryFee(key)));
+}
+
+function getCurrentLootPool() {
+  return LOOT_POOLS[getDifficultyKey()] || LOOT_POOLS[DEFAULT_DIFFICULTY];
+}
+
+// 当前难度商店出现率：仅由 LOOT_POOLS + PART_RARITY_WEIGHTS 决定，
+// 不参与 dropRateMultiplier。返回该稀有度整体出现率（百分比）。
+function getRarityShopRate(rarity) {
+  const pool = getCurrentLootPool();
+  if (!pool.includes(rarity)) {
+    return 0;
+  }
+  const totalWeight = pool.reduce((sum, key) => sum + (PART_RARITY_WEIGHTS[key] || 0), 0);
+  if (totalWeight <= 0) {
+    return 0;
+  }
+  return ((PART_RARITY_WEIGHTS[rarity] || 0) / totalWeight) * 100;
+}
+
+// 单件商店出现率 = 该稀有度出现率 / 当前池内同稀有度零件数。
+function getPartShopRate(part) {
+  const rarity = getPartRarity(part);
+  const pool = getCurrentLootPool();
+  if (!pool.includes(rarity)) {
+    return 0;
+  }
+  const sameRarityCount = PART_POOL.filter((item) => getPartRarity(item) === rarity).length;
+  if (sameRarityCount <= 0) {
+    return 0;
+  }
+  return getRarityShopRate(rarity) / sameRarityCount;
+}
+
+function formatShopRate(rate) {
+  if (rate <= 0) {
+    return '0%';
+  }
+  if (rate < 0.1) {
+    return '<0.1%';
+  }
+  return `${rate.toFixed(rate < 1 ? 2 : 1)}%`;
+}
+
+function setDifficulty(key) {
+  if (!DIFFICULTIES[key]) {
+    return;
+  }
+  if (isRaceLockedPhase(gameState.phase) || gameState.phase === 'game_over') {
+    return;
+  }
+  if (gameState.difficulty === key) {
+    return;
+  }
+
+  gameState.difficulty = key;
+  addLog(`难度切换为「${DIFFICULTIES[key].name}」。`);
+  refreshShop();
+  renderDifficulty();
+  renderAtlas();
+  updateStats();
+  autoSaveGame();
+}
+
+function openDifficultyModal() {
+  if (!el.difficultyModal) {
+    return;
+  }
+  if (isRaceLockedPhase(gameState.phase) || gameState.phase === 'game_over') {
+    return;
+  }
+  el.difficultyModal.hidden = false;
+}
+
+function closeDifficultyModal() {
+  if (el.difficultyModal) {
+    el.difficultyModal.hidden = true;
+  }
+}
+
 function getPartById(partId) {
   return gameState.inventory.find((part) => part.id === partId) || null;
 }
@@ -217,7 +330,7 @@ function isVehicleStripped() {
 }
 
 function shouldFailForNoEntryFee() {
-  return gameState.cash < ENTRY_FEE && isVehicleStripped();
+  return gameState.cash < getMinEntryFee() && isVehicleStripped();
 }
 
 function checkGameFailure() {
@@ -228,7 +341,7 @@ function checkGameFailure() {
   if (gameState.phase !== 'game_over') {
     setPhase('game_over');
     setLights('none');
-    addLog('游戏失败：车辆已无装备，现金不足以支付报名费。');
+    addLog('游戏失败：车辆已无装备，现金不足以支付最低难度报名费。');
     addLog('请点击“重开”重新开始。');
   }
 
@@ -240,6 +353,7 @@ function createSaveData() {
     cash: gameState.cash,
     raceCount: gameState.raceCount,
     lastRank: gameState.lastRank,
+    difficulty: getDifficultyKey(),
     inventory: gameState.inventory.map((part) => ({
       id: part.id,
       name: part.name,
@@ -283,7 +397,7 @@ function sanitizeSaveData(data) {
           id,
           name: String(part.name || '未命名零件'),
           type: part.type,
-          rarity: PART_RARITY_LABELS[part.rarity] ? part.rarity : 'common',
+          rarity: normalizeRarity(part.rarity),
           price: Math.floor(price),
           effectText: String(part.effectText || '-'),
           changes,
@@ -308,6 +422,7 @@ function sanitizeSaveData(data) {
     cash: Math.max(0, Math.floor(Number(data.cash) || 0)),
     raceCount: Math.max(0, Math.floor(Number(data.raceCount) || 0)),
     lastRank: String(data.lastRank || '-'),
+    difficulty: DIFFICULTIES[data.difficulty] ? data.difficulty : DEFAULT_DIFFICULTY,
     inventory,
     equippedParts,
     nextPartId,
@@ -318,6 +433,7 @@ function applyPersistentState(data) {
   gameState.cash = data.cash;
   gameState.raceCount = data.raceCount;
   gameState.lastRank = data.lastRank;
+  gameState.difficulty = DIFFICULTIES[data.difficulty] ? data.difficulty : DEFAULT_DIFFICULTY;
   gameState.inventory = data.inventory;
   gameState.equippedParts = data.equippedParts;
   gameState.nextPartId = data.nextPartId;
@@ -334,6 +450,8 @@ function refreshAfterPersistentChange() {
   resetCars();
   refreshShop();
   renderGarage();
+  renderDifficulty();
+  renderAtlas();
   setLights('none');
   setPhase('idle');
   updateStats();
@@ -380,6 +498,10 @@ function setActivePage(page) {
     pageNode.classList.toggle('is-active', active);
     pageNode.hidden = !active;
   });
+
+  if (page === 'atlas') {
+    renderAtlas();
+  }
 
   updateButtons();
 }
@@ -452,6 +574,20 @@ function updateButtons() {
       (button.dataset.action === 'sell' && equipped) ||
       (button.dataset.action === 'unequip' && !equipped);
   });
+
+  if (el.difficultyChoices) {
+    const canChangeDifficulty = !countdownOrRace && !gameOver;
+    if (el.difficultyOpenBtn) {
+      el.difficultyOpenBtn.disabled = !canChangeDifficulty;
+    }
+    if (!canChangeDifficulty) {
+      closeDifficultyModal();
+    }
+    Array.from(el.difficultyChoices.querySelectorAll('button')).forEach((button) => {
+      const isActive = button.dataset.difficulty === getDifficultyKey();
+      button.disabled = !canChangeDifficulty || isActive;
+    });
+  }
 }
 
 function updateResultMessage() {
@@ -495,11 +631,66 @@ function updateStats() {
   el.shopCashStat.textContent = `${gameState.cash} 元`;
   el.tuningCashStat.textContent = `${gameState.cash} 元`;
   el.storageCashStat.textContent = `${gameState.cash} 元`;
+  if (el.atlasCashStat) {
+    el.atlasCashStat.textContent = `${gameState.cash} 元`;
+  }
   el.raceCountStat.textContent = gameState.raceCount;
   el.raceTierText.textContent = getRaceTier().label;
   el.lastRankStat.textContent = gameState.lastRank;
-  el.entryFeeText.textContent = ENTRY_FEE;
+  el.entryFeeText.textContent = getEntryFee();
+  el.registerBtn.textContent = `报名比赛（${getEntryFee()} 元）`;
   el.opponentPowerText.textContent = getOpponentPower().toFixed(2);
   el.currentVehicleText.textContent = '玩家破车';
+  renderDifficulty();
   updateButtons();
+}
+
+function renderDifficulty() {
+  const activeKey = getDifficultyKey();
+  const activeConfig = DIFFICULTIES[activeKey];
+
+  if (el.difficultyCurrentName && activeConfig) {
+    el.difficultyCurrentName.textContent = activeConfig.name;
+  }
+  if (el.difficultyCurrentMeta && activeConfig) {
+    el.difficultyCurrentMeta.textContent = `报名${getDifficultyEntryFee(activeKey)}元 · 奖金×${activeConfig.rewardMultiplier} · 强度×${activeConfig.opponentMultiplier}`;
+  }
+
+  if (!el.difficultyChoices) {
+    return;
+  }
+
+  el.difficultyChoices.innerHTML = '';
+
+  DIFFICULTY_ORDER.forEach((key) => {
+    const config = DIFFICULTIES[key];
+    if (!config) {
+      return;
+    }
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.difficulty = key;
+    button.className = `difficulty-button${key === activeKey ? ' is-active' : ''}`;
+    button.setAttribute('aria-pressed', key === activeKey ? 'true' : 'false');
+    button.innerHTML = `
+      <span class="difficulty-name">${config.name}</span>
+      <span class="difficulty-meta">报名${getDifficultyEntryFee(key)}元 · 奖金×${config.rewardMultiplier} · 强度×${config.opponentMultiplier}</span>
+    `;
+    el.difficultyChoices.appendChild(button);
+  });
+
+  updateButtons();
+}
+
+// 安全自动保存：失败只写日志，不阻塞游戏；比赛锁定阶段或初始化未完成时跳过。
+function autoSaveGame() {
+  if (!gameState.ready || isRaceLockedPhase(gameState.phase)) {
+    return;
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(createSaveData()));
+  } catch (error) {
+    addLog('自动保存失败：浏览器拒绝写入本地存档。');
+  }
 }

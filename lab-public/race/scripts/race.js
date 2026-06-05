@@ -76,13 +76,19 @@ function getPlayerPower() {
 
 function getOpponentPower() {
   const count = gameState.raceCount;
+  let base;
   if (count < 5) {
-    return 1 + count * 0.1;
+    base = 1 + count * 0.1;
+  } else if (count < 12) {
+    base = 1.45 + (count - 5) * 0.07;
+  } else {
+    base = Math.min(2.35, 1.95 + (count - 12) * 0.035);
   }
-  if (count < 12) {
-    return 1.45 + (count - 5) * 0.07;
-  }
-  return Math.min(2.35, 1.95 + (count - 12) * 0.035);
+
+  // 随局数温和成长（上限 +150% 原始增量），叠加难度倍率，
+  // 避免后期全金装碾压，同时不无限膨胀。
+  const growth = Math.min(count * 0.015, 1.5);
+  return base * (1 + growth * 0.18) * getDifficulty().opponentMultiplier;
 }
 
 function getOpponentCarPower(id) {
@@ -99,23 +105,28 @@ function getOpponentCarPower(id) {
 }
 
 function registerRace() {
-  if (gameState.cash < ENTRY_FEE) {
+  if (gameState.cash < getEntryFee()) {
     if (checkGameFailure()) {
       return;
     }
-    addLog('现金不足，连报名费都交不起。');
-    addLog('可以进仓库卸下或卖掉零件，仓库回收价为原价 8 折。');
+    addLog(`现金不足以支付「${getDifficulty().name}」难度报名费 ${getEntryFee()} 元。`);
+    if (gameState.cash >= getMinEntryFee()) {
+      addLog('可降低难度以减少报名费，或进仓库卸下/卖掉零件。');
+    } else {
+      addLog('可以进仓库卸下或卖掉零件，仓库回收价为原价 8 折。');
+    }
     return;
   }
 
   clearRaceTimers();
-  gameState.cash -= ENTRY_FEE;
+  const entryFee = getEntryFee();
+  gameState.cash -= entryFee;
   gameState.reactionTime = null;
   gameState.playerStarted = false;
   resetCars();
   updateStats();
 
-  addLog(`报名费 ${ENTRY_FEE} 元`);
+  addLog(`报名费 ${entryFee} 元`);
   addLog('等待绿灯……红灯或黄灯点击“起步 / 踩油门”会抢跑。');
 
   setPhase('countdown_red');
@@ -282,7 +293,9 @@ function completeRace() {
   });
 
   const playerRank = ranked.findIndex((car) => car.isPlayer) + 1;
-  const prize = PRIZES[playerRank - 1] || 0;
+  const basePrize = PRIZES[playerRank - 1] || 0;
+  const rewardMultiplier = getDifficulty().rewardMultiplier;
+  const prize = Math.floor(basePrize * rewardMultiplier);
 
   gameState.cash += prize;
   gameState.raceCount += 1;
@@ -292,8 +305,10 @@ function completeRace() {
 
   addLog('比赛结束！');
   addLog(`本场排名：第 ${playerRank} 名`);
+  addLog(`难度「${getDifficulty().name}」奖金×${rewardMultiplier}`);
   addLog(`获得奖金 ${prize} 元`);
   finishPostRace();
+  autoSaveGame();
 }
 
 function finishPostRace() {

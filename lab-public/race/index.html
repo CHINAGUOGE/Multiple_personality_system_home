@@ -15,7 +15,7 @@
       <main class="app-window" aria-label="横线赛车经营赛">
         <div class="title-bar">
           <span class="title-icon"></span>
-          <span>横线赛车经营赛 v1.3</span>
+          <span>横线赛车经营赛 v1.4</span>
           <div class="window-buttons" aria-hidden="true">
             <span>_</span>
             <span>□</span>
@@ -46,6 +46,9 @@
           <button id="storageTab" type="button" data-page="storage" aria-controls="storagePage">
             仓库
           </button>
+          <button id="atlasTab" type="button" data-page="atlas" aria-controls="atlasPage">
+            图鉴
+          </button>
         </nav>
 
         <div class="page-shell">
@@ -53,7 +56,7 @@
             <header class="page-header">
               <div>
                 <h1>横线赛车经营赛</h1>
-                <p>v1.3</p>
+                <p>v1.4</p>
               </div>
               <div class="header-stat">
                 <span>当前资金</span>
@@ -78,6 +81,23 @@
                 <span>报名费</span>
                 <strong><span id="entryFeeText">200</span> 元</strong>
               </div>
+            </section>
+
+            <section class="group-box difficulty-box">
+              <h2>比赛难度</h2>
+              <div class="difficulty-current">
+                <div class="difficulty-current-info">
+                  <span>当前难度</span>
+                  <strong id="difficultyCurrentName">标准</strong>
+                  <small id="difficultyCurrentMeta">奖金×1 · 强度×1</small>
+                </div>
+                <button id="difficultyOpenBtn" type="button" aria-haspopup="dialog">
+                  更改难度
+                </button>
+              </div>
+              <p class="difficulty-note">
+                难度影响电脑强度、奖金倍率与商店奖池范围。比赛进行中不可更改。
+              </p>
             </section>
 
             <section class="group-box race-box">
@@ -276,8 +296,57 @@
               <button id="restartBtn" type="button">重开</button>
             </section>
           </section>
+
+          <section id="atlasPage" class="app-page" data-page="atlas" hidden>
+            <header class="page-header">
+              <div>
+                <h1>装备图鉴</h1>
+                <p>零件出现率与效果</p>
+              </div>
+              <div class="header-stat">
+                <span>当前资金</span>
+                <strong id="atlasCashStat">1500 元</strong>
+              </div>
+            </header>
+
+            <section class="storage-section">
+              <p id="atlasDifficultyText" class="panel-note">当前难度奖池。</p>
+              <p class="panel-note">
+                图鉴仅展示零件数据。「商店出现率」随难度奖池变化，与未来比赛掉落是不同系统。
+              </p>
+              <div id="atlasBody" class="atlas-list"></div>
+            </section>
+          </section>
         </div>
       </main>
+    </div>
+
+    <div id="difficultyModal" class="modal-overlay" hidden>
+      <div
+        class="modal-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="difficultyModalTitle"
+      >
+        <div class="title-bar">
+          <span class="title-icon"></span>
+          <span id="difficultyModalTitle">选择比赛难度</span>
+          <div class="window-buttons">
+            <button id="difficultyCloseBtn" type="button" aria-label="关闭">×</button>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div
+            id="difficultyChoices"
+            class="difficulty-choices"
+            role="group"
+            aria-label="选择比赛难度"
+          ></div>
+          <p class="difficulty-note">
+            难度影响电脑强度、奖金倍率与商店奖池范围。比赛进行中不可更改。
+          </p>
+        </div>
+      </div>
     </div>
 
     <script src="./game.js"></script>
