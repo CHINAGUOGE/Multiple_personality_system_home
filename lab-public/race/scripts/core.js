@@ -247,7 +247,7 @@ function formatReactionTime(reactionTime) {
 }
 
 function formatReactionRecordText(bestReactionTime, lastReactionTime) {
-  return `最快 ${formatReactionTime(bestReactionTime)} / 上一场 ${formatReactionTime(lastReactionTime)}`;
+  return `${formatReactionTime(bestReactionTime)} / ${formatReactionTime(lastReactionTime)}`;
 }
 
 function formatWinStreakText(currentWinStreak, bestWinStreak) {
