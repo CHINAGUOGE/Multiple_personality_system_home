@@ -1,14 +1,24 @@
 'use strict';
 
-// 按 PART_RARITY_WEIGHTS 加权、去重地抽取 count 件零件。
-// 商店出现概率仅由奖池范围与稀有度权重决定，不参与 dropRateMultiplier。
+// 先按 PART_RARITY_WEIGHTS 抽稀有度，再在该稀有度内等概率抽零件，去重。
+// 这样实际出现率与图鉴展示（getRarityShopRate / getPartShopRate）一致，
+// 不会被各稀有度零件数量差异稀释。商店概率不参与 dropRateMultiplier。
 function pickWeightedParts(pool, count) {
-  const candidates = pool.slice();
+  const buckets = new Map();
+  pool.forEach((part) => {
+    const rarity = getPartRarity(part);
+    if (!buckets.has(rarity)) {
+      buckets.set(rarity, []);
+    }
+    buckets.get(rarity).push(part);
+  });
+
   const picked = [];
 
-  while (picked.length < count && candidates.length > 0) {
-    const totalWeight = candidates.reduce(
-      (sum, part) => sum + (PART_RARITY_WEIGHTS[getPartRarity(part)] || 0),
+  while (picked.length < count && buckets.size > 0) {
+    const rarities = Array.from(buckets.keys());
+    const totalWeight = rarities.reduce(
+      (sum, rarity) => sum + (PART_RARITY_WEIGHTS[rarity] || 0),
       0
     );
     if (totalWeight <= 0) {
@@ -16,18 +26,21 @@ function pickWeightedParts(pool, count) {
     }
 
     let roll = Math.random() * totalWeight;
-    let index = 0;
-    for (; index < candidates.length; index += 1) {
-      roll -= PART_RARITY_WEIGHTS[getPartRarity(candidates[index])] || 0;
+    let chosenRarity = rarities[rarities.length - 1];
+    for (let i = 0; i < rarities.length; i += 1) {
+      roll -= PART_RARITY_WEIGHTS[rarities[i]] || 0;
       if (roll <= 0) {
+        chosenRarity = rarities[i];
         break;
       }
     }
-    if (index >= candidates.length) {
-      index = candidates.length - 1;
-    }
 
-    picked.push(candidates.splice(index, 1)[0]);
+    const partsInRarity = buckets.get(chosenRarity);
+    const index = Math.floor(Math.random() * partsInRarity.length);
+    picked.push(partsInRarity.splice(index, 1)[0]);
+    if (partsInRarity.length === 0) {
+      buckets.delete(chosenRarity);
+    }
   }
 
   return picked;
