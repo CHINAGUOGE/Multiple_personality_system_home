@@ -4,10 +4,16 @@
 
 ## 技术栈
 
-- **框架**: Astro 4.x + TypeScript
+- **框架**: Astro 6.x + TypeScript
 - **样式**: Tailwind CSS + CSS Variables
 - **部署**: Cloudflare Pages
 - **质量**: ESLint + Prettier + Stylelint + Markdownlint
+
+## 环境要求
+
+- **Node.js**: `>=22.12.0`
+- 仓库根目录同时提供 `.node-version` 与 `.nvmrc`，用于本地和 CI 固定 Node 版本。
+- 如果 Cloudflare Pages 仍使用旧项目配置，请在项目设置中将 `NODE_VERSION` 设为 `22.12.0` 或更高，或升级到支持 Node 22 的构建镜像。
 
 ## 开发
 
