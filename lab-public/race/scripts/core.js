@@ -246,12 +246,30 @@ function formatReactionTime(reactionTime) {
   return reactionTime === null ? '--' : `${reactionTime.toFixed(3)} 秒`;
 }
 
+function formatCompactReactionTime(reactionTime) {
+  return reactionTime === null ? '--' : `${reactionTime.toFixed(3)}s`;
+}
+
 function formatReactionRecordText(bestReactionTime, lastReactionTime) {
   return `${formatReactionTime(bestReactionTime)} / ${formatReactionTime(lastReactionTime)}`;
 }
 
 function formatWinStreakText(currentWinStreak, bestWinStreak) {
   return `当前 ${currentWinStreak} / 最高 ${bestWinStreak}`;
+}
+
+function formatRaceRoundText(raceCount) {
+  return raceCount > 0 ? `第 ${raceCount} 场比赛` : '尚未参赛';
+}
+
+function formatLastRankReportText(lastRank) {
+  if (!lastRank || lastRank === '-') {
+    return '等待报名';
+  }
+  if (lastRank === '第 1 名') {
+    return '上场冠军';
+  }
+  return `上场${lastRank}`;
 }
 
 function setDifficulty(key) {
@@ -667,11 +685,21 @@ function updateStats() {
   if (el.atlasCashStat) {
     el.atlasCashStat.textContent = `${gameState.cash} 元`;
   }
-  el.raceCountStat.textContent = gameState.raceCount;
+  if (el.raceCountStat) {
+    el.raceCountStat.textContent = gameState.raceCount;
+  }
+  if (el.raceRoundText) {
+    el.raceRoundText.textContent = formatRaceRoundText(gameState.raceCount);
+  }
   if (el.raceTierText) {
     el.raceTierText.textContent = getRaceTier().label;
   }
-  el.lastRankStat.textContent = gameState.lastRank;
+  if (el.lastRankStat) {
+    el.lastRankStat.textContent = formatLastRankReportText(gameState.lastRank);
+  }
+  if (el.lastReactionStat) {
+    el.lastReactionStat.textContent = formatCompactReactionTime(gameState.lastReactionTime);
+  }
   if (el.entryFeeText) {
     el.entryFeeText.textContent = getEntryFee();
   }
@@ -686,6 +714,18 @@ function updateStats() {
       gameState.currentWinStreak,
       gameState.bestWinStreak
     );
+  }
+  if (el.raceCurrentWinStreakStat) {
+    el.raceCurrentWinStreakStat.textContent = gameState.currentWinStreak;
+  }
+  if (el.raceBestWinStreakStat) {
+    el.raceBestWinStreakStat.textContent = gameState.bestWinStreak;
+  }
+  if (el.raceReportEmptyText && el.raceReportStats) {
+    const hasRaceReport =
+      gameState.lastRank !== '-' || gameState.lastReactionTime !== null;
+    el.raceReportEmptyText.hidden = hasRaceReport;
+    el.raceReportStats.hidden = !hasRaceReport;
   }
   el.registerBtn.textContent = `报名比赛（${getEntryFee()} 元）`;
   el.opponentPowerText.textContent = getOpponentPower().toFixed(2);

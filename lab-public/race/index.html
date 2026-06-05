@@ -118,9 +118,15 @@
                 </div>
               </div>
               <div class="race-status">
-                <span>电脑强度：<strong id="opponentPowerText">1.00</strong></span>
-                <span>比赛次数：<strong id="raceCountStat">0</strong></span>
-                <span>上场名次：<strong id="lastRankStat">-</strong></span>
+                <span class="race-status-title">战报</span>
+                <div class="race-status-lines">
+                  <p class="race-report-line">
+                    <span id="raceRoundText">尚未参赛</span><span class="race-report-separator">｜</span><span>电脑强度 <strong id="opponentPowerText">1.00</strong></span>
+                  </p>
+                  <p class="race-report-line">
+                    <span id="lastRankStat">等待报名</span><span class="race-report-separator">｜</span><span id="raceReportEmptyText">暂无上场战报</span><span id="raceReportStats" class="race-report-stats" hidden>连胜 <strong id="raceCurrentWinStreakStat">0</strong><span class="race-report-separator">｜</span>最佳 <strong id="raceBestWinStreakStat">0</strong><span class="race-report-separator">｜</span>反应 <strong id="lastReactionStat">--</strong></span>
+                  </p>
+                </div>
               </div>
             </section>
 
