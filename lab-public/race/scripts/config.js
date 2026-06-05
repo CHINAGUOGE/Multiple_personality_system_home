@@ -74,11 +74,11 @@ const PART_RARITY_LABELS = {
 const PART_RARITY_ORDER = ['common', 'rare', 'epic', 'legendary', 'mythic'];
 
 const PART_RARITY_WEIGHTS = {
-  common: 60,
-  rare: 26,
-  epic: 10,
-  legendary: 3.4,
-  mythic: 0.6,
+  common: 70,
+  rare: 22,
+  epic: 6,
+  legendary: 1.6,
+  mythic: 0.4,
 };
 
 // 旧存档/旧数据的稀有度迁移表：uncommon 统一并入 rare。
@@ -87,20 +87,40 @@ const PART_RARITY_MIGRATIONS = {
 };
 
 const DIFFICULTIES = {
-  easy: { name: '休闲', opponentMultiplier: 0.9, rewardMultiplier: 0.8, dropRateMultiplier: 1.2 },
-  normal: { name: '标准', opponentMultiplier: 1.0, rewardMultiplier: 1.0, dropRateMultiplier: 1.0 },
-  hard: { name: '挑战', opponentMultiplier: 1.2, rewardMultiplier: 1.25, dropRateMultiplier: 0.85 },
+  easy: {
+    name: '休闲',
+    opponentMultiplier: 0.9,
+    rewardMultiplier: 0.8,
+    dropRateMultiplier: 1.2,
+    entryFeeMultiplier: 0.8,
+  },
+  normal: {
+    name: '标准',
+    opponentMultiplier: 1.0,
+    rewardMultiplier: 1.0,
+    dropRateMultiplier: 1.0,
+    entryFeeMultiplier: 1.0,
+  },
+  hard: {
+    name: '挑战',
+    opponentMultiplier: 1.2,
+    rewardMultiplier: 1.25,
+    dropRateMultiplier: 0.85,
+    entryFeeMultiplier: 1.3,
+  },
   expert: {
     name: '专家',
     opponentMultiplier: 1.45,
     rewardMultiplier: 1.6,
     dropRateMultiplier: 0.65,
+    entryFeeMultiplier: 1.7,
   },
   nightmare: {
     name: '噩梦',
     opponentMultiplier: 1.8,
     rewardMultiplier: 2.2,
     dropRateMultiplier: 0.45,
+    entryFeeMultiplier: 2.4,
   },
 };
 

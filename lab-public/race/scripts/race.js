@@ -105,7 +105,7 @@ function getOpponentCarPower(id) {
 }
 
 function registerRace() {
-  if (gameState.cash < ENTRY_FEE) {
+  if (gameState.cash < getEntryFee()) {
     if (checkGameFailure()) {
       return;
     }
@@ -115,13 +115,14 @@ function registerRace() {
   }
 
   clearRaceTimers();
-  gameState.cash -= ENTRY_FEE;
+  const entryFee = getEntryFee();
+  gameState.cash -= entryFee;
   gameState.reactionTime = null;
   gameState.playerStarted = false;
   resetCars();
   updateStats();
 
-  addLog(`报名费 ${ENTRY_FEE} 元`);
+  addLog(`报名费 ${entryFee} 元`);
   addLog('等待绿灯……红灯或黄灯点击“起步 / 踩油门”会抢跑。');
 
   setPhase('countdown_red');

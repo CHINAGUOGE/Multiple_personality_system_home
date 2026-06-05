@@ -183,6 +183,18 @@ function getDifficulty() {
   return DIFFICULTIES[getDifficultyKey()];
 }
 
+// 报名费按当前难度倍率缩放，向上取整到 10 元。
+function getEntryFee() {
+  return getDifficultyEntryFee(getDifficultyKey());
+}
+
+// 指定难度的报名费（用于按钮对比展示）。
+function getDifficultyEntryFee(key) {
+  const config = DIFFICULTIES[key] || DIFFICULTIES[DEFAULT_DIFFICULTY];
+  const multiplier = (config && config.entryFeeMultiplier) || 1;
+  return Math.round((ENTRY_FEE * multiplier) / 10) * 10;
+}
+
 function getCurrentLootPool() {
   return LOOT_POOLS[getDifficultyKey()] || LOOT_POOLS[DEFAULT_DIFFICULTY];
 }
@@ -313,7 +325,7 @@ function isVehicleStripped() {
 }
 
 function shouldFailForNoEntryFee() {
-  return gameState.cash < ENTRY_FEE && isVehicleStripped();
+  return gameState.cash < getEntryFee() && isVehicleStripped();
 }
 
 function checkGameFailure() {
@@ -620,7 +632,8 @@ function updateStats() {
   el.raceCountStat.textContent = gameState.raceCount;
   el.raceTierText.textContent = getRaceTier().label;
   el.lastRankStat.textContent = gameState.lastRank;
-  el.entryFeeText.textContent = ENTRY_FEE;
+  el.entryFeeText.textContent = getEntryFee();
+  el.registerBtn.textContent = `报名比赛（${getEntryFee()} 元）`;
   el.opponentPowerText.textContent = getOpponentPower().toFixed(2);
   el.currentVehicleText.textContent = '玩家破车';
   renderDifficulty();
@@ -635,7 +648,7 @@ function renderDifficulty() {
     el.difficultyCurrentName.textContent = activeConfig.name;
   }
   if (el.difficultyCurrentMeta && activeConfig) {
-    el.difficultyCurrentMeta.textContent = `奖金×${activeConfig.rewardMultiplier} · 强度×${activeConfig.opponentMultiplier}`;
+    el.difficultyCurrentMeta.textContent = `报名${getDifficultyEntryFee(activeKey)}元 · 奖金×${activeConfig.rewardMultiplier} · 强度×${activeConfig.opponentMultiplier}`;
   }
 
   if (!el.difficultyChoices) {
@@ -657,7 +670,7 @@ function renderDifficulty() {
     button.setAttribute('aria-pressed', key === activeKey ? 'true' : 'false');
     button.innerHTML = `
       <span class="difficulty-name">${config.name}</span>
-      <span class="difficulty-meta">奖金×${config.rewardMultiplier} · 强度×${config.opponentMultiplier}</span>
+      <span class="difficulty-meta">报名${getDifficultyEntryFee(key)}元 · 奖金×${config.rewardMultiplier} · 强度×${config.opponentMultiplier}</span>
     `;
     el.difficultyChoices.appendChild(button);
   });
