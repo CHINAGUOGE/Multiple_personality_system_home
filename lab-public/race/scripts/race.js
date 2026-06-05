@@ -284,6 +284,7 @@ function startPlayerCar() {
   const slowPenalty = clamp(reactionSeconds - 0.65, 0, 1.2);
 
   gameState.reactionTime = reactionSeconds;
+  gameState.lastReactionTime = reactionSeconds;
   gameState.playerStarted = true;
   playerCar.started = true;
   playerCar.reactionPenalty = slowPenalty;

@@ -242,8 +242,12 @@ function formatShopRate(rate) {
   return `${rate.toFixed(rate < 1 ? 2 : 1)}%`;
 }
 
-function formatBestReactionTime(reactionTime) {
+function formatReactionTime(reactionTime) {
   return reactionTime === null ? '--' : `${reactionTime.toFixed(3)} 秒`;
+}
+
+function formatReactionRecordText(bestReactionTime, lastReactionTime) {
+  return `最快 ${formatReactionTime(bestReactionTime)} / 上一场 ${formatReactionTime(lastReactionTime)}`;
 }
 
 function formatWinStreakText(currentWinStreak, bestWinStreak) {
@@ -362,6 +366,7 @@ function createSaveData() {
     raceCount: gameState.raceCount,
     lastRank: gameState.lastRank,
     bestReactionTime: gameState.bestReactionTime,
+    lastReactionTime: gameState.lastReactionTime,
     currentWinStreak: gameState.currentWinStreak,
     bestWinStreak: gameState.bestWinStreak,
     difficulty: getDifficultyKey(),
@@ -437,6 +442,10 @@ function sanitizeSaveData(data) {
       Number.isFinite(Number(data.bestReactionTime)) && Number(data.bestReactionTime) >= 0
         ? Number(data.bestReactionTime)
         : null,
+    lastReactionTime:
+      Number.isFinite(Number(data.lastReactionTime)) && Number(data.lastReactionTime) >= 0
+        ? Number(data.lastReactionTime)
+        : null,
     currentWinStreak: Math.max(0, Math.floor(Number(data.currentWinStreak) || 0)),
     bestWinStreak: Math.max(0, Math.floor(Number(data.bestWinStreak) || 0)),
     difficulty: DIFFICULTIES[data.difficulty] ? data.difficulty : DEFAULT_DIFFICULTY,
@@ -451,6 +460,7 @@ function applyPersistentState(data) {
   gameState.raceCount = data.raceCount;
   gameState.lastRank = data.lastRank;
   gameState.bestReactionTime = data.bestReactionTime ?? null;
+  gameState.lastReactionTime = data.lastReactionTime ?? null;
   gameState.currentWinStreak = data.currentWinStreak ?? 0;
   gameState.bestWinStreak = Math.max(
     gameState.currentWinStreak,
@@ -666,7 +676,10 @@ function updateStats() {
     el.entryFeeText.textContent = getEntryFee();
   }
   if (el.bestReactionText) {
-    el.bestReactionText.textContent = formatBestReactionTime(gameState.bestReactionTime);
+    el.bestReactionText.textContent = formatReactionRecordText(
+      gameState.bestReactionTime,
+      gameState.lastReactionTime
+    );
   }
   if (el.winStreakText) {
     el.winStreakText.textContent = formatWinStreakText(

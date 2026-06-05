@@ -13,6 +13,7 @@ const gameState = {
   raceCount: 0,
   lastRank: '-',
   bestReactionTime: null,
+  lastReactionTime: null,
   currentWinStreak: 0,
   bestWinStreak: 0,
   difficulty: DEFAULT_DIFFICULTY,
