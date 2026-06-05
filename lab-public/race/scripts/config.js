@@ -81,6 +81,11 @@ const PART_RARITY_WEIGHTS = {
   mythic: 0.4,
 };
 
+const SHOP_OWNED_PART_WEIGHT = 0.2;
+const OPPONENT_CHASE_START_RACE = 6;
+const OPPONENT_CHASE_RAMP_RACES = 14;
+const OPPONENT_CHASE_CAP = 1.05;
+
 // 旧存档/旧数据的稀有度迁移表：uncommon 统一并入 rare。
 const PART_RARITY_MIGRATIONS = {
   uncommon: 'rare',
@@ -93,6 +98,7 @@ const DIFFICULTIES = {
     rewardMultiplier: 0.8,
     dropRateMultiplier: 1.2,
     entryFeeMultiplier: 0.8,
+    chaseRate: 0,
   },
   normal: {
     name: '标准',
@@ -100,27 +106,31 @@ const DIFFICULTIES = {
     rewardMultiplier: 1.0,
     dropRateMultiplier: 1.0,
     entryFeeMultiplier: 1.0,
+    chaseRate: 0.03,
   },
   hard: {
     name: '挑战',
-    opponentMultiplier: 1.4,
+    opponentMultiplier: 1.14,
     rewardMultiplier: 1.25,
     dropRateMultiplier: 0.85,
     entryFeeMultiplier: 1.3,
+    chaseRate: 0.1,
   },
   expert: {
     name: '专家',
-    opponentMultiplier: 1.85,
+    opponentMultiplier: 1.26,
     rewardMultiplier: 1.6,
     dropRateMultiplier: 0.65,
     entryFeeMultiplier: 1.7,
+    chaseRate: 0.16,
   },
   nightmare: {
     name: '噩梦',
-    opponentMultiplier: 2.5,
+    opponentMultiplier: 1.52,
     rewardMultiplier: 2.2,
     dropRateMultiplier: 0.45,
     entryFeeMultiplier: 2.4,
+    chaseRate: 0.26,
   },
 };
 

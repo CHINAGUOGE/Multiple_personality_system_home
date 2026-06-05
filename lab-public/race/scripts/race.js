@@ -65,17 +65,32 @@ function createCar(id, name, color, isPlayer) {
 function getPlayerPower() {
   const p = gameState.player;
   const weightPenalty = (p.weight - 1000) / 85;
+  const lowStabilityPenalty = Math.max(0, 8 - clamp(p.stability, 1, 8));
   return {
-    base: 0.53 + p.hp / 520 + p.engine / 155 - weightPenalty / 100,
-    acceleration: 0.02 + p.engine / 3600 + p.gearbox / 4300,
+    // 极低稳定性会拖慢高配车，避免只堆马力就能无脑碾压高难度。
+    base: 0.53 + p.hp / 520 + p.engine / 155 - weightPenalty / 100 - lowStabilityPenalty * 0.035,
+    acceleration: 0.02 + p.engine / 3600 + p.gearbox / 4300 - lowStabilityPenalty * 0.001,
     launch: p.tire / 85,
-    mid: p.gearbox / 185,
+    mid: p.gearbox / 185 - lowStabilityPenalty * 0.009,
     stability: clamp(p.stability, 1, 80),
   };
 }
 
+function getPlayerRating() {
+  const p = gameState.player;
+  return (
+    p.hp * 0.003 +
+    p.engine * 0.02 +
+    p.gearbox * 0.015 +
+    p.tire * 0.018 +
+    p.stability * 0.01 -
+    Math.max(0, p.weight - 1000) * 0.001
+  );
+}
+
 function getOpponentPower() {
   const count = gameState.raceCount;
+  const difficulty = getDifficulty();
   let base;
   if (count < 5) {
     base = 1 + count * 0.1;
@@ -85,22 +100,37 @@ function getOpponentPower() {
     base = Math.min(2.35, 1.95 + (count - 12) * 0.035);
   }
 
-  // 随局数温和成长（上限 +150% 原始增量），叠加难度倍率，
-  // 避免后期全金装碾压，同时不无限膨胀。
   const growth = Math.min(count * 0.015, 1.5);
-  return base * (1 + growth * 0.18) * getDifficulty().opponentMultiplier;
+  const scaledBase = base * (1 + growth * 0.18) * difficulty.opponentMultiplier;
+  const lateGameFactor = clamp(
+    (count - OPPONENT_CHASE_START_RACE) / OPPONENT_CHASE_RAMP_RACES,
+    0,
+    1
+  );
+  const chaseBonus = clamp(
+    getPlayerRating() * (difficulty.chaseRate || 0) * lateGameFactor,
+    0,
+    OPPONENT_CHASE_CAP
+  );
+
+  return scaledBase + chaseBonus;
 }
 
 function getOpponentCarPower(id) {
   const difficulty = getOpponentPower();
   const variance = randomBetween(-0.05, 0.09);
   const personality = [0, -0.02, 0.02, 0.05, -0.04][id] || 0;
+  const lateBoost = Math.max(0, difficulty - 2.2);
   return {
-    base: 0.53 + difficulty * 0.07 + variance + personality,
-    acceleration: 0.021 + difficulty * 0.0018 + randomBetween(-0.0015, 0.0025),
-    launch: 0.1 + difficulty * 0.015 + randomBetween(0, 0.05),
-    mid: 0.08 + difficulty * 0.018 + randomBetween(-0.02, 0.04),
-    stability: 10 + difficulty * 1.8 + randomBetween(-3, 4),
+    base: 0.53 + difficulty * 0.088 + lateBoost * 0.045 + variance + personality,
+    acceleration:
+      0.021 +
+      difficulty * 0.0021 +
+      lateBoost * 0.0007 +
+      randomBetween(-0.0015, 0.0025),
+    launch: 0.1 + difficulty * 0.016 + lateBoost * 0.004 + randomBetween(0, 0.05),
+    mid: 0.08 + difficulty * 0.021 + lateBoost * 0.008 + randomBetween(-0.02, 0.04),
+    stability: 10 + difficulty * 2 + lateBoost * 2.5 + randomBetween(-3, 4),
   };
 }
 

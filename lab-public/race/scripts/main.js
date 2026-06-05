@@ -1,5 +1,17 @@
 'use strict';
 
+function shouldIgnoreRaceShortcut(event) {
+  const target = event.target;
+  const tagName = target && target.tagName ? target.tagName.toLowerCase() : '';
+
+  return (
+    event.repeat ||
+    ['input', 'textarea', 'select', 'button'].includes(tagName) ||
+    (target && target.isContentEditable) ||
+    (el.difficultyModal && !el.difficultyModal.hidden)
+  );
+}
+
 function bindEvents() {
   el.registerBtn.addEventListener('click', registerRace);
   el.startBtn.addEventListener('click', pressStart);
@@ -30,6 +42,27 @@ function bindEvents() {
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && el.difficultyModal && !el.difficultyModal.hidden) {
       closeDifficultyModal();
+      return;
+    }
+
+    if (event.code !== 'Space' || shouldIgnoreRaceShortcut(event)) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (gameState.phase === 'idle') {
+      registerRace();
+      return;
+    }
+
+    if (['countdown_red', 'countdown_yellow', 'countdown_green', 'racing'].includes(gameState.phase)) {
+      pressStart();
+      return;
+    }
+
+    if (['finished', 'false_start'].includes(gameState.phase)) {
+      nextRace();
     }
   });
 
@@ -57,6 +90,8 @@ function init() {
   setLights('none');
   updateStats();
   addLog('横线赛车经营赛启动。');
+  addLog('v1.4.1：已降低商店重复改装件权重，并优化高难度后期追赶曲线。');
+  addLog('电脑端可按空格键报名 / 起步 / 下一场。');
   addLog('先报名比赛，等绿灯后点“起步 / 踩油门”。红灯或黄灯点击会抢跑。');
   gameState.ready = true;
 }

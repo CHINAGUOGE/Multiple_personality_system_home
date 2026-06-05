@@ -1,9 +1,44 @@
 'use strict';
 
-// 先按 PART_RARITY_WEIGHTS 抽稀有度，再在该稀有度内等概率抽零件，去重。
-// 这样实际出现率与图鉴展示（getRarityShopRate / getPartShopRate）一致，
-// 不会被各稀有度零件数量差异稀释。商店概率不参与 dropRateMultiplier。
-function pickWeightedParts(pool, count) {
+function getShopPartWeight(part) {
+  return hasOwnedPart(part) ? SHOP_OWNED_PART_WEIGHT : 1;
+}
+
+function pickWeightedBucketItem(parts, weightAdjuster = null) {
+  if (parts.length === 0) {
+    return null;
+  }
+
+  const weights = parts.map((part) => {
+    if (!weightAdjuster) {
+      return 1;
+    }
+
+    const weight = Number(weightAdjuster(part));
+    return Number.isFinite(weight) && weight > 0 ? weight : 0;
+  });
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+
+  if (totalWeight <= 0) {
+    return parts.splice(Math.floor(Math.random() * parts.length), 1)[0];
+  }
+
+  let roll = Math.random() * totalWeight;
+  for (let i = 0; i < parts.length; i += 1) {
+    roll -= weights[i];
+    if (roll <= 0) {
+      return parts.splice(i, 1)[0];
+    }
+  }
+
+  return parts.pop();
+}
+
+// 先按 PART_RARITY_WEIGHTS 抽稀有度，再在该稀有度内抽零件，去重。
+// 商店内已拥有零件只会在同稀有度内被降权，不改动整体稀有度概率。
+function pickWeightedParts(pool, count, options = {}) {
+  const weightAdjuster =
+    options && typeof options.weightAdjuster === 'function' ? options.weightAdjuster : null;
   const buckets = new Map();
   pool.forEach((part) => {
     const rarity = getPartRarity(part);
@@ -36,8 +71,12 @@ function pickWeightedParts(pool, count) {
     }
 
     const partsInRarity = buckets.get(chosenRarity);
-    const index = Math.floor(Math.random() * partsInRarity.length);
-    picked.push(partsInRarity.splice(index, 1)[0]);
+    const pickedPart = pickWeightedBucketItem(partsInRarity, weightAdjuster);
+    if (!pickedPart) {
+      buckets.delete(chosenRarity);
+      continue;
+    }
+    picked.push(pickedPart);
     if (partsInRarity.length === 0) {
       buckets.delete(chosenRarity);
     }
@@ -51,7 +90,9 @@ function refreshShop() {
   const available = PART_POOL.filter((part) => pool.includes(getPartRarity(part)));
   const count = Math.min(available.length, Math.floor(randomBetween(4, 7)));
 
-  gameState.shopItems = pickWeightedParts(available, count).map((part) => ({
+  gameState.shopItems = pickWeightedParts(available, count, {
+    weightAdjuster: getShopPartWeight,
+  }).map((part) => ({
     ...part,
     bought: false,
   }));
@@ -462,7 +503,7 @@ function renderAtlas() {
           ${renderPartRarity(part)}
         </div>
         <div class="atlas-rate">
-          <span class="atlas-rate-label">当前难度商店出现率</span>
+          <span class="atlas-rate-label">当前难度基础出现率</span>
           <span class="atlas-rate-value">${inPool ? formatShopRate(rate) : '本难度不出现'}</span>
         </div>
         ${renderPartChangeList(part.changes)}

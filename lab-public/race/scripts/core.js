@@ -204,8 +204,8 @@ function getCurrentLootPool() {
   return LOOT_POOLS[getDifficultyKey()] || LOOT_POOLS[DEFAULT_DIFFICULTY];
 }
 
-// 当前难度商店出现率：仅由 LOOT_POOLS + PART_RARITY_WEIGHTS 决定，
-// 不参与 dropRateMultiplier。返回该稀有度整体出现率（百分比）。
+// 当前难度商店基础出现率：仅由 LOOT_POOLS + PART_RARITY_WEIGHTS 决定，
+// 不参与 dropRateMultiplier，也不包含“已拥有零件降权”影响。
 function getRarityShopRate(rarity) {
   const pool = getCurrentLootPool();
   if (!pool.includes(rarity)) {
@@ -218,7 +218,7 @@ function getRarityShopRate(rarity) {
   return ((PART_RARITY_WEIGHTS[rarity] || 0) / totalWeight) * 100;
 }
 
-// 单件商店出现率 = 该稀有度出现率 / 当前池内同稀有度零件数。
+// 单件商店基础出现率 = 该稀有度出现率 / 当前池内同稀有度零件数。
 function getPartShopRate(part) {
   const rarity = getPartRarity(part);
   const pool = getCurrentLootPool();
