@@ -8,14 +8,8 @@ function getCompletedAchievementCount() {
   return Object.keys(gameState.achievements.completed).length;
 }
 
-function getEquippedTemplateIds() {
-  return EQUIPMENT_SLOTS.map((type) => getEquippedPart(type))
-    .filter(Boolean)
-    .map((part) => getPartTemplateId(part));
-}
-
-function summarizePlayerStatProfile() {
-  const stats = gameState.player;
+function summarizePlayerStatProfile(sourceStats = gameState.player) {
+  const stats = sourceStats;
   const positives = {
     engine: Math.max(0, stats.engine - BASE_PLAYER_STATS.engine),
     tire: Math.max(0, stats.tire - BASE_PLAYER_STATS.tire),
@@ -37,6 +31,21 @@ function summarizePlayerStatProfile() {
     dominantStat,
     dominantShare: total > 0 ? dominantValue / total : 0,
   };
+}
+
+function getWinningAchievementTagsFromCurrentBuild() {
+  const profile = summarizePlayerStatProfile();
+  const unlockedTags = [];
+
+  if (profile.dominantStat === 'hp' && profile.dominantShare > 0.55) {
+    unlockedTags.push('hpBeliever');
+  }
+
+  if (gameState.player.stability >= 28 && profile.dominantStat === 'stability') {
+    unlockedTags.push('stableDriver');
+  }
+
+  return unlockedTags;
 }
 
 function enqueueAchievementToast(achievement) {
@@ -98,8 +107,6 @@ function completeAchievement(achievement, options = {}) {
 
 function checkAchievementCondition(achievement) {
   const stats = gameState.stats;
-  const profile = summarizePlayerStatProfile();
-  const equippedTemplateIds = getEquippedTemplateIds();
 
   switch (achievement.check) {
     case 'firstRace':
@@ -135,31 +142,13 @@ function checkAchievementCondition(achievement) {
     case 'streak5':
       return stats.bestStreak >= 5;
     case 'hpBeliever':
-      return (
-        stats.totalWins >= 1 &&
-        profile.dominantStat === 'hp' &&
-        profile.dominantShare > 0.55 &&
-        gameState.lastRank === '第 1 名'
-      );
+      return stats.wonWithBuildAchievements.includes('hpBeliever');
     case 'stableDriver':
-      return (
-        stats.totalWins >= 1 &&
-        gameState.lastRank === '第 1 名' &&
-        gameState.player.stability >= 28 &&
-        profile.dominantStat === 'stability'
-      );
+      return stats.wonWithBuildAchievements.includes('stableDriver');
     case 'xueWrenchWin':
-      return (
-        stats.wonWithSpecialParts.includes('gearbox_xue_wrench') ||
-        (gameState.lastRank === '第 1 名' &&
-          equippedTemplateIds.includes('gearbox_xue_wrench'))
-      );
+      return stats.wonWithSpecialParts.includes('gearbox_xue_wrench');
     case 'xiaoyuSponsorWin':
-      return (
-        stats.wonWithSpecialParts.includes('stability_xiaoyu_sponsor') ||
-        (gameState.lastRank === '第 1 名' &&
-          equippedTemplateIds.includes('stability_xiaoyu_sponsor'))
-      );
+      return stats.wonWithSpecialParts.includes('stability_xiaoyu_sponsor');
     default:
       return false;
   }

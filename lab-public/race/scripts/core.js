@@ -474,6 +474,17 @@ function sanitizeStatsData(data, fallback = {}) {
   const bestStreakByDifficulty = normalizeDifficultyStatMap(
     (data && data.bestStreakByDifficulty) || fallback.bestStreakByDifficulty
   );
+  const wonWithBuildAchievements = Array.isArray(data && data.wonWithBuildAchievements)
+    ? Array.from(
+        new Set(
+          data.wonWithBuildAchievements
+            .map((value) => String(value || '').trim())
+            .filter(Boolean)
+        )
+      )
+    : Array.isArray(fallback.wonWithBuildAchievements)
+      ? Array.from(new Set(fallback.wonWithBuildAchievements))
+      : [];
   const wonWithSpecialParts = Array.isArray(data && data.wonWithSpecialParts)
     ? Array.from(
         new Set(
@@ -498,6 +509,7 @@ function sanitizeStatsData(data, fallback = {}) {
     hasFilledAllSlots: Boolean(
       (data && data.hasFilledAllSlots) ?? fallback.hasFilledAllSlots
     ),
+    wonWithBuildAchievements,
     wonWithSpecialParts,
   };
 }
@@ -588,6 +600,7 @@ function createSaveData() {
       ...gameState.stats,
       winsByDifficulty: { ...gameState.stats.winsByDifficulty },
       bestStreakByDifficulty: { ...gameState.stats.bestStreakByDifficulty },
+      wonWithBuildAchievements: gameState.stats.wonWithBuildAchievements.slice(),
       wonWithSpecialParts: gameState.stats.wonWithSpecialParts.slice(),
     },
     achievements: {
@@ -658,6 +671,7 @@ function sanitizeSaveData(data) {
     winsByDifficulty: createDifficultyStatsMap(),
     bestStreakByDifficulty: createDifficultyStatsMap(),
     hasFilledAllSlots: EQUIPMENT_SLOTS.every((type) => Boolean(equippedParts[type])),
+    wonWithBuildAchievements: [],
     wonWithSpecialParts: [],
   };
 

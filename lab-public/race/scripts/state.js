@@ -25,6 +25,7 @@ function createDefaultStats() {
     winsByDifficulty: createDifficultyStatsMap(),
     bestStreakByDifficulty: createDifficultyStatsMap(),
     hasFilledAllSlots: false,
+    wonWithBuildAchievements: [],
     wonWithSpecialParts: [],
   };
 }

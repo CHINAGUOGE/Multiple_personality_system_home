@@ -370,6 +370,10 @@ function completeRace() {
     const equippedTemplateIds = EQUIPMENT_SLOTS.map((type) => getEquippedPart(type))
       .filter(Boolean)
       .map((part) => getPartTemplateId(part));
+    const wonWithBuildAchievements =
+      typeof getWinningAchievementTagsFromCurrentBuild === 'function'
+        ? getWinningAchievementTagsFromCurrentBuild()
+        : [];
 
     gameState.stats.totalWins += 1;
     gameState.stats.winsByDifficulty[difficultyKey] += 1;
@@ -377,6 +381,11 @@ function completeRace() {
       gameState.stats.bestStreakByDifficulty[difficultyKey] || 0,
       gameState.currentWinStreak
     );
+    wonWithBuildAchievements.forEach((achievementId) => {
+      if (!gameState.stats.wonWithBuildAchievements.includes(achievementId)) {
+        gameState.stats.wonWithBuildAchievements.push(achievementId);
+      }
+    });
 
     ['gearbox_xue_wrench', 'stability_xiaoyu_sponsor'].forEach((templateId) => {
       if (
