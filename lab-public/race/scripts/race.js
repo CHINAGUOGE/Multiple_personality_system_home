@@ -68,10 +68,10 @@ function getPlayerPower() {
   const lowStabilityPenalty = Math.max(0, 8 - clamp(p.stability, 1, 8));
   return {
     // 极低稳定性会拖慢高配车，避免只堆马力就能无脑碾压高难度。
-    base: 0.53 + p.hp / 520 + p.engine / 155 - weightPenalty / 100 - lowStabilityPenalty * 0.035,
-    acceleration: 0.02 + p.engine / 3600 + p.gearbox / 4300 - lowStabilityPenalty * 0.001,
+    base: 0.53 + p.hp / 580 + p.engine / 165 - weightPenalty / 75 - lowStabilityPenalty * 0.045,
+    acceleration: 0.02 + p.engine / 3800 + p.gearbox / 4500 - lowStabilityPenalty * 0.0012,
     launch: p.tire / 85,
-    mid: p.gearbox / 185 - lowStabilityPenalty * 0.009,
+    mid: p.gearbox / 195 - lowStabilityPenalty * 0.01,
     stability: clamp(p.stability, 1, 80),
   };
 }
@@ -79,12 +79,12 @@ function getPlayerPower() {
 function getPlayerRating() {
   const p = gameState.player;
   return (
-    p.hp * 0.003 +
-    p.engine * 0.02 +
-    p.gearbox * 0.015 +
-    p.tire * 0.018 +
-    p.stability * 0.01 -
-    Math.max(0, p.weight - 1000) * 0.001
+    p.hp * 0.0026 +
+    p.engine * 0.019 +
+    p.gearbox * 0.014 +
+    p.tire * 0.02 +
+    p.stability * 0.012 -
+    Math.max(0, p.weight - 1000) * 0.0012
   );
 }
 
@@ -122,15 +122,15 @@ function getOpponentCarPower(id) {
   const personality = [0, -0.02, 0.02, 0.05, -0.04][id] || 0;
   const lateBoost = Math.max(0, difficulty - 2.2);
   return {
-    base: 0.53 + difficulty * 0.088 + lateBoost * 0.045 + variance + personality,
+    base: 0.53 + difficulty * 0.092 + lateBoost * 0.048 + variance + personality,
     acceleration:
       0.021 +
-      difficulty * 0.0021 +
-      lateBoost * 0.0007 +
+      difficulty * 0.0023 +
+      lateBoost * 0.0008 +
       randomBetween(-0.0015, 0.0025),
-    launch: 0.1 + difficulty * 0.016 + lateBoost * 0.004 + randomBetween(0, 0.05),
-    mid: 0.08 + difficulty * 0.021 + lateBoost * 0.008 + randomBetween(-0.02, 0.04),
-    stability: 10 + difficulty * 2 + lateBoost * 2.5 + randomBetween(-3, 4),
+    launch: 0.1 + difficulty * 0.017 + lateBoost * 0.0045 + randomBetween(0, 0.05),
+    mid: 0.08 + difficulty * 0.023 + lateBoost * 0.009 + randomBetween(-0.02, 0.04),
+    stability: 10 + difficulty * 2.2 + lateBoost * 2.7 + randomBetween(-3, 4),
   };
 }
 
