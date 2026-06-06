@@ -66,15 +66,25 @@ const RaceFormulaUtils = (() => {
 
     const growth = Math.min(raceCount * 0.015, 1.5);
     const scaledBase = base * (1 + growth * 0.18) * difficulty.opponentMultiplier;
+    const chaseStart =
+      typeof difficulty.opponentChaseStartRace === 'number'
+        ? difficulty.opponentChaseStartRace
+        : chaseStartRace;
+    const chaseRamp =
+      typeof difficulty.opponentChaseRampRaces === 'number'
+        ? difficulty.opponentChaseRampRaces
+        : chaseRampRaces;
+    const effectiveChaseCap =
+      typeof difficulty.opponentChaseCap === 'number' ? difficulty.opponentChaseCap : chaseCap;
     const lateGameFactor = clampValue(
-      (raceCount - chaseStartRace) / chaseRampRaces,
+      (raceCount - chaseStart) / chaseRamp,
       0,
       1
     );
     const chaseBonus = clampValue(
       playerRating * (difficulty.chaseRate || 0) * lateGameFactor,
       0,
-      chaseCap
+      effectiveChaseCap
     );
     const earlyRaceAssist =
       raceCount < 5 ? (difficulty.earlyRaceAssist || 0) * ((6 - raceCount) / 6) : 0;

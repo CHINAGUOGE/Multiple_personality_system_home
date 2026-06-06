@@ -49,6 +49,42 @@ const DIFFICULTY_TARGETS = {
   nightmare: { stableWinRate: 0.34, budgetWinRate: 0.25, lateFloor: 0.3 },
 };
 
+const DEFAULT_MODE = 'enumerate';
+const DEFAULT_PROFILE_BUILDS = ['initial', 'mid', 'late'];
+const DEFAULT_PROFILE_RACE_COUNTS = [0, 15, 38];
+const BUILD_PROFILES = {
+  initial: {
+    label: '初始车',
+    description: '空配基准车',
+    partKeys: [],
+  },
+  mid: {
+    label: '中期参考车',
+    description: '5 件 hard 奖池主力件，保留明显压力但应看得到成长',
+    partKeys: [
+      'Engine:厂队封存红头机',
+      'Tire:赛道热熔 slick',
+      'Gearbox:雪主任祖传扳手',
+      'Body:碳纤维全车壳',
+      'Stability:碳陶刹车套装',
+    ],
+  },
+  late: {
+    label: '后期参考车',
+    description: 'nightmare 奖池高配满装',
+    partKeys: [
+      'Engine:航空燃料调校机',
+      'Tire:赛道之神热熔胎',
+      'Gearbox:零延迟序列变速箱',
+      'Body:镁合金竞技壳',
+      'Intake:赛用氮氧加速系统',
+      'Exhaust:钛合金全段排气总成',
+      'Turbo:军规增压核心',
+      'Stability:主动液压悬挂系统',
+    ],
+  },
+};
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -84,24 +120,40 @@ function randomBetween(rng, min, max) {
   return min + rng() * (max - min);
 }
 
+function parseIntegerList(rawValue) {
+  return rawValue
+    .split(',')
+    .map((value) => Number(value.trim()))
+    .filter((value) => Number.isInteger(value) && value >= 0);
+}
+
+function parseStringList(rawValue) {
+  return rawValue
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
 function parseArgs(argv) {
   const args = {
+    mode: DEFAULT_MODE,
     checkpoints: DEFAULT_CHECKPOINTS.slice(),
     reactionSeconds: DEFAULT_REACTION_SECONDS,
     sampleCount: DEFAULT_SAMPLE_COUNT,
     topK: DEFAULT_TOP_K,
     difficultyFilter: null,
+    profileBuilds: DEFAULT_PROFILE_BUILDS.slice(),
+    profileRaceCounts: DEFAULT_PROFILE_RACE_COUNTS.slice(),
     seed: 'race-balance-check',
   };
 
   argv.forEach((arg) => {
-    if (arg.startsWith('--checkpoints=')) {
-      args.checkpoints = arg
-        .slice('--checkpoints='.length)
-        .split(',')
-        .map((value) => Number(value.trim()))
-        .filter((value) => Number.isFinite(value) && value >= 0)
-        .sort((left, right) => left - right);
+    if (arg.startsWith('--mode=')) {
+      args.mode = arg.slice('--mode='.length).trim() || args.mode;
+    } else if (arg.startsWith('--checkpoints=')) {
+      args.checkpoints = parseIntegerList(arg.slice('--checkpoints='.length)).sort(
+        (left, right) => left - right
+      );
     } else if (arg.startsWith('--reaction=')) {
       const value = Number(arg.slice('--reaction='.length));
       if (Number.isFinite(value) && value >= 0) {
@@ -120,6 +172,10 @@ function parseArgs(argv) {
     } else if (arg.startsWith('--difficulty=')) {
       const value = arg.slice('--difficulty='.length).trim();
       args.difficultyFilter = value || null;
+    } else if (arg.startsWith('--builds=')) {
+      args.profileBuilds = parseStringList(arg.slice('--builds='.length));
+    } else if (arg.startsWith('--race-counts=')) {
+      args.profileRaceCounts = parseIntegerList(arg.slice('--race-counts='.length));
     } else if (arg.startsWith('--seed=')) {
       args.seed = arg.slice('--seed='.length) || args.seed;
     }
@@ -127,6 +183,22 @@ function parseArgs(argv) {
 
   if (args.checkpoints.length === 0) {
     args.checkpoints = DEFAULT_CHECKPOINTS.slice();
+  }
+
+  if (args.profileBuilds.length === 0) {
+    args.profileBuilds = DEFAULT_PROFILE_BUILDS.slice();
+  }
+
+  if (args.profileRaceCounts.length === 0) {
+    args.profileRaceCounts = DEFAULT_PROFILE_RACE_COUNTS.slice();
+  }
+
+  if (args.mode !== 'enumerate' && args.mode !== 'profiles') {
+    throw new Error(`不支持的模式：${args.mode}`);
+  }
+
+  if (args.mode === 'profiles' && args.profileBuilds.length !== args.profileRaceCounts.length) {
+    throw new Error('--builds 与 --race-counts 的数量必须一致');
   }
 
   return args;
@@ -179,7 +251,10 @@ globalThis.__raceBalanceData = {
 }
 
 function validateSourceTexts(sourceText) {
-  const requiredCoreTokens = ['function getDifficultyEntryFee', 'Math.round((ENTRY_FEE * multiplier)'];
+  const requiredCoreTokens = [
+    'function getDifficultyEntryFee',
+    'Math.round((ENTRY_FEE * multiplier)',
+  ];
   const requiredFormulaTokens = [
     'function computePlayerPower',
     'function computePlayerRating',
@@ -254,7 +329,8 @@ function buildDifficultyOptions(raceData, difficultyKey) {
 
 function computeEntryFee(raceData, difficultyKey) {
   const difficulty = raceData.DIFFICULTIES[difficultyKey];
-  const multiplier = difficulty && difficulty.entryFeeMultiplier ? difficulty.entryFeeMultiplier : 1;
+  const multiplier =
+    difficulty && difficulty.entryFeeMultiplier ? difficulty.entryFeeMultiplier : 1;
   return Math.round((raceData.ENTRY_FEE * multiplier) / 10) * 10;
 }
 
@@ -269,6 +345,61 @@ function computePlayerStats(raceData, totals) {
   };
 }
 
+function findPartByKey(raceData, partKey) {
+  const [slot, ...nameParts] = partKey.split(':');
+  const name = nameParts.join(':');
+
+  return raceData.PART_POOL.find((part) => part.type === slot && part.name === name) || null;
+}
+
+function createProfileCandidate(raceData, difficultyKey, profileKey) {
+  const profile = BUILD_PROFILES[profileKey];
+
+  if (!profile) {
+    throw new Error(`未定义的 build profile：${profileKey}`);
+  }
+
+  const totals = { ...raceData.BASE_PLAYER_STATS };
+  const options = profile.partKeys.map((partKey) => {
+    const part = findPartByKey(raceData, partKey);
+
+    if (!part) {
+      throw new Error(`未找到 build profile 零件：${partKey}`);
+    }
+
+    totals.engine += Number(part.changes.engine || 0);
+    totals.tire += Number(part.changes.tire || 0);
+    totals.gearbox += Number(part.changes.gearbox || 0);
+    totals.stability += Number(part.changes.stability || 0);
+    totals.weight += Number(part.changes.weight || 0);
+    totals.hp += Number(part.changes.hp || 0);
+
+    return {
+      slot: part.type,
+      name: part.name,
+      rarity: part.rarity,
+      price: part.price,
+    };
+  });
+  const stats = computePlayerStats(raceData, totals);
+  const playerRating = raceData.RaceFormulaUtils.computePlayerRating(stats);
+  const playerPower = raceData.RaceFormulaUtils.computePlayerPower(stats);
+
+  return {
+    difficultyKey,
+    profileKey,
+    profileLabel: profile.label,
+    profileDescription: profile.description,
+    configKey: profile.partKeys.join('|') || 'empty',
+    options,
+    stats,
+    totalCost: options.reduce((sum, option) => sum + option.price, 0),
+    playerRating,
+    playerPower,
+    simulations: {},
+  };
+}
+
 function computeMeanOpponentPower(opponentStrength, id) {
   const lateBoost = Math.max(0, opponentStrength - 2.2);
 
@@ -280,22 +411,10 @@ function computeMeanOpponentPower(opponentStrength, id) {
       MEAN_RANDOMS.variance +
       (PERSONALITY_BY_ID[id] || 0),
     acceleration:
-      0.021 +
-      opponentStrength * 0.0023 +
-      lateBoost * 0.0008 +
-      MEAN_RANDOMS.acceleration,
-    launch:
-      0.1 +
-      opponentStrength * 0.017 +
-      lateBoost * 0.0045 +
-      MEAN_RANDOMS.launch,
-    mid:
-      0.08 +
-      opponentStrength * 0.023 +
-      lateBoost * 0.009 +
-      MEAN_RANDOMS.mid,
-    stability:
-      10 + opponentStrength * 2.2 + lateBoost * 2.7 + MEAN_RANDOMS.stability,
+      0.021 + opponentStrength * 0.0023 + lateBoost * 0.0008 + MEAN_RANDOMS.acceleration,
+    launch: 0.1 + opponentStrength * 0.017 + lateBoost * 0.0045 + MEAN_RANDOMS.launch,
+    mid: 0.08 + opponentStrength * 0.023 + lateBoost * 0.009 + MEAN_RANDOMS.mid,
+    stability: 10 + opponentStrength * 2.2 + lateBoost * 2.7 + MEAN_RANDOMS.stability,
   };
 }
 
@@ -517,11 +636,7 @@ function simulateRace(raceData, candidate, difficultyKey, raceCount, seed, react
       car.currentSpeed += car.power.acceleration + stabilityNoise;
       car.currentSpeed = clamp(car.currentSpeed, 0.28, 2.2);
       car.position +=
-        car.power.base +
-        car.currentSpeed +
-        midBoost +
-        launchFade -
-        car.reactionPenalty * 0.035;
+        car.power.base + car.currentSpeed + midBoost + launchFade - car.reactionPenalty * 0.035;
 
       if (car.position >= raceData.FINISH) {
         car.position = raceData.FINISH;
@@ -536,13 +651,18 @@ function simulateRace(raceData, candidate, difficultyKey, raceCount, seed, react
 
   const ranked = cars
     .slice()
-    .sort((left, right) => (left.finishTick ?? Number.MAX_SAFE_INTEGER) - (right.finishTick ?? Number.MAX_SAFE_INTEGER));
+    .sort(
+      (left, right) =>
+        (left.finishTick ?? Number.MAX_SAFE_INTEGER) - (right.finishTick ?? Number.MAX_SAFE_INTEGER)
+    );
   const playerRank = ranked.findIndex((car) => car.isPlayer) + 1;
   const prize = raceData.PRIZES[playerRank - 1] || 0;
 
   return {
     playerRank,
     prize,
+    finishSeconds: ((cars[0].finishTick ?? 600) * raceData.TICK_MS) / 1000,
+    opponentStrength,
   };
 }
 
@@ -597,6 +717,62 @@ function simulateCandidate({
   return candidate;
 }
 
+function simulateProfileScenario({
+  raceData,
+  candidate,
+  difficultyKey,
+  raceCount,
+  sampleCount,
+  seedPrefix,
+  reactionSeconds,
+}) {
+  let winCount = 0;
+  let topThreeCount = 0;
+  let totalRank = 0;
+  let totalFinishSeconds = 0;
+  let totalOpponentStrength = 0;
+
+  for (let sample = 0; sample < sampleCount; sample += 1) {
+    const seed = createHash(
+      `${seedPrefix}|${difficultyKey}|${candidate.profileKey}|${raceCount}|${sample}`
+    );
+    const result = simulateRace(
+      raceData,
+      candidate,
+      difficultyKey,
+      raceCount,
+      seed,
+      reactionSeconds
+    );
+
+    totalRank += result.playerRank;
+    totalFinishSeconds += result.finishSeconds;
+    totalOpponentStrength += result.opponentStrength;
+    if (result.playerRank === 1) {
+      winCount += 1;
+    }
+    if (result.playerRank <= 3) {
+      topThreeCount += 1;
+    }
+  }
+
+  return {
+    build: candidate.profileKey,
+    buildLabel: candidate.profileLabel,
+    buildDescription: candidate.profileDescription,
+    raceCount,
+    playerRating: candidate.playerRating,
+    averageRank: totalRank / sampleCount,
+    winRate: winCount / sampleCount,
+    topThreeRate: topThreeCount / sampleCount,
+    averageFinishSeconds: totalFinishSeconds / sampleCount,
+    averageOpponentStrength: totalOpponentStrength / sampleCount,
+    opponentPlayerRatio: totalOpponentStrength / sampleCount / candidate.playerRating,
+    totalCost: candidate.totalCost,
+    config: formatConfig(candidate),
+  };
+}
+
 function getFocusStats(candidate, focusCheckpoints) {
   const simulations = focusCheckpoints.map((checkpoint) => candidate.simulations[checkpoint]);
 
@@ -605,18 +781,18 @@ function getFocusStats(candidate, focusCheckpoints) {
     minimumWinRate: Math.min(...simulations.map((item) => item.winRate)),
     averageExpectedValue:
       simulations.reduce((sum, item) => sum + item.expectedValue, 0) / simulations.length,
-    averageRank:
-      simulations.reduce((sum, item) => sum + item.averageRank, 0) / simulations.length,
+    averageRank: simulations.reduce((sum, item) => sum + item.averageRank, 0) / simulations.length,
   };
 }
 
-function enumerateDifficulty({
-  raceData,
-  difficultyKey,
-  checkpoints,
-  topK,
-}) {
-  const focusCheckpoints = DEFAULT_FOCUS[difficultyKey] || checkpoints;
+function resolveFocusCheckpoints(difficultyKey, checkpoints) {
+  const preferred = DEFAULT_FOCUS[difficultyKey] || checkpoints;
+  const filtered = preferred.filter((checkpoint) => checkpoints.includes(checkpoint));
+  return filtered.length > 0 ? filtered : checkpoints;
+}
+
+function enumerateDifficulty({ raceData, difficultyKey, checkpoints, topK }) {
+  const focusCheckpoints = resolveFocusCheckpoints(difficultyKey, checkpoints);
   const slotOptions = buildDifficultyOptions(raceData, difficultyKey);
   const selectedOptions = new Array(slotOptions.length);
   const totals = {
@@ -730,14 +906,18 @@ function collectUniqueCandidates(result) {
 function pickBestCandidate(candidates, focusCheckpoints, scoreGetter) {
   return candidates
     .slice()
-    .sort((left, right) => scoreGetter(right, focusCheckpoints) - scoreGetter(left, focusCheckpoints))[0];
+    .sort(
+      (left, right) => scoreGetter(right, focusCheckpoints) - scoreGetter(left, focusCheckpoints)
+    )[0];
 }
 
 function formatConfig(candidate) {
-  return candidate.options
-    .filter((option) => option.name !== '-')
-    .map((option) => `${option.slot}=${option.name}`)
-    .join(' / ') || '全空配';
+  return (
+    candidate.options
+      .filter((option) => option.name !== '-')
+      .map((option) => `${option.slot}=${option.name}`)
+      .join(' / ') || '全空配'
+  );
 }
 
 function buildDifficultyDiagnosis({ result, simulatedCandidates }) {
@@ -752,7 +932,8 @@ function buildDifficultyDiagnosis({ result, simulatedCandidates }) {
     simulatedCandidates,
     focusCheckpoints,
     (candidate, focus) =>
-      getFocusStats(candidate, focus).minimumWinRate * 100 - getFocusStats(candidate, focus).averageRank
+      getFocusStats(candidate, focus).minimumWinRate * 100 -
+      getFocusStats(candidate, focus).averageRank
   );
   const valuePool = simulatedCandidates.filter((candidate) => {
     const focusStats = getFocusStats(candidate, focusCheckpoints);
@@ -771,8 +952,7 @@ function buildDifficultyDiagnosis({ result, simulatedCandidates }) {
   const budget = simulatedCandidates
     .filter(
       (candidate) =>
-        getFocusStats(candidate, focusCheckpoints).minimumWinRate >=
-        target.budgetWinRate
+        getFocusStats(candidate, focusCheckpoints).minimumWinRate >= target.budgetWinRate
     )
     .sort((left, right) => {
       if (left.totalCost !== right.totalCost) {
@@ -792,18 +972,17 @@ function buildDifficultyDiagnosis({ result, simulatedCandidates }) {
   const lateCheckpoint = Math.max(...focusCheckpoints);
   const lateStrongestRate = strongest ? strongest.simulations[lateCheckpoint].winRate : 0;
   const earlyCheckpoint = Math.min(...DEFAULT_CHECKPOINTS);
-  const earlyStrongestRate = strongest && strongest.simulations[earlyCheckpoint]
-    ? strongest.simulations[earlyCheckpoint].winRate
-    : 0;
+  const earlyStrongestRate =
+    strongest && strongest.simulations[earlyCheckpoint]
+      ? strongest.simulations[earlyCheckpoint].winRate
+      : 0;
   const obviousBrailsThreshold =
     result.difficultyKey === 'nightmare' ? 0.68 : result.difficultyKey === 'hard' ? 0.78 : 0.9;
   const brainless =
     Boolean(budget) &&
     getFocusStats(budget, focusCheckpoints).minimumWinRate >= obviousBrailsThreshold;
   const impossibleGap =
-    !strongest ||
-    lateStrongestRate < target.lateFloor ||
-    result.focusProxyPassCount === 0;
+    !strongest || lateStrongestRate < target.lateFloor || result.focusProxyPassCount === 0;
 
   return {
     strongest,
@@ -817,8 +996,7 @@ function buildDifficultyDiagnosis({ result, simulatedCandidates }) {
     findings: {
       brainless,
       impossibleGap,
-      nightmareEarlyOverrun:
-        result.difficultyKey === 'nightmare' && earlyStrongestRate >= 0.7,
+      nightmareEarlyOverrun: result.difficultyKey === 'nightmare' && earlyStrongestRate >= 0.7,
       singleStatSmash:
         Boolean(strongest) &&
         ['hard', 'expert', 'nightmare'].includes(result.difficultyKey) &&
@@ -846,7 +1024,9 @@ function printDifficultyReport({ raceData, result, diagnosis, checkpoints }) {
   console.table(
     checkpoints.map((checkpoint) => ({
       检查点: checkpoint,
-      代理过线组合占比: formatPercent(result.checkpointProxyPassCount[checkpoint] / result.comboCount),
+      代理过线组合占比: formatPercent(
+        result.checkpointProxyPassCount[checkpoint] / result.comboCount
+      ),
     }))
   );
 
@@ -855,7 +1035,7 @@ function printDifficultyReport({ raceData, result, diagnosis, checkpoints }) {
     ['最稳配置', diagnosis.stablest, diagnosis.stablestFocus],
     ['性价比配置', diagnosis.value, diagnosis.valueFocus],
   ]
-    .filter(([, candidate]) => candidate)
+    .filter(([, candidate, focus]) => candidate && focus)
     .map(([label, candidate, focus]) => {
       const lateCheckpoint = Math.max(...focusCheckpoints);
       const earlyCheckpoint = Math.min(...checkpoints);
@@ -895,9 +1075,7 @@ function printDifficultyReport({ raceData, result, diagnosis, checkpoints }) {
   if (diagnosis.emptyStats) {
     notes.push(`空配焦点平均胜率 ${formatPercent(diagnosis.emptyStats.averageWinRate)}`);
   }
-  notes.push(
-    `维修风险成本按 0 计（当前 race 逻辑无维修/耐久扣费公式，脚本只验算现有玩法）`
-  );
+  notes.push(`维修风险成本按 0 计（当前 race 逻辑无维修/耐久扣费公式，脚本只验算现有玩法）`);
 
   if (diagnosis.findings.brainless) {
     notes.push('存在明显无脑通关配置：低成本过线参考在焦点检查点仍保持极高胜率');
@@ -924,6 +1102,39 @@ function printDifficultyReport({ raceData, result, diagnosis, checkpoints }) {
   });
 }
 
+function printProfileReport({ raceData, difficultyKey, scenarios, sampleCount, reactionSeconds }) {
+  const difficulty = raceData.DIFFICULTIES[difficultyKey];
+
+  console.log(`\n=== ${difficulty.name} (${difficultyKey}) / 固定 build 回归 ===`);
+  console.table([
+    {
+      来源: 'lab-public/race/scripts/{config,core,race-formulas,race}.js',
+      样本数: sampleCount,
+      反应时间: `${reactionSeconds}s`,
+      报名费: computeEntryFee(raceData, difficultyKey),
+    },
+  ]);
+  console.table(
+    scenarios.map((scenario) => ({
+      Build: `${scenario.build} / ${scenario.buildLabel}`,
+      描述: scenario.buildDescription,
+      raceCount: scenario.raceCount,
+      成本: scenario.totalCost,
+      玩家Rating: formatNumber(scenario.playerRating, 3),
+      对手均强: formatNumber(scenario.averageOpponentStrength, 3),
+      强度比: formatNumber(scenario.opponentPlayerRatio, 3),
+      平均名次: formatNumber(scenario.averageRank, 3),
+      胜率: formatPercent(scenario.winRate),
+      前三率: formatPercent(scenario.topThreeRate),
+      平均完赛: `${formatNumber(scenario.averageFinishSeconds, 3)}s`,
+    }))
+  );
+
+  scenarios.forEach((scenario) => {
+    console.log(`${scenario.buildLabel}: ${scenario.config}`);
+  });
+}
+
 function main() {
   const startedAt = performance.now();
   const args = parseArgs(process.argv.slice(2));
@@ -942,48 +1153,83 @@ function main() {
   }
 
   console.log('Race balance check');
-  console.table([
-    {
-      来源: 'lab-public/race/scripts/{config,core,race}.js',
-      检查点: args.checkpoints.join(', '),
-      样本数: args.sampleCount,
-      候选保留数: args.topK,
-      反应时间: `${args.reactionSeconds}s`,
-      维修风险成本: '0',
-    },
-  ]);
+  if (args.mode === 'profiles') {
+    console.table([
+      {
+        模式: 'profiles',
+        难度: difficultyKeys.join(', '),
+        Builds: args.profileBuilds.join(', '),
+        raceCount: args.profileRaceCounts.join(', '),
+        样本数: args.sampleCount,
+        反应时间: `${args.reactionSeconds}s`,
+      },
+    ]);
 
-  difficultyKeys.forEach((difficultyKey) => {
-    const enumerated = enumerateDifficulty({
-      raceData,
-      difficultyKey,
-      checkpoints: args.checkpoints,
-      topK: args.topK,
-    });
+    difficultyKeys.forEach((difficultyKey) => {
+      const scenarios = args.profileBuilds.map((profileKey, index) =>
+        simulateProfileScenario({
+          raceData,
+          candidate: createProfileCandidate(raceData, difficultyKey, profileKey),
+          difficultyKey,
+          raceCount: args.profileRaceCounts[index],
+          sampleCount: args.sampleCount,
+          seedPrefix: args.seed,
+          reactionSeconds: args.reactionSeconds,
+        })
+      );
 
-    const candidates = collectUniqueCandidates(enumerated).map((candidate) =>
-      simulateCandidate({
+      printProfileReport({
         raceData,
-        candidate,
-        checkpoints: args.checkpoints,
+        difficultyKey,
+        scenarios,
         sampleCount: args.sampleCount,
-        seedPrefix: args.seed,
         reactionSeconds: args.reactionSeconds,
-      })
-    );
-
-    const diagnosis = buildDifficultyDiagnosis({
-      result: enumerated,
-      simulatedCandidates: candidates,
+      });
     });
+  } else {
+    console.table([
+      {
+        来源: 'lab-public/race/scripts/{config,core,race-formulas,race}.js',
+        检查点: args.checkpoints.join(', '),
+        样本数: args.sampleCount,
+        候选保留数: args.topK,
+        反应时间: `${args.reactionSeconds}s`,
+        维修风险成本: '0',
+      },
+    ]);
 
-    printDifficultyReport({
-      raceData,
-      result: enumerated,
-      diagnosis,
-      checkpoints: args.checkpoints,
+    difficultyKeys.forEach((difficultyKey) => {
+      const enumerated = enumerateDifficulty({
+        raceData,
+        difficultyKey,
+        checkpoints: args.checkpoints,
+        topK: args.topK,
+      });
+
+      const candidates = collectUniqueCandidates(enumerated).map((candidate) =>
+        simulateCandidate({
+          raceData,
+          candidate,
+          checkpoints: args.checkpoints,
+          sampleCount: args.sampleCount,
+          seedPrefix: args.seed,
+          reactionSeconds: args.reactionSeconds,
+        })
+      );
+
+      const diagnosis = buildDifficultyDiagnosis({
+        result: enumerated,
+        simulatedCandidates: candidates,
+      });
+
+      printDifficultyReport({
+        raceData,
+        result: enumerated,
+        diagnosis,
+        checkpoints: args.checkpoints,
+      });
     });
-  });
+  }
 
   console.log(`\n耗时 ${(performance.now() - startedAt).toFixed(1)} ms`);
 }
