@@ -20,8 +20,9 @@ const PART_SELL_RATE = 0.8;
 const FINISH = 100;
 const TICK_MS = 45;
 const STORAGE_KEY = 'mpsteam-race-save-v1';
-const GAME_VERSION = 'v1.6.6';
-const GAME_VERSION_NOTE = '合并报名比赛与下一场比赛为同一个主操作按钮，手机端赛事操作保持两个按钮并排。';
+const GAME_VERSION = 'v1.7';
+const GAME_VERSION_NOTE =
+  '新增「AI 托管一场」，会模拟普通玩家反应自动跑完本场，保留完整赛道动画和正常结算。';
 
 const BASE_PLAYER_STATS = {
   engine: 10,

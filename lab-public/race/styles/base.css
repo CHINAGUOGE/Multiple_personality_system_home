@@ -533,19 +533,27 @@ select {
   white-space: nowrap;
 }
 
+.race-report-hint {
+  color: #3f4e66;
+}
+
 .race-report-separator {
   color: #555;
 }
 
 .race-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 8px;
 }
 
 .race-actions button {
   min-height: 50px;
+}
+
+.ai-assist-button {
+  overflow-wrap: anywhere;
 }
 
 .result-panel {
@@ -556,6 +564,11 @@ select {
 .result-panel p {
   margin: 6px 0 0;
   font-weight: bold;
+}
+
+.result-sub-message {
+  color: #4f5b70;
+  font-weight: normal;
 }
 
 .stats-list {

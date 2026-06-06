@@ -48,13 +48,29 @@ function createDefaultAchievementsState() {
   };
 }
 
+function createDefaultAiAssistState() {
+  return {
+    active: false,
+    reactionTime: null,
+  };
+}
+
+function createDefaultManualRankStreak() {
+  return {
+    rank: null,
+    count: 0,
+  };
+}
+
 const gameState = {
   phase: 'idle',
   cash: 1500,
   raceCount: 0,
   lastRank: '-',
   bestReactionTime: null,
+  bestManualReactionTime: null,
   lastReactionTime: null,
+  lastManualReactionTime: null,
   currentWinStreak: 0,
   bestWinStreak: 0,
   difficulty: DEFAULT_DIFFICULTY,
@@ -62,6 +78,11 @@ const gameState = {
   greenAt: 0,
   reactionTime: null,
   playerStarted: false,
+  raceControl: 'manual',
+  lastRaceControl: null,
+  aiAssist: createDefaultAiAssistState(),
+  aiAssistLocked: false,
+  manualRankStreak: createDefaultManualRankStreak(),
   countdownTimers: [],
   raceTimer: null,
   raceStartedAt: 0,
@@ -89,6 +110,7 @@ const gameState = {
 const el = {
   registerBtn: document.getElementById('registerBtn'),
   startBtn: document.getElementById('startBtn'),
+  aiAssistRaceButton: document.getElementById('aiAssistRaceButton'),
   saveBtn: document.getElementById('saveBtn'),
   loadBtn: document.getElementById('loadBtn'),
   restartBtn: document.getElementById('restartBtn'),
@@ -130,6 +152,7 @@ const el = {
   winStreakText: document.getElementById('winStreakText'),
   raceRoundText: document.getElementById('raceRoundText'),
   opponentPowerText: document.getElementById('opponentPowerText'),
+  raceControlHint: document.getElementById('raceControlHint'),
   raceReportEmptyText: document.getElementById('raceReportEmptyText'),
   raceReportStats: document.getElementById('raceReportStats'),
   raceCurrentWinStreakStat: document.getElementById('raceCurrentWinStreakStat'),
@@ -146,6 +169,7 @@ const el = {
   lastReactionStat: document.getElementById('lastReactionStat'),
   currentVehicleText: document.getElementById('currentVehicleText'),
   resultMessage: document.getElementById('resultMessage'),
+  resultSubMessage: document.getElementById('resultSubMessage'),
   shopCashStat: document.getElementById('shopCashStat'),
   tuningCashStat: document.getElementById('tuningCashStat'),
   profileCashStat: document.getElementById('profileCashStat'),
@@ -164,5 +188,6 @@ const el = {
   statsCollectionProgress: document.getElementById('statsCollectionProgress'),
   versionText: document.getElementById('versionText'),
   versionNote: document.getElementById('versionNote'),
+  statusVersionText: document.getElementById('statusVersionText'),
   achievementToast: document.getElementById('achievementToast'),
 };
