@@ -179,6 +179,7 @@ function buyPart(index) {
   const ownedPart = createOwnedPart(part);
   const equippedPart = getEquippedPart(ownedPart.type);
   gameState.inventory.push(ownedPart);
+  gameState.stats.partsPurchasedCount = (gameState.stats.partsPurchasedCount || 0) + 1;
   if (!equippedPart) {
     gameState.equippedParts[ownedPart.type] = ownedPart.id;
     recalculatePlayerStats();

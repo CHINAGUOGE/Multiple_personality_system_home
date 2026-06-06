@@ -235,6 +235,21 @@ function getDifficulty() {
   return DIFFICULTIES[getDifficultyKey()];
 }
 
+function isNightmareDifficulty(key = getDifficultyKey()) {
+  return key === 'nightmare';
+}
+
+function formatOpponentStrengthCap(config) {
+  return Number.isFinite(config && config.maxOpponentStrength)
+    ? config.maxOpponentStrength.toFixed(2)
+    : '∞';
+}
+
+function formatDifficultyMeta(key) {
+  const config = DIFFICULTIES[key] || DIFFICULTIES[DEFAULT_DIFFICULTY];
+  return `报名${getDifficultyEntryFee(key)}元 · 奖金×${config.rewardMultiplier} · 强度×${config.opponentMultiplier} · 上限${formatOpponentStrengthCap(config)}`;
+}
+
 // 报名费按当前难度倍率缩放，向上取整到 10 元。
 function getEntryFee() {
   return getDifficultyEntryFee(getDifficultyKey());
@@ -590,6 +605,14 @@ function sanitizeStatsData(data, fallback = {}) {
     currentStreak,
     Math.floor(Number((data && data.bestStreak) ?? fallback.bestStreak) || 0)
   );
+  const falseStartCount = Math.max(
+    0,
+    Math.floor(Number((data && data.falseStartCount) ?? fallback.falseStartCount) || 0)
+  );
+  const falseStartStreak = Math.max(
+    0,
+    Math.floor(Number((data && data.falseStartStreak) ?? fallback.falseStartStreak) || 0)
+  );
   const secondPlaceStreak = Math.max(
     0,
     Math.floor(
@@ -599,6 +622,12 @@ function sanitizeStatsData(data, fallback = {}) {
   const fifthPlaceStreak = Math.max(
     0,
     Math.floor(Number((data && data.fifthPlaceStreak) ?? fallback.fifthPlaceStreak) || 0)
+  );
+  const partsPurchasedCount = Math.max(
+    0,
+    Math.floor(
+      Number((data && data.partsPurchasedCount) ?? fallback.partsPurchasedCount) || 0
+    )
   );
   const highestCash = Math.max(
     0,
@@ -639,13 +668,29 @@ function sanitizeStatsData(data, fallback = {}) {
     totalLosses: Math.min(totalRaces, totalLosses),
     currentStreak,
     bestStreak,
+    falseStartCount,
+    falseStartStreak,
     secondPlaceStreak,
     fifthPlaceStreak,
+    partsPurchasedCount,
     highestCash,
     winsByDifficulty,
     bestStreakByDifficulty,
     hasFilledAllSlots: Boolean(
       (data && data.hasFilledAllSlots) ?? fallback.hasFilledAllSlots
+    ),
+    hasLowCashAfterRace: Boolean(
+      (data && data.hasLowCashAfterRace) ?? fallback.hasLowCashAfterRace
+    ),
+    hasFinishedLast: Boolean((data && data.hasFinishedLast) ?? fallback.hasFinishedLast),
+    hasNightmareSlowReactionWin: Boolean(
+      (data && data.hasNightmareSlowReactionWin) ?? fallback.hasNightmareSlowReactionWin
+    ),
+    hasNightmareGlassCannonWin: Boolean(
+      (data && data.hasNightmareGlassCannonWin) ?? fallback.hasNightmareGlassCannonWin
+    ),
+    hasNightmareStableWin: Boolean(
+      (data && data.hasNightmareStableWin) ?? fallback.hasNightmareStableWin
     ),
     hasWonAfterSecondPlaceStreak: Boolean(
       (data && data.hasWonAfterSecondPlaceStreak) ??
@@ -696,8 +741,14 @@ function isVehicleStripped() {
   return EQUIPMENT_SLOTS.every((type) => !gameState.equippedParts[type]);
 }
 
+function hasSellableInventory() {
+  return gameState.inventory.some(
+    (part) => gameState.equippedParts[part.type] !== part.id && getPartSellPrice(part) > 0
+  );
+}
+
 function shouldFailForNoEntryFee() {
-  return gameState.cash < getMinEntryFee() && isVehicleStripped();
+  return gameState.cash < getMinEntryFee() && isVehicleStripped() && !hasSellableInventory();
 }
 
 function checkGameFailure() {
@@ -708,7 +759,7 @@ function checkGameFailure() {
   if (gameState.phase !== 'game_over') {
     setPhase('game_over');
     setLights('none');
-    addLog('游戏失败：车辆已无装备，现金不足以支付最低难度报名费。');
+    addLog('游戏失败：车辆已无装备和可出售库存，现金不足以支付最低难度报名费。');
     addLog('请点击“重开并清档”重新开始。');
   }
 
@@ -809,12 +860,20 @@ function sanitizeSaveData(data) {
     totalLosses: Math.max(0, totalRaces - estimateMigratedTotalWins(data, totalRaces)),
     currentStreak: Math.max(0, Math.floor(Number(data.currentWinStreak) || 0)),
     bestStreak: Math.max(0, Math.floor(Number(data.bestWinStreak) || 0)),
+    falseStartCount: 0,
+    falseStartStreak: 0,
     secondPlaceStreak: 0,
     fifthPlaceStreak: 0,
+    partsPurchasedCount: inventory.length,
     highestCash: Math.max(1500, Math.floor(Number(data.cash) || 0)),
     winsByDifficulty: createDifficultyStatsMap(),
     bestStreakByDifficulty: createDifficultyStatsMap(),
     hasFilledAllSlots: EQUIPMENT_SLOTS.every((type) => Boolean(equippedParts[type])),
+    hasLowCashAfterRace: false,
+    hasFinishedLast: false,
+    hasNightmareSlowReactionWin: false,
+    hasNightmareGlassCannonWin: false,
+    hasNightmareStableWin: false,
     hasWonAfterSecondPlaceStreak: false,
     wonWithBuildAchievements: [],
     wonWithSpecialParts: [],
@@ -1045,7 +1104,7 @@ function updateResultMessage() {
     racing: gameState.playerStarted ? '比赛进行中。' : '电脑车已起跑，立即点击起步。',
     finished: `比赛结束，上场名次：${gameState.lastRank}。`,
     false_start: '抢跑犯规，本场成绩无效。',
-    game_over: '游戏失败：现金不足且车辆无装备，请重开。',
+    game_over: '游戏失败：现金不足且无可出售库存，请重开。',
   };
   el.resultMessage.textContent = messages[gameState.phase] || PHASE_LABELS[gameState.phase];
 }
@@ -1148,13 +1207,13 @@ function renderDifficulty() {
     el.difficultyCurrentName.textContent = activeConfig.name;
   }
   if (el.difficultyCurrentMeta && activeConfig) {
-    el.difficultyCurrentMeta.textContent = `报名${getDifficultyEntryFee(activeKey)}元 · 奖金×${activeConfig.rewardMultiplier} · 强度×${activeConfig.opponentMultiplier}`;
+    el.difficultyCurrentMeta.textContent = formatDifficultyMeta(activeKey);
   }
   if (el.profileDifficultyName && activeConfig) {
     el.profileDifficultyName.textContent = activeConfig.name;
   }
   if (el.profileDifficultyMeta && activeConfig) {
-    el.profileDifficultyMeta.textContent = `报名${getDifficultyEntryFee(activeKey)}元 · 奖金×${activeConfig.rewardMultiplier} · 强度×${activeConfig.opponentMultiplier}`;
+    el.profileDifficultyMeta.textContent = formatDifficultyMeta(activeKey);
   }
 
   if (!el.difficultyChoices) {
@@ -1176,7 +1235,7 @@ function renderDifficulty() {
     button.setAttribute('aria-pressed', key === activeKey ? 'true' : 'false');
     button.innerHTML = `
       <span class="difficulty-name">${config.name}</span>
-      <span class="difficulty-meta">报名${getDifficultyEntryFee(key)}元 · 奖金×${config.rewardMultiplier} · 强度×${config.opponentMultiplier}</span>
+      <span class="difficulty-meta">${formatDifficultyMeta(key)}</span>
     `;
     el.difficultyChoices.appendChild(button);
   });

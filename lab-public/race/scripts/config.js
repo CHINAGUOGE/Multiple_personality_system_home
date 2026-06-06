@@ -20,8 +20,8 @@ const PART_SELL_RATE = 0.8;
 const FINISH = 100;
 const TICK_MS = 45;
 const STORAGE_KEY = 'mpsteam-race-save-v1';
-const GAME_VERSION = 'v1.6.2';
-const GAME_VERSION_NOTE = '补充零件等级与稀有度颜色展示，并新增连续第二名成就。';
+const GAME_VERSION = 'v1.6.5';
+const GAME_VERSION_NOTE = '修复低余额卸下装备后误进入失败态的问题，库存零件可正常出售回血。';
 
 const BASE_PLAYER_STATS = {
   engine: 10,
@@ -87,6 +87,12 @@ const SHOP_OWNED_PART_WEIGHT = 0.2;
 const OPPONENT_CHASE_START_RACE = 6;
 const OPPONENT_CHASE_RAMP_RACES = 14;
 const OPPONENT_CHASE_CAP = 1.05;
+const NIGHTMARE_SLOW_REACTION_SECONDS = 0.6;
+const NEURAL_LINK_REACTION_SECONDS = 0.01;
+const SLEEPY_START_REACTION_SECONDS = 1;
+const NIGHTMARE_GLASS_CANNON_RATING = 3.2;
+const NIGHTMARE_GLASS_CANNON_MAX_STABILITY = 8;
+const NIGHTMARE_STABLE_DOG_MIN_STABILITY = 50;
 
 // 旧存档/旧数据的稀有度迁移表：uncommon 统一并入 rare。
 const PART_RARITY_MIGRATIONS = {
@@ -102,6 +108,7 @@ const DIFFICULTIES = {
     entryFeeMultiplier: 0.8,
     chaseRate: 0.015,
     opponentChaseCap: 0.7,
+    maxOpponentStrength: 2.45,
     opponentChaseStartRace: 6,
     opponentChaseRampRaces: 14,
     earlyRaceAssist: 0.2,
@@ -115,6 +122,7 @@ const DIFFICULTIES = {
     entryFeeMultiplier: 1.0,
     chaseRate: 0.045,
     opponentChaseCap: 0.85,
+    maxOpponentStrength: 2.85,
     opponentChaseStartRace: 6,
     opponentChaseRampRaces: 14,
     earlyRaceAssist: 0.18,
@@ -128,6 +136,7 @@ const DIFFICULTIES = {
     entryFeeMultiplier: 1.3,
     chaseRate: 0.12,
     opponentChaseCap: 0.95,
+    maxOpponentStrength: 3.45,
     opponentChaseStartRace: 6,
     opponentChaseRampRaces: 14,
   },
@@ -139,6 +148,7 @@ const DIFFICULTIES = {
     entryFeeMultiplier: 1.7,
     chaseRate: 0.24,
     opponentChaseCap: 1.0,
+    maxOpponentStrength: 4.35,
     opponentChaseStartRace: 7,
     opponentChaseRampRaces: 16,
   },
@@ -150,6 +160,7 @@ const DIFFICULTIES = {
     entryFeeMultiplier: 2.4,
     chaseRate: 0.25,
     opponentChaseCap: 1.0,
+    maxOpponentStrength: null,
     opponentChaseStartRace: 10,
     opponentChaseRampRaces: 24,
   },
@@ -368,35 +379,144 @@ const ACHIEVEMENTS = [
   {
     id: 'broke_entry_attempt',
     name: '家财散尽',
-    description: '钱包空空，还想上赛道。',
-    category: '趣味',
+    description: '余额不足报名费时，仍然点击报名。',
+    category: '经济行为',
     hidden: true,
     check: 'brokeEntryAttempt',
-    flavor: '钱不够也要点报名，精神可嘉。',
+    flavor: '报名费都凑不齐了，但梦想还是热的。',
   },
   {
     id: 'false_start_hot_tofu',
     name: '心急吃不了热豆腐',
-    description: '还没起步就抢跑，裁判都愣了一下。',
-    category: '趣味',
+    description: '首次抢跑 / 犯规。',
+    category: '比赛表现',
+    hidden: true,
     check: 'falseStartHotTofu',
-    flavor: '还没亮绿灯，脚已经先替脑子做了决定。',
+    flavor: '灯还没绿，车已经替你做决定了。',
+  },
+  {
+    id: 'red_light_warrior',
+    name: '红灯战神',
+    description: '累计抢跑 10 次。',
+    category: '比赛表现',
+    check: 'falseStartCount10',
+    flavor: '红灯不是阻碍，是你的起跑信号。',
+  },
+  {
+    id: 'slippery_hand',
+    name: '手滑了吧',
+    description: '连续 3 场抢跑。',
+    category: '比赛表现',
+    check: 'falseStartStreak3',
+    flavor: '连续三次提前出发。裁判已经开始认识你了。',
+  },
+  {
+    id: 'neural_link',
+    name: '神经直连',
+    description: '单场有效反应时间 ≤ 0.010 秒。',
+    category: '比赛表现',
+    check: 'neuralLinkReaction',
+    flavor: '这已经不像反应，像车和大脑签了协议。',
+  },
+  {
+    id: 'sleepy_start',
+    name: '睡着了？',
+    description: '单场有效起步反应时间 ≥ 1.000 秒。',
+    category: '比赛表现',
+    check: 'sleepyStartReaction',
+    flavor: '灯都绿这么久了，你刚醒吗？',
+  },
+  {
+    id: 'moonlight_driver',
+    name: '月光车手',
+    description: '比赛结算后余额低于 100。',
+    category: '经济行为',
+    check: 'lowCashAfterRace',
+    flavor: '钱没剩多少，但车还在响。',
+  },
+  {
+    id: 'buy_buy_buy',
+    name: '买买买',
+    description: '累计购买 10 个零件。',
+    category: '经济行为',
+    check: 'partsPurchased10',
+    flavor: '商店老板看你的眼神变亲切了。',
   },
   {
     id: 'racing_enthusiast_50_wins',
     name: '竞速爱好者',
-    description: '连续赢下 50 场比赛，赛道已经认识你了。',
-    category: '挑战',
-    check: 'racingEnthusiast50Wins',
-    flavor: '跑到第五十场还在连胜，连终点线都开始眼熟了。',
+    description: '累计比赛 50 场。',
+    category: '长期游玩',
+    check: 'racingEnthusiast50Races',
+    flavor: '你已经不是路过玩玩了。',
   },
   {
     id: 'five_fifth_places',
     name: '五五大顺',
-    description: '连续五场第五名，也是一种稳定发挥。',
-    category: '趣味',
+    description: '连续 5 场获得第 5 名。',
+    category: '比赛表现',
+    hidden: true,
     check: 'fiveFifthPlaces',
-    flavor: '每次都精准停在第五，稳定得有点离谱。',
+    flavor: '连续五场第五名。稳定，但有点微妙。',
+  },
+  {
+    id: 'last_place_finish',
+    name: '垫底也是抵达终点',
+    description: '首次获得最后一名。',
+    category: '比赛表现',
+    check: 'lastPlaceFinish',
+    flavor: '至少你完整地抵达了终点。',
+  },
+  {
+    id: 'how_did_that_win',
+    name: '这也能赢？',
+    description: '噩梦难度下，反应时间很差但仍获得第一名。',
+    category: '比赛表现',
+    hidden: true,
+    check: 'nightmareSlowReactionWin',
+    flavor: '起步慢了点，但结局很倔强。',
+  },
+  {
+    id: 'glass_cannon_nightmare',
+    name: '玻璃大炮',
+    description: '噩梦难度下，使用高性能、低稳定配置获胜。',
+    category: '改装风格',
+    hidden: true,
+    check: 'nightmareGlassCannonWin',
+    flavor: '快是真的快，散也是真的散。',
+  },
+  {
+    id: 'stable_dog_nightmare',
+    name: '稳如老狗',
+    description: '噩梦难度下，使用高稳定配置获胜。',
+    category: '改装风格',
+    hidden: true,
+    check: 'nightmareStableWin',
+    flavor: '不一定最猛，但稳得让人安心。',
+  },
+  {
+    id: 'engineer_smile',
+    name: '工程师的微笑',
+    description: '所有可装备槽位都已安装配件。',
+    category: '改装风格',
+    check: 'engineerSmile',
+    flavor: '每个槽位都有东西，雪雪看了会点头。',
+  },
+  {
+    id: 'old_driver_100',
+    name: '老车手',
+    description: '累计比赛 100 场。',
+    category: '长期游玩',
+    check: 'totalRaces100',
+    flavor: '方向盘记住了你的手感。',
+  },
+  {
+    id: 'nightmare_graduate',
+    name: '噩梦毕业生',
+    description: '在噩梦难度下首次获胜。',
+    category: '长期游玩',
+    check: 'nightmareGraduate',
+    flavor: '噩梦难度，也不过如此……大概。',
   },
   {
     id: 'ten_second_places',

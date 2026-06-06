@@ -52,6 +52,33 @@ function getWinningAchievementTagsFromCurrentBuild() {
   return unlockedTags;
 }
 
+function getNightmareWinningAchievementTagsFromCurrentBuild(sourceStats = gameState.player) {
+  const rating = RaceFormulaUtils.computePlayerRating(sourceStats);
+  const unlockedTags = [];
+
+  if (
+    rating >= NIGHTMARE_GLASS_CANNON_RATING &&
+    sourceStats.stability <= NIGHTMARE_GLASS_CANNON_MAX_STABILITY
+  ) {
+    unlockedTags.push('nightmareGlassCannon');
+  }
+
+  if (sourceStats.stability >= NIGHTMARE_STABLE_DOG_MIN_STABILITY) {
+    unlockedTags.push('nightmareStableDog');
+  }
+
+  return unlockedTags;
+}
+
+function markNightmareBuildAchievementFlags(tags) {
+  if (tags.includes('nightmareGlassCannon')) {
+    gameState.stats.hasNightmareGlassCannonWin = true;
+  }
+  if (tags.includes('nightmareStableDog')) {
+    gameState.stats.hasNightmareStableWin = true;
+  }
+}
+
 function enqueueAchievementToast(achievement) {
   gameState.achievementToastQueue.push(achievement);
   if (gameState.achievementToastTimer) {
@@ -170,12 +197,45 @@ function checkAchievementCondition(achievement) {
     case 'xiaoyuSponsorWin':
       return stats.wonWithSpecialParts.includes('stability_xiaoyu_sponsor');
     case 'brokeEntryAttempt':
-    case 'falseStartHotTofu':
       return false;
-    case 'racingEnthusiast50Wins':
-      return stats.bestStreak >= 50;
+    case 'falseStartHotTofu':
+      return stats.falseStartCount >= 1;
+    case 'falseStartCount10':
+      return stats.falseStartCount >= 10;
+    case 'falseStartStreak3':
+      return stats.falseStartStreak >= 3;
+    case 'neuralLinkReaction':
+      return (
+        gameState.bestReactionTime !== null &&
+        gameState.bestReactionTime <= NEURAL_LINK_REACTION_SECONDS
+      );
+    case 'sleepyStartReaction':
+      return (
+        gameState.lastReactionTime !== null &&
+        gameState.lastReactionTime >= SLEEPY_START_REACTION_SECONDS
+      );
+    case 'lowCashAfterRace':
+      return Boolean(stats.hasLowCashAfterRace);
+    case 'partsPurchased10':
+      return stats.partsPurchasedCount >= 10;
+    case 'racingEnthusiast50Races':
+      return stats.totalRaces >= 50;
     case 'fiveFifthPlaces':
       return stats.fifthPlaceStreak >= 5;
+    case 'lastPlaceFinish':
+      return Boolean(stats.hasFinishedLast);
+    case 'nightmareSlowReactionWin':
+      return Boolean(stats.hasNightmareSlowReactionWin);
+    case 'nightmareGlassCannonWin':
+      return Boolean(stats.hasNightmareGlassCannonWin);
+    case 'nightmareStableWin':
+      return Boolean(stats.hasNightmareStableWin);
+    case 'engineerSmile':
+      return stats.hasFilledAllSlots || isAllSlotsFilled();
+    case 'totalRaces100':
+      return stats.totalRaces >= 100;
+    case 'nightmareGraduate':
+      return (stats.winsByDifficulty.nightmare || 0) >= 1;
     case 'tenSecondPlaces':
       return (
         stats.secondPlaceStreak >= 10 ||
@@ -231,7 +291,7 @@ function renderAchievements() {
         <strong>${hidden ? '？？？' : achievement.name}</strong>
         <span>${achievement.category}</span>
       </div>
-      <p>${hidden ? '隐藏成就，达成后公开。' : achievement.description}</p>
+      <p>${hidden ? '达成某个奇怪条件后解锁。' : achievement.description}</p>
       <small>${completed ? `已完成 · ${formatDateTime(completedAt)}` : '未完成'}</small>
     `;
     el.achievementsBody.appendChild(card);

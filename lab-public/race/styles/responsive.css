@@ -378,9 +378,16 @@
   }
 
   .achievement-toast {
+    top: calc(var(--mobile-title-bar-height) + var(--mobile-page-header-offset) + 4px);
     right: 10px;
-    bottom: calc(84px + env(safe-area-inset-bottom));
-    width: min(320px, calc(100vw - 20px));
+    bottom: auto;
+    left: 10px;
+    width: auto;
+    transform: translateY(-12px);
+  }
+
+  .achievement-toast.is-visible {
+    transform: translateY(0);
   }
 }
 

@@ -117,7 +117,11 @@ function autoLoadGameOnInit() {
   return result;
 }
 
-function resetPersistentState() {
+function resetPersistentState(options = {}) {
+  const achievements = options.preserveAchievements
+    ? sanitizeAchievementsData(gameState.achievements)
+    : createDefaultAchievementsState();
+
   gameState.cash = 1500;
   gameState.raceCount = 0;
   gameState.lastRank = '-';
@@ -135,7 +139,7 @@ function resetPersistentState() {
   gameState.equippedParts = createEmptyEquippedParts();
   gameState.nextPartId = 1;
   gameState.stats = createDefaultStats();
-  gameState.achievements = createDefaultAchievementsState();
+  gameState.achievements = achievements;
   recalculatePlayerStats();
 }
 
@@ -148,10 +152,10 @@ function performRestartGame() {
   }
 
   clearStorageWriteBlock();
-  resetPersistentState();
+  resetPersistentState({ preserveAchievements: true });
   el.logOutput.textContent = '';
   refreshAfterPersistentChange();
-  addLog('游戏已重开。');
+  addLog('游戏已重开，已解锁成就会保留。');
   addLog('先报名比赛，等绿灯后点“起步 / 踩油门”。');
 }
 

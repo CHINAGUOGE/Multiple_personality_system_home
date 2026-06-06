@@ -183,6 +183,8 @@ function handleFalseStart() {
   gameState.lastReactionTime = null;
   gameState.playerStarted = false;
   gameState.currentWinStreak = 0;
+  gameState.stats.falseStartCount = (gameState.stats.falseStartCount || 0) + 1;
+  gameState.stats.falseStartStreak = (gameState.stats.falseStartStreak || 0) + 1;
   gameState.stats.secondPlaceStreak = 0;
   gameState.stats.fifthPlaceStreak = 0;
   syncProgressStats();
@@ -191,8 +193,8 @@ function handleFalseStart() {
   setLights('red');
   addLog(`${falseStartPhase === 'countdown_yellow' ? '黄灯' : '红灯'}抢跑犯规！`);
   addLog('本场成绩无效，奖金 0 元，报名费不退。');
-  if (typeof unlockAchievementById === 'function') {
-    unlockAchievementById('false_start_hot_tofu');
+  if (typeof checkAchievements === 'function') {
+    checkAchievements({ source: 'falseStart' });
   }
   finishPostRace();
 }
@@ -265,6 +267,9 @@ function startPlayerCar() {
   }
   updateResultMessage();
   updateButtons();
+  if (typeof checkAchievements === 'function') {
+    checkAchievements({ source: 'validStart' });
+  }
 }
 
 function tickRace() {
@@ -326,6 +331,7 @@ function completeRace() {
   gameState.raceCount += 1;
   gameState.lastRank = `第 ${playerRank} 名`;
   updateWinStreak(playerRank);
+  gameState.stats.falseStartStreak = 0;
   const secondPlaceStreakBeforeRace = gameState.stats.secondPlaceStreak || 0;
   if (playerRank === 1 && secondPlaceStreakBeforeRace >= 10) {
     gameState.stats.hasWonAfterSecondPlaceStreak = true;
@@ -335,6 +341,10 @@ function completeRace() {
   gameState.stats.fifthPlaceStreak =
     playerRank === 5 ? (gameState.stats.fifthPlaceStreak || 0) + 1 : 0;
   gameState.stats.totalRaces += 1;
+  gameState.stats.hasFinishedLast =
+    gameState.stats.hasFinishedLast || playerRank === ranked.length;
+  gameState.stats.hasLowCashAfterRace =
+    gameState.stats.hasLowCashAfterRace || gameState.cash < 100;
   if (playerRank === 1) {
     const difficultyKey = getDifficultyKey();
     const equippedTemplateIds = EQUIPMENT_SLOTS.map((type) => getEquippedPart(type))
@@ -351,6 +361,17 @@ function completeRace() {
       gameState.stats.bestStreakByDifficulty[difficultyKey] || 0,
       gameState.currentWinStreak
     );
+    if (isNightmareDifficulty(difficultyKey)) {
+      if (
+        Number.isFinite(gameState.lastReactionTime) &&
+        gameState.lastReactionTime >= NIGHTMARE_SLOW_REACTION_SECONDS
+      ) {
+        gameState.stats.hasNightmareSlowReactionWin = true;
+      }
+      if (typeof getNightmareWinningAchievementTagsFromCurrentBuild === 'function') {
+        markNightmareBuildAchievementFlags(getNightmareWinningAchievementTagsFromCurrentBuild());
+      }
+    }
     wonWithBuildAchievements.forEach((achievementId) => {
       if (!gameState.stats.wonWithBuildAchievements.includes(achievementId)) {
         gameState.stats.wonWithBuildAchievements.push(achievementId);
