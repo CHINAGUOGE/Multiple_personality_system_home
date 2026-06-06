@@ -321,10 +321,18 @@ function isAnyModalOpen() {
   return isModalOpen(el.difficultyModal) || isModalOpen(el.noticeModal);
 }
 
-function openNoticeModal(title, message) {
+function openNoticeModal(title, message, options = {}) {
   if (!el.noticeModal) {
     return;
   }
+
+  gameState.noticeModalConfig = {
+    showCancel: Boolean(options.showCancel),
+    confirmText: options.confirmText || '确定',
+    cancelText: options.cancelText || '取消',
+    onConfirm: typeof options.onConfirm === 'function' ? options.onConfirm : null,
+    onCancel: typeof options.onCancel === 'function' ? options.onCancel : null,
+  };
 
   if (el.noticeModalTitle) {
     el.noticeModalTitle.textContent = title || '提示';
@@ -334,18 +342,53 @@ function openNoticeModal(title, message) {
     el.noticeModalMessage.textContent = message || '';
   }
 
-  el.noticeModal.hidden = false;
+  if (el.noticeModalCancelBtn) {
+    el.noticeModalCancelBtn.hidden = !gameState.noticeModalConfig.showCancel;
+    el.noticeModalCancelBtn.textContent = gameState.noticeModalConfig.cancelText;
+  }
 
   if (el.noticeModalConfirmBtn) {
+    el.noticeModalConfirmBtn.textContent = gameState.noticeModalConfig.confirmText;
+  }
+
+  el.noticeModal.hidden = false;
+
+  const focusTarget =
+    gameState.noticeModalConfig.showCancel && el.noticeModalCancelBtn
+      ? el.noticeModalCancelBtn
+      : el.noticeModalConfirmBtn;
+
+  if (focusTarget) {
     requestAnimationFrame(() => {
-      el.noticeModalConfirmBtn.focus();
+      focusTarget.focus();
     });
   }
 }
 
-function closeNoticeModal() {
+function closeNoticeModal(action = 'cancel') {
+  const noticeModalConfig = gameState.noticeModalConfig || null;
+  gameState.noticeModalConfig = null;
+
   if (el.noticeModal) {
     el.noticeModal.hidden = true;
+  }
+
+  if (el.noticeModalCancelBtn) {
+    el.noticeModalCancelBtn.hidden = true;
+    el.noticeModalCancelBtn.textContent = '取消';
+  }
+
+  if (el.noticeModalConfirmBtn) {
+    el.noticeModalConfirmBtn.textContent = '确定';
+  }
+
+  if (action === 'confirm' && noticeModalConfig && noticeModalConfig.onConfirm) {
+    noticeModalConfig.onConfirm();
+    return;
+  }
+
+  if (action !== 'confirm' && noticeModalConfig && noticeModalConfig.onCancel) {
+    noticeModalConfig.onCancel();
   }
 }
 
@@ -766,7 +809,6 @@ function refreshAfterPersistentChange() {
   gameState.reactionTime = null;
   gameState.playerStarted = false;
   gameState.panelReturnPhase = 'idle';
-  gameState.restartArmed = false;
   if (el.restartBtn) {
     el.restartBtn.textContent = '重开并清档';
   }

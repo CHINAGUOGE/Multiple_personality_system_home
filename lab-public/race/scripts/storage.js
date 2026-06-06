@@ -72,7 +72,6 @@ function resetPersistentState() {
   gameState.playerStarted = false;
   gameState.panelReturnPhase = 'idle';
   gameState.atlasFilter = 'all';
-  gameState.restartArmed = false;
   gameState.inventory = [];
   gameState.equippedParts = createEmptyEquippedParts();
   gameState.nextPartId = 1;
@@ -81,28 +80,7 @@ function resetPersistentState() {
   recalculatePlayerStats();
 }
 
-function restartGame() {
-  if (isRaceLockedPhase(gameState.phase)) {
-    addLog('比赛进行中不能重开，请等本场结束。');
-    return;
-  }
-
-  if (!gameState.restartArmed) {
-    gameState.restartArmed = true;
-    el.restartBtn.textContent = '再次点击确认清档';
-    addLog('再次点击“重开并清档”会清除当前进度和本地存档。');
-    clearTimeout(gameState.restartArmedTimer);
-    gameState.restartArmedTimer = setTimeout(() => {
-      gameState.restartArmed = false;
-      el.restartBtn.textContent = '重开并清档';
-    }, 4500);
-    return;
-  }
-
-  clearTimeout(gameState.restartArmedTimer);
-  gameState.restartArmed = false;
-  el.restartBtn.textContent = '重开并清档';
-
+function performRestartGame() {
   clearRaceTimers();
   try {
     localStorage.removeItem(STORAGE_KEY);
@@ -115,6 +93,33 @@ function restartGame() {
   refreshAfterPersistentChange();
   addLog('游戏已重开。');
   addLog('先报名比赛，等绿灯后点“起步 / 踩油门”。');
+}
+
+function confirmRestartGame() {
+  const message = '确定要删除当前存档并重新开始吗？此操作无法撤销。';
+
+  if (typeof openNoticeModal === 'function') {
+    openNoticeModal('确认清档', message, {
+      showCancel: true,
+      cancelText: '取消',
+      confirmText: '确认删除并重开',
+      onConfirm: performRestartGame,
+    });
+    return;
+  }
+
+  if (window.confirm(message)) {
+    performRestartGame();
+  }
+}
+
+function restartGame() {
+  if (isRaceLockedPhase(gameState.phase)) {
+    addLog('比赛进行中不能重开，请等本场结束。');
+    return;
+  }
+
+  confirmRestartGame();
 }
 
 function clearRaceTimers() {

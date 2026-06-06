@@ -315,7 +315,7 @@
             <section class="storage-section">
               <h2>重开 / 清档</h2>
               <p class="panel-note">
-                保存和读取只影响本地浏览器。重开会清除当前进度与本地存档，需再次确认。
+                保存和读取只影响本地浏览器。重开会清除当前进度与本地存档，需弹窗确认。
               </p>
               <div class="system-actions" aria-label="系统操作">
                 <button id="saveBtn" type="button">保存</button>
@@ -490,6 +490,7 @@
         <div class="modal-body modal-body-notice">
           <p id="noticeModalMessage">请确认当前操作。</p>
           <div class="modal-actions">
+            <button id="noticeModalCancelBtn" type="button" hidden>取消</button>
             <button id="noticeModalConfirmBtn" type="button">确定</button>
           </div>
         </div>

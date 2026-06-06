@@ -74,14 +74,21 @@ function bindEvents() {
 
   if (el.noticeModalCloseBtn) {
     el.noticeModalCloseBtn.addEventListener('click', (event) => {
-      closeNoticeModal();
+      closeNoticeModal('cancel');
+      blurAfterPointerClick(event);
+    });
+  }
+
+  if (el.noticeModalCancelBtn) {
+    el.noticeModalCancelBtn.addEventListener('click', (event) => {
+      closeNoticeModal('cancel');
       blurAfterPointerClick(event);
     });
   }
 
   if (el.noticeModalConfirmBtn) {
     el.noticeModalConfirmBtn.addEventListener('click', (event) => {
-      closeNoticeModal();
+      closeNoticeModal('confirm');
       blurAfterPointerClick(event);
     });
   }
@@ -89,14 +96,14 @@ function bindEvents() {
   if (el.noticeModal) {
     el.noticeModal.addEventListener('click', (event) => {
       if (event.target === el.noticeModal) {
-        closeNoticeModal();
+        closeNoticeModal('cancel');
       }
     });
   }
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && el.noticeModal && !el.noticeModal.hidden) {
-      closeNoticeModal();
+      closeNoticeModal('cancel');
       return;
     }
 

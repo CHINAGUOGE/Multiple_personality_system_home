@@ -61,8 +61,6 @@ const gameState = {
   panelReturnPhase: 'idle',
   activePage: 'race',
   atlasFilter: 'all',
-  restartArmed: false,
-  restartArmedTimer: null,
   inventory: [],
   equippedParts: createEmptyEquippedParts(),
   nextPartId: 1,
@@ -74,6 +72,7 @@ const gameState = {
   achievements: createDefaultAchievementsState(),
   achievementToastQueue: [],
   achievementToastTimer: null,
+  noticeModalConfig: null,
 };
 
 const el = {
@@ -100,6 +99,7 @@ const el = {
   noticeModalTitle: document.getElementById('noticeModalTitle'),
   noticeModalMessage: document.getElementById('noticeModalMessage'),
   noticeModalCloseBtn: document.getElementById('noticeModalCloseBtn'),
+  noticeModalCancelBtn: document.getElementById('noticeModalCancelBtn'),
   noticeModalConfirmBtn: document.getElementById('noticeModalConfirmBtn'),
   difficultyCurrentName: document.getElementById('difficultyCurrentName'),
   difficultyCurrentMeta: document.getElementById('difficultyCurrentMeta'),
