@@ -62,6 +62,13 @@ function createDefaultManualRankStreak() {
   };
 }
 
+function createDefaultManualDifficultyWinStreak() {
+  return {
+    difficultyKey: null,
+    count: 0,
+  };
+}
+
 const gameState = {
   phase: 'idle',
   cash: 1500,
@@ -71,6 +78,7 @@ const gameState = {
   bestManualReactionTime: null,
   lastReactionTime: null,
   lastManualReactionTime: null,
+  lastReactionControl: null,
   currentWinStreak: 0,
   bestWinStreak: 0,
   difficulty: DEFAULT_DIFFICULTY,
@@ -83,6 +91,7 @@ const gameState = {
   aiAssist: createDefaultAiAssistState(),
   aiAssistLocked: false,
   manualRankStreak: createDefaultManualRankStreak(),
+  manualDifficultyWinStreak: createDefaultManualDifficultyWinStreak(),
   countdownTimers: [],
   raceTimer: null,
   raceStartedAt: 0,

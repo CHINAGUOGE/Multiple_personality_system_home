@@ -312,16 +312,27 @@ function formatShopRate(rate) {
   return `${rate.toFixed(rate < 1 ? 2 : 1)}%`;
 }
 
-function formatReactionTime(reactionTime) {
-  return reactionTime === null ? '--' : `${reactionTime.toFixed(3)} 秒`;
+function formatReactionControlSuffix(control) {
+  return control === 'ai' ? '（AI托管）' : '';
 }
 
-function formatCompactReactionTime(reactionTime) {
-  return reactionTime === null ? '--' : `${reactionTime.toFixed(3)}s`;
+function formatReactionTime(reactionTime, control = null) {
+  return reactionTime === null
+    ? '--'
+    : `${reactionTime.toFixed(3)} 秒${formatReactionControlSuffix(control)}`;
 }
 
-function formatReactionRecordText(bestReactionTime, lastReactionTime) {
-  return `${formatReactionTime(bestReactionTime)} / ${formatReactionTime(lastReactionTime)}`;
+function formatCompactReactionTime(reactionTime, control = null) {
+  return reactionTime === null
+    ? '--'
+    : `${reactionTime.toFixed(3)}s${formatReactionControlSuffix(control)}`;
+}
+
+function formatReactionRecordText(bestReactionTime, lastReactionTime, lastReactionControl = null) {
+  return `${formatReactionTime(bestReactionTime)} / ${formatReactionTime(
+    lastReactionTime,
+    lastReactionControl
+  )}`;
 }
 
 function formatWinStreakText(currentWinStreak, bestWinStreak) {
@@ -336,11 +347,15 @@ function isManualRace(race) {
   return Boolean(race && race.controlledBy === 'manual');
 }
 
-function normalizeManualReactionTime(value) {
+function normalizeReactionTime(value) {
   const reactionTime = Number(value);
   return Number.isFinite(reactionTime) && reactionTime >= MIN_MANUAL_REACTION_SECONDS
     ? reactionTime
     : null;
+}
+
+function normalizeManualReactionTime(value) {
+  return normalizeReactionTime(value);
 }
 
 function getCurrentRaceControl() {
@@ -674,6 +689,12 @@ function sanitizeStatsData(data, fallback = {}) {
   const bestStreakByDifficulty = normalizeDifficultyStatMap(
     (data && data.bestStreakByDifficulty) || fallback.bestStreakByDifficulty
   );
+  DIFFICULTY_ORDER.forEach((key) => {
+    bestStreakByDifficulty[key] = Math.min(
+      bestStreakByDifficulty[key],
+      winsByDifficulty[key]
+    );
+  });
   const wonWithBuildAchievements = Array.isArray(data && data.wonWithBuildAchievements)
     ? Array.from(
         new Set(
@@ -785,6 +806,21 @@ function sanitizeManualRankStreakData(data) {
   };
 }
 
+function sanitizeManualDifficultyWinStreakData(data) {
+  const difficultyKey =
+    data && DIFFICULTIES[data.difficultyKey] ? data.difficultyKey : null;
+  const count = Math.max(0, Math.floor(Number(data && data.count) || 0));
+
+  if (!difficultyKey || count <= 0) {
+    return createDefaultManualDifficultyWinStreak();
+  }
+
+  return {
+    difficultyKey,
+    count,
+  };
+}
+
 function syncProgressStats() {
   if (!gameState.stats) {
     gameState.stats = createDefaultStats();
@@ -829,20 +865,27 @@ function checkGameFailure() {
 function createSaveData() {
   syncProgressStats();
   const bestManualReactionTime = normalizeManualReactionTime(gameState.bestManualReactionTime);
+  const lastReactionTime = normalizeReactionTime(gameState.lastReactionTime);
   const lastManualReactionTime = normalizeManualReactionTime(gameState.lastManualReactionTime);
+  const lastReactionControl =
+    lastReactionTime === null ? null : gameState.lastReactionControl === 'ai' ? 'ai' : 'manual';
   return {
     cash: gameState.cash,
     raceCount: gameState.raceCount,
     lastRank: gameState.lastRank,
     bestReactionTime: bestManualReactionTime,
     bestManualReactionTime,
-    lastReactionTime: lastManualReactionTime,
+    lastReactionTime,
     lastManualReactionTime,
+    lastReactionControl,
     currentWinStreak: gameState.currentWinStreak,
     bestWinStreak: gameState.bestWinStreak,
     difficulty: getDifficultyKey(),
     raceControl: getCurrentRaceControl(),
-    lastRaceControl: gameState.lastRaceControl,
+    lastRaceControl:
+      gameState.lastRaceControl === 'ai' || gameState.lastRaceControl === 'manual'
+        ? gameState.lastRaceControl
+        : null,
     aiAssist: {
       active: Boolean(gameState.aiAssist && gameState.aiAssist.active),
       reactionTime:
@@ -853,6 +896,10 @@ function createSaveData() {
     manualRankStreak: {
       rank: gameState.manualRankStreak.rank,
       count: gameState.manualRankStreak.count,
+    },
+    manualDifficultyWinStreak: {
+      difficultyKey: gameState.manualDifficultyWinStreak.difficultyKey,
+      count: gameState.manualDifficultyWinStreak.count,
     },
     inventory: gameState.inventory.map((part) => ({
       id: part.id,
@@ -958,9 +1005,18 @@ function sanitizeSaveData(data) {
   const bestManualReactionTime =
     normalizeManualReactionTime(data.bestManualReactionTime) ??
     normalizeManualReactionTime(data.bestReactionTime);
+  const savedLastReactionTime = normalizeReactionTime(data.lastReactionTime);
+  const savedLastManualReactionTime = normalizeManualReactionTime(data.lastManualReactionTime);
+  const rawLastReactionControl =
+    data.lastReactionControl === 'ai' || data.lastReactionControl === 'manual'
+      ? data.lastReactionControl
+      : null;
+  const lastReactionTime = savedLastReactionTime ?? savedLastManualReactionTime;
   const lastManualReactionTime =
-    normalizeManualReactionTime(data.lastManualReactionTime) ??
-    normalizeManualReactionTime(data.lastReactionTime);
+    savedLastManualReactionTime ??
+    (rawLastReactionControl === 'ai' ? null : normalizeManualReactionTime(data.lastReactionTime));
+  const lastReactionControl =
+    lastReactionTime === null ? null : rawLastReactionControl || 'manual';
   const achievements = sanitizeAchievementsData(data.achievements);
   const hasZeroBestReactionRecord = [data.bestManualReactionTime, data.bestReactionTime].some(
     (value) => Number(value) === 0
@@ -969,6 +1025,23 @@ function sanitizeSaveData(data) {
     delete achievements.completed.neural_link;
     achievements.lastUnlocked = achievements.lastUnlocked.filter((id) => id !== 'neural_link');
   }
+  const lastRaceControl =
+    data.lastRaceControl === 'ai' || data.lastRaceControl === 'manual'
+      ? data.lastRaceControl
+      : null;
+  const manualDifficultyWinStreak = sanitizeManualDifficultyWinStreakData(
+    data.manualDifficultyWinStreak
+  );
+  const stats = sanitizeStatsData(data.stats, fallbackStats);
+  if (manualDifficultyWinStreak.difficultyKey) {
+    manualDifficultyWinStreak.count = Math.min(
+      manualDifficultyWinStreak.count,
+      stats.bestStreakByDifficulty[manualDifficultyWinStreak.difficultyKey] || 0
+    );
+    if (manualDifficultyWinStreak.count <= 0) {
+      manualDifficultyWinStreak.difficultyKey = null;
+    }
+  }
 
   return {
     cash: Math.max(0, Math.floor(Number(data.cash) || 0)),
@@ -976,19 +1049,21 @@ function sanitizeSaveData(data) {
     lastRank: String(data.lastRank || '-'),
     bestReactionTime: bestManualReactionTime,
     bestManualReactionTime,
-    lastReactionTime: lastManualReactionTime,
+    lastReactionTime,
     lastManualReactionTime,
+    lastReactionControl,
     currentWinStreak: Math.max(0, Math.floor(Number(data.currentWinStreak) || 0)),
     bestWinStreak: Math.max(0, Math.floor(Number(data.bestWinStreak) || 0)),
     difficulty: DIFFICULTIES[data.difficulty] ? data.difficulty : DEFAULT_DIFFICULTY,
     raceControl: data.raceControl === 'ai' ? 'ai' : 'manual',
-    lastRaceControl: data.lastRaceControl === 'ai' ? 'ai' : null,
+    lastRaceControl,
     aiAssist: sanitizeAiAssistData(data.aiAssist),
     manualRankStreak: sanitizeManualRankStreakData(data.manualRankStreak),
+    manualDifficultyWinStreak,
     inventory,
     equippedParts,
     nextPartId,
-    stats: sanitizeStatsData(data.stats, fallbackStats),
+    stats,
     achievements,
   };
 }
@@ -1002,8 +1077,8 @@ function applyPersistentState(data) {
   gameState.bestManualReactionTime =
     data.bestManualReactionTime ?? data.bestReactionTime ?? null;
   gameState.lastReactionTime = data.lastReactionTime ?? null;
-  gameState.lastManualReactionTime =
-    data.lastManualReactionTime ?? data.lastReactionTime ?? null;
+  gameState.lastManualReactionTime = data.lastManualReactionTime ?? null;
+  gameState.lastReactionControl = data.lastReactionControl || null;
   gameState.currentWinStreak = data.currentWinStreak ?? 0;
   gameState.bestWinStreak = Math.max(
     gameState.currentWinStreak,
@@ -1011,10 +1086,16 @@ function applyPersistentState(data) {
   );
   gameState.difficulty = DIFFICULTIES[data.difficulty] ? data.difficulty : DEFAULT_DIFFICULTY;
   gameState.raceControl = data.raceControl === 'ai' ? 'ai' : 'manual';
-  gameState.lastRaceControl = data.lastRaceControl === 'ai' ? 'ai' : null;
+  gameState.lastRaceControl =
+    data.lastRaceControl === 'ai' || data.lastRaceControl === 'manual'
+      ? data.lastRaceControl
+      : null;
   gameState.aiAssist = sanitizeAiAssistData(data.aiAssist);
   gameState.aiAssistLocked = false;
   gameState.manualRankStreak = sanitizeManualRankStreakData(data.manualRankStreak);
+  gameState.manualDifficultyWinStreak = sanitizeManualDifficultyWinStreakData(
+    data.manualDifficultyWinStreak
+  );
   gameState.inventory = data.inventory;
   gameState.equippedParts = data.equippedParts;
   gameState.nextPartId = data.nextPartId;
@@ -1278,7 +1359,10 @@ function updateStats() {
     el.lastRankStat.textContent = formatLastRankReportText(gameState.lastRank);
   }
   if (el.lastReactionStat) {
-    el.lastReactionStat.textContent = formatCompactReactionTime(gameState.lastReactionTime);
+    el.lastReactionStat.textContent = formatCompactReactionTime(
+      gameState.lastReactionTime,
+      gameState.lastReactionControl
+    );
   }
   if (el.entryFeeText) {
     el.entryFeeText.textContent = getEntryFee();
@@ -1286,7 +1370,8 @@ function updateStats() {
   if (el.bestReactionText) {
     el.bestReactionText.textContent = formatReactionRecordText(
       gameState.bestManualReactionTime,
-      gameState.lastReactionTime
+      gameState.lastReactionTime,
+      gameState.lastReactionControl
     );
   }
   if (el.winStreakText) {
@@ -1306,12 +1391,6 @@ function updateStats() {
       gameState.lastRank !== '-' || gameState.lastReactionTime !== null;
     el.raceReportEmptyText.hidden = hasRaceReport;
     el.raceReportStats.hidden = !hasRaceReport;
-  }
-  if (el.raceControlHint) {
-    const showAiRaceHint =
-      (getCurrentRaceControl() === 'ai' && gameState.phase !== 'idle') ||
-      (isPostRacePhase(gameState.phase) && gameState.lastRaceControl === 'ai');
-    el.raceControlHint.hidden = !showAiRaceHint;
   }
   el.registerBtn.textContent = `报名比赛（${getEntryFee()} 元）`;
   el.opponentPowerText.textContent = getOpponentPower().toFixed(2);

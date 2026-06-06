@@ -283,6 +283,32 @@ function updateWinStreak(playerRank, race) {
   gameState.currentWinStreak = 0;
 }
 
+function updateManualDifficultyWinStreak(playerRank, race) {
+  if (!isManualRace(race)) {
+    return;
+  }
+
+  if (playerRank !== 1) {
+    gameState.manualDifficultyWinStreak = createDefaultManualDifficultyWinStreak();
+    return;
+  }
+
+  const difficultyKey = race.difficultyKey;
+  const previous =
+    gameState.manualDifficultyWinStreak || createDefaultManualDifficultyWinStreak();
+  const nextCount =
+    previous.difficultyKey === difficultyKey ? previous.count + 1 : 1;
+
+  gameState.manualDifficultyWinStreak = {
+    difficultyKey,
+    count: nextCount,
+  };
+  gameState.stats.bestStreakByDifficulty[difficultyKey] = Math.max(
+    gameState.stats.bestStreakByDifficulty[difficultyKey] || 0,
+    nextCount
+  );
+}
+
 function updateManualRankStreak(playerRank, race) {
   if (!isManualRace(race)) {
     return;
@@ -303,9 +329,11 @@ function handleFalseStart() {
   clearRaceTimers();
   gameState.reactionTime = null;
   gameState.lastReactionTime = null;
+  gameState.lastReactionControl = null;
   gameState.playerStarted = false;
   gameState.currentWinStreak = 0;
   gameState.manualRankStreak = createDefaultManualRankStreak();
+  gameState.manualDifficultyWinStreak = createDefaultManualDifficultyWinStreak();
   gameState.stats.falseStartCount = (gameState.stats.falseStartCount || 0) + 1;
   gameState.stats.falseStartStreak = (gameState.stats.falseStartStreak || 0) + 1;
   gameState.stats.secondPlaceStreak = 0;
@@ -320,6 +348,7 @@ function handleFalseStart() {
     checkAchievements({ source: 'falseStart' });
   }
   finishPostRace();
+  autoSaveGame();
 }
 
 function startRaceMotion() {
@@ -382,12 +411,15 @@ function startPlayerCar(options = {}) {
   playerCar.reactionPenalty = reaction.slowPenalty;
   playerCar.launchBonus = playerCar.power.launch + reaction.reactionBonus;
   if (controlledBy === 'ai') {
+    gameState.lastReactionTime = normalizeReactionTime(reactionSeconds);
+    gameState.lastReactionControl = 'ai';
     addLog(`AI 以 ${reactionSeconds.toFixed(3)} 秒反应起步。`);
     addLog('本场为 AI 托管，操作类成就不会解锁。');
   } else {
     const manualReactionTime = normalizeManualReactionTime(reactionSeconds);
     gameState.lastReactionTime = manualReactionTime;
     gameState.lastManualReactionTime = manualReactionTime;
+    gameState.lastReactionControl = 'manual';
     updateBestReactionRecord(manualReactionTime);
     addLog(`你起步反应时间：${reactionSeconds.toFixed(3)} 秒`);
     if (reactionSeconds < 0.25) {
@@ -473,6 +505,7 @@ function completeRace() {
   gameState.lastRank = `第 ${playerRank} 名`;
   gameState.lastRaceControl = finishedRace.controlledBy;
   updateWinStreak(playerRank, finishedRace);
+  updateManualDifficultyWinStreak(playerRank, finishedRace);
   gameState.stats.falseStartStreak = 0;
   const secondPlaceStreakBeforeRace = gameState.stats.secondPlaceStreak || 0;
   if (isManualRace(finishedRace) && playerRank === 1 && secondPlaceStreakBeforeRace >= 10) {
@@ -498,12 +531,6 @@ function completeRace() {
 
     gameState.stats.totalWins += 1;
     gameState.stats.winsByDifficulty[difficultyKey] += 1;
-    if (isManualRace(finishedRace)) {
-      gameState.stats.bestStreakByDifficulty[difficultyKey] = Math.max(
-        gameState.stats.bestStreakByDifficulty[difficultyKey] || 0,
-        gameState.currentWinStreak
-      );
-    }
     if (isNightmareDifficulty(difficultyKey)) {
       if (
         isManualRace(finishedRace) &&
