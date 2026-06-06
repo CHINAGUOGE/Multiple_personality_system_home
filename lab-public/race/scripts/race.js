@@ -365,7 +365,6 @@ function startPlayerCar(options = {}) {
   });
 
   gameState.reactionTime = reactionSeconds;
-  gameState.lastReactionTime = reactionSeconds;
   gameState.playerStarted = true;
   playerCar.started = true;
   playerCar.reactionPenalty = reaction.slowPenalty;
@@ -374,6 +373,7 @@ function startPlayerCar(options = {}) {
     addLog(`AI 以 ${reactionSeconds.toFixed(3)} 秒反应起步。`);
     addLog('本场为 AI 托管，操作类成就不会解锁。');
   } else {
+    gameState.lastReactionTime = reactionSeconds;
     gameState.lastManualReactionTime = reactionSeconds;
     updateBestReactionRecord(reactionSeconds);
     addLog(`你起步反应时间：${reactionSeconds.toFixed(3)} 秒`);
