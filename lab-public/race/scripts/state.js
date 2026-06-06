@@ -21,11 +21,13 @@ function createDefaultStats() {
     totalLosses: 0,
     currentStreak: 0,
     bestStreak: 0,
+    secondPlaceStreak: 0,
     fifthPlaceStreak: 0,
     highestCash: 1500,
     winsByDifficulty: createDifficultyStatsMap(),
     bestStreakByDifficulty: createDifficultyStatsMap(),
     hasFilledAllSlots: false,
+    hasWonAfterSecondPlaceStreak: false,
     wonWithBuildAchievements: [],
     wonWithSpecialParts: [],
   };

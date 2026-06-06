@@ -20,8 +20,8 @@ const PART_SELL_RATE = 0.8;
 const FINISH = 100;
 const TICK_MS = 45;
 const STORAGE_KEY = 'mpsteam-race-save-v1';
-const GAME_VERSION = 'v1.6.1';
-const GAME_VERSION_NOTE = '重构改装页响应式布局，并压缩候选零件属性展示。';
+const GAME_VERSION = 'v1.6.2';
+const GAME_VERSION_NOTE = '补充零件等级与稀有度颜色展示，并新增连续第二名成就。';
 
 const BASE_PLAYER_STATS = {
   engine: 10,
@@ -397,6 +397,22 @@ const ACHIEVEMENTS = [
     category: '趣味',
     check: 'fiveFifthPlaces',
     flavor: '每次都精准停在第五，稳定得有点离谱。',
+  },
+  {
+    id: 'ten_second_places',
+    name: '望尘莫及',
+    description: '连续 10 场止步第二名。',
+    category: '趣味',
+    check: 'tenSecondPlaces',
+    flavor: '前车的尾灯看得很清楚，就是追不上。',
+  },
+  {
+    id: 'comeback_after_second_places',
+    name: '逆袭登顶',
+    description: '连续 10 场止步第二名后获得第 1 名。',
+    category: '挑战',
+    check: 'comebackAfterSecondPlaces',
+    flavor: '看了十场背影，终于把终点线先收入眼底。',
   },
 ];
 
