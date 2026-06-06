@@ -237,6 +237,13 @@ select {
   margin: 0;
 }
 
+.header-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .page-header h1 {
   font-size: 20px;
   line-height: 1.2;
@@ -245,6 +252,18 @@ select {
 .page-header p {
   margin-top: 2px;
   color: #2f2f2f;
+}
+
+.page-header p.header-contact {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  margin-top: 0;
+  padding: 4px 8px;
+  color: #1f1f1f;
+  white-space: nowrap;
+  background: #d4d0c8;
+  border: 2px inset #fff;
 }
 
 .header-stat {
@@ -1232,15 +1251,34 @@ select {
   border-radius: 6px;
 }
 
+.version-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .version-card strong,
 .version-card p,
-.version-card small {
+.version-card small,
+.version-qq {
   margin: 0;
   line-height: 1.4;
 }
 
 .version-card strong {
   font-size: 18px;
+}
+
+.version-qq {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  color: #0a246a;
+  font-size: 12px;
+  font-weight: bold;
+  background: #e7eefc;
+  border: 1px solid #b7c8ea;
+  border-radius: 999px;
 }
 
 .achievement-toast {
@@ -1309,36 +1347,57 @@ select {
 
 @media (max-width: 767px) {
   :root {
-    --mobile-title-bar-height: 44px;
-    --mobile-page-header-offset: 72px;
+    --mobile-title-bar-height: 34px;
+    --mobile-page-header-offset: 56px;
+    --mobile-tab-bar-height: 60px;
   }
 
   body {
     min-height: 100svh;
+    min-height: 100dvh;
     font-size: 14px;
     background: #d4d0c8;
   }
 
   .desktop {
+    min-height: 100svh;
+    min-height: 100dvh;
     padding: 0;
   }
 
   .app-window {
     width: 100%;
     min-height: 100svh;
+    min-height: 100dvh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
     padding-top: var(--mobile-title-bar-height);
     border: 0;
     box-shadow: none;
   }
 
-  .title-bar {
+  .app-window > .title-bar {
     position: fixed;
     top: 0;
     right: 0;
     left: 0;
     z-index: 11;
     min-height: var(--mobile-title-bar-height);
-    padding: 8px 12px;
+    padding: 4px 10px;
+    font-size: 13px;
+    line-height: 1.1;
+  }
+
+  .app-window > .title-bar .title-icon {
+    width: 14px;
+    height: 14px;
+    margin-right: 5px;
+    background:
+      linear-gradient(#ffdf00, #ffdf00) 2px 2px / 10px 5px no-repeat,
+      linear-gradient(#d00000, #d00000) 1px 8px / 12px 4px no-repeat,
+      radial-gradient(circle at 4px 12px, #000 0 2px, transparent 2px),
+      radial-gradient(circle at 10px 12px, #000 0 2px, transparent 2px);
   }
 
   .window-buttons,
@@ -1353,26 +1412,29 @@ select {
     left: 0;
     z-index: 10;
     gap: 2px;
-    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
     background: #d4d0c8;
     border-top: 1px solid #808080;
     border-bottom: 0;
   }
 
   .page-tabs button {
-    min-height: 48px;
-    padding: 6px 2px;
+    min-height: 44px;
+    padding: 4px 2px;
     font-size: 13px;
   }
 
   .page-shell {
-    padding: 10px 10px calc(78px + env(safe-area-inset-bottom));
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    padding: 8px 10px calc(var(--mobile-tab-bar-height) + 10px + env(safe-area-inset-bottom));
   }
 
   .status-bar {
-    grid-template-columns: 1fr;
-    gap: 4px;
-    padding: 0 10px calc(10px + 78px + env(safe-area-inset-bottom));
+    display: none;
   }
 
   .status-panel {
@@ -1401,9 +1463,9 @@ select {
     z-index: 9;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     margin: 0;
-    padding: 8px 10px;
+    padding: 5px 8px;
     background: #d4d0c8;
     border-bottom: 2px groove #fff;
   }
@@ -1418,35 +1480,37 @@ select {
     grid-template-columns: minmax(0, 1fr) minmax(118px, auto);
   }
 
-  #racePage > .page-header {
-    gap: 6px;
+  .page-header p,
+  .header-stat span {
+    display: none;
   }
 
   #shopPage > .page-header .header-stat,
   #tuningPage > .page-header .header-stat,
   #atlasPage > .page-header .header-stat,
   #profilePage > .page-header .header-stat {
-    padding: 5px 7px;
+    display: flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 4px 7px;
   }
 
   #shopPage > .page-header .header-stat strong,
   #tuningPage > .page-header .header-stat strong,
   #atlasPage > .page-header .header-stat strong,
   #profilePage > .page-header .header-stat strong {
-    font-size: 15px;
+    margin-top: 0;
+    font-size: 14px;
+    line-height: 1.1;
   }
 
   .page-header h1 {
-    font-size: 22px;
+    font-size: 18px;
+    line-height: 1.1;
   }
 
   #racePage > .page-header h1 {
-    font-size: 20px;
-  }
-
-  #racePage > .page-header p {
-    margin-top: 0;
-    font-size: 12px;
+    font-size: 18px;
   }
 
   .header-stat {
@@ -1454,12 +1518,17 @@ select {
   }
 
   #racePage > .page-header .header-stat {
-    min-width: 104px;
-    padding: 5px 7px;
+    display: flex;
+    align-items: center;
+    min-width: 92px;
+    min-height: 30px;
+    padding: 4px 7px;
   }
 
   #racePage > .page-header .header-stat strong {
-    font-size: 15px;
+    margin-top: 0;
+    font-size: 14px;
+    line-height: 1.1;
   }
 
   .summary-grid,
@@ -1496,6 +1565,11 @@ select {
   .storage-section,
   .storage-current {
     padding: 10px;
+  }
+
+  .version-card-head {
+    align-items: start;
+    flex-wrap: wrap;
   }
 
   .race-layout {
@@ -1613,6 +1687,75 @@ select {
     right: 10px;
     bottom: calc(84px + env(safe-area-inset-bottom));
     width: min(320px, calc(100vw - 20px));
+  }
+}
+
+@media (max-width: 640px) and (max-height: 720px) {
+  :root {
+    --mobile-title-bar-height: 30px;
+    --mobile-page-header-offset: 50px;
+    --mobile-tab-bar-height: 56px;
+  }
+
+  .app-window > .title-bar {
+    padding: 3px 8px;
+    font-size: 12px;
+  }
+
+  .app-window > .title-bar .title-icon {
+    width: 12px;
+    height: 12px;
+    margin-right: 4px;
+    background:
+      linear-gradient(#ffdf00, #ffdf00) 2px 2px / 8px 4px no-repeat,
+      linear-gradient(#d00000, #d00000) 1px 7px / 10px 3px no-repeat,
+      radial-gradient(circle at 3px 10px, #000 0 1.5px, transparent 1.5px),
+      radial-gradient(circle at 9px 10px, #000 0 1.5px, transparent 1.5px);
+  }
+
+  .page-tabs {
+    padding: 3px 4px calc(3px + env(safe-area-inset-bottom));
+  }
+
+  .page-tabs button {
+    min-height: 40px;
+    padding: 3px 2px;
+    font-size: 12px;
+  }
+
+  .page-shell {
+    padding-top: 6px;
+    padding-bottom: calc(var(--mobile-tab-bar-height) + 8px + env(safe-area-inset-bottom));
+  }
+
+  .app-page > .page-header {
+    gap: 5px;
+    padding: 4px 8px;
+  }
+
+  .page-header h1 {
+    font-size: 16px;
+  }
+
+  #racePage > .page-header h1 {
+    font-size: 16px;
+  }
+
+  #racePage > .page-header .header-stat,
+  #shopPage > .page-header .header-stat,
+  #tuningPage > .page-header .header-stat,
+  #atlasPage > .page-header .header-stat,
+  #profilePage > .page-header .header-stat {
+    min-height: 28px;
+    padding: 3px 6px;
+  }
+
+  #racePage > .page-header .header-stat strong,
+  #shopPage > .page-header .header-stat strong,
+  #tuningPage > .page-header .header-stat strong,
+  #atlasPage > .page-header .header-stat strong,
+  #profilePage > .page-header .header-stat strong {
+    font-size: 13px;
   }
 }
 
