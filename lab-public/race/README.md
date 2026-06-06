@@ -32,9 +32,14 @@
 ```text
 lab-public/race/
 ├─ index.html          # 页面结构与 UI 容器
-├─ style.css           # 复古桌面风格与响应式样式
+├─ style.css           # CSS 入口，按模块引入 styles/ 下样式
 ├─ game.js             # 入口脚本，顺序加载 scripts/ 下模块
 ├─ favicon.ico         # 页面图标
+├─ styles/
+│  ├─ base.css         # 全局基础样式、窗口结构、赛道布局
+│  ├─ components.css   # 卡片、改装区、通用组件样式
+│  ├─ ui.css           # 难度弹窗、图鉴、档案、成就样式
+│  └─ responsive.css   # 响应式断点样式
 └─ scripts/
    ├─ config.js        # 常量、难度、奖池、零件配置
    ├─ race-formulas.js # 比赛平衡与起步判定的共享纯公式
@@ -74,7 +79,7 @@ npm run build:lab
 - 调整比赛流程：修改 `scripts/race.js`
 - 调整商店、改装、图鉴：修改 `scripts/parts.js`
 - 调整成就、统计、档案：修改 `scripts/achievements.js`
-- 调整整体 UI：修改 `style.css` 与 `index.html`
+- 调整整体 UI：优先修改 `styles/` 下对应模块，入口仍为 `style.css`
 
 ### 注意事项
 

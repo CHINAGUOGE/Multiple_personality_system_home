@@ -1,0 +1,458 @@
+.atlas-toolbar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.atlas-toolbar button {
+  min-width: 0;
+}
+
+.atlas-toolbar button.is-active {
+  color: #fff;
+  background: #0a246a;
+  border-color: #7da0d8 #001342 #001342 #7da0d8;
+  box-shadow: inset 1px 1px rgba(255, 255, 255, 0.32);
+}
+
+.shop-card,
+.vehicle-card,
+.inventory-card,
+.slot-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  background: #fff;
+  border: 2px solid #9b9b9b;
+  border-radius: 6px;
+}
+
+.shop-card h3,
+.vehicle-card h2,
+.inventory-card h3,
+.slot-summary-card h3,
+.slot-detail-panel h3,
+.slot-card h3,
+.shop-card p,
+.vehicle-card p,
+.inventory-card p,
+.slot-summary-card p,
+.slot-detail-panel p,
+.slot-card p,
+.shop-card small,
+.inventory-card small,
+.slot-summary-card small,
+.slot-detail-panel small,
+.slot-card small {
+  margin: 0;
+}
+
+.shop-card h3,
+.inventory-card h3,
+.slot-summary-card h3,
+.slot-detail-panel h3,
+.slot-card h3 {
+  font-size: 15px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.shop-card p,
+.inventory-card p,
+.slot-summary-card p,
+.slot-detail-panel p,
+.slot-card p {
+  color: #303030;
+  line-height: 1.4;
+}
+
+.shop-card small,
+.inventory-card small,
+.slot-summary-card small,
+.slot-detail-panel small,
+.slot-card small {
+  color: #555;
+  line-height: 1.35;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.card-main {
+  display: grid;
+  gap: 5px;
+}
+
+.part-compare {
+  display: grid;
+  gap: 4px;
+}
+
+.part-compare-label {
+  color: #555;
+  font-weight: bold;
+}
+
+.part-change-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.part-change-groups {
+  display: grid;
+  gap: 4px;
+}
+
+.part-change-group {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 5px;
+  align-items: start;
+}
+
+.part-change-group > span:first-child {
+  color: #555;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1.4;
+}
+
+.part-change {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 2px 5px;
+  overflow-wrap: anywhere;
+  font-weight: bold;
+  line-height: 1.3;
+  border: 1px solid #9b9b9b;
+  border-radius: 4px;
+}
+
+.part-change-good {
+  color: #0b5d2a;
+  background: #e9f7ed;
+  border-color: #7eb98d;
+}
+
+.part-change-bad {
+  color: #8a1f11;
+  background: #fff0ec;
+  border-color: #d79588;
+}
+
+.part-change-neutral {
+  color: #555;
+  background: #f4f4f4;
+}
+
+.part-quality {
+  font-weight: bold;
+}
+
+.part-quality-common {
+  color: #303030;
+}
+
+.part-quality-rare {
+  color: #1f55d6;
+}
+
+.part-quality-epic {
+  color: #8a2be2;
+}
+
+.part-quality-legendary {
+  color: #b75b00;
+}
+
+.part-quality-mythic {
+  color: #d6175b;
+}
+
+.current-badge {
+  display: inline-block;
+  width: max-content;
+  margin-bottom: 6px;
+  padding: 3px 6px;
+  color: #fff;
+  font-weight: bold;
+  background: #0a246a;
+}
+
+.vehicle-card,
+.inventory-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.vehicle-card.is-current,
+.inventory-card.is-current {
+  border-color: #0a246a;
+  box-shadow: inset 0 0 0 2px #9fb9e8;
+}
+
+.storage-stats {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.storage-stats div {
+  padding: 5px 6px;
+}
+
+.storage-stats dt {
+  font-size: 12px;
+  line-height: 1.1;
+}
+
+.storage-stats dd {
+  margin-top: 1px;
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.panel-note {
+  margin: 0 0 8px;
+  padding: 7px;
+  background: #ffffe1;
+  border: 1px solid #808080;
+}
+
+.slot-list,
+.inventory-list,
+.owned-list {
+  display: grid;
+  gap: 8px;
+}
+
+.slot-list {
+  margin-bottom: 16px;
+}
+
+.part-change-list-compact {
+  gap: 5px;
+}
+
+.part-change-list-compact .part-change {
+  font-size: 12px;
+}
+
+.tuning-layout {
+  display: grid;
+  gap: 10px;
+}
+
+.tuning-layout-desktop {
+  grid-template-columns: minmax(280px, 0.92fr) minmax(0, 1.18fr);
+  align-items: start;
+}
+
+.slot-overview {
+  display: grid;
+  gap: 8px;
+}
+
+.slot-summary-card,
+.slot-detail-panel {
+  min-width: 0;
+  padding: 10px;
+  background: #fff;
+  border: 2px solid #9b9b9b;
+  border-radius: 6px;
+}
+
+.slot-summary-card.is-active,
+.slot-detail-panel {
+  border-color: #0a246a;
+  box-shadow: inset 0 0 0 2px #9fb9e8;
+}
+
+.slot-summary-card .slot-detail-panel {
+  margin-top: 8px;
+}
+
+.slot-summary-trigger {
+  display: grid;
+  gap: 7px;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.slot-summary-trigger:active:not(:disabled) {
+  transform: none;
+}
+
+.slot-summary-copy,
+.slot-detail-copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.slot-summary-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.slot-summary-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  min-height: 24px;
+  padding: 3px 8px;
+  color: #0a246a;
+  font-size: 12px;
+  font-weight: bold;
+  background: #eef4ff;
+  border: 1px solid #7da0d8;
+  border-radius: 999px;
+}
+
+.slot-summary-current,
+.slot-summary-effect,
+.slot-detail-current,
+.slot-detail-effect,
+.part-option-name {
+  overflow-wrap: anywhere;
+}
+
+.slot-summary-effect,
+.slot-detail-effect {
+  color: #303030;
+  line-height: 1.4;
+}
+
+.slot-detail-panel {
+  display: grid;
+  gap: 8px;
+}
+
+.slot-detail-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.slot-detail-kicker {
+  color: #555;
+  font-weight: bold;
+}
+
+.slot-detail-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.slot-detail-unequip {
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.slot-choices {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.slot-choice-scroller {
+  max-height: 460px;
+  padding-right: 2px;
+  overflow: auto;
+}
+
+.slot-empty-state {
+  padding: 10px;
+  color: #555;
+  background: #f5f5f5;
+  border: 1px dashed #9b9b9b;
+}
+
+.slot-empty-state p {
+  margin: 0;
+}
+
+.part-option-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.part-option-row {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px;
+  background: #fbfbfb;
+  border: 1px solid #bdbdbd;
+  border-radius: 4px;
+}
+
+.part-option-row.is-current {
+  background: #eef4ff;
+  border-color: #89a7de;
+}
+
+.part-option-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.part-option-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.part-option-id {
+  color: #555;
+  font-weight: bold;
+}
+
+.part-option-name {
+  min-width: 0;
+  font-weight: bold;
+}
+
+.part-option-button {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 5px 9px;
+  font-size: 12px;
+}
+
+.system-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  background: #d4d0c8;
+  border: 2px groove #fff;
+}

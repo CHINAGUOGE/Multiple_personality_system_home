@@ -1,0 +1,422 @@
+/* ===== v1.4 难度选择 ===== */
+.difficulty-box {
+  padding-top: 28px;
+}
+
+.difficulty-box > h2 {
+  position: absolute;
+  top: -9px;
+  left: 10px;
+  padding: 0 4px;
+  font: inherit;
+  font-weight: bold;
+  background: #d4d0c8;
+}
+
+.difficulty-choices {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.difficulty-button {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-height: 56px;
+  padding: 7px 6px;
+  line-height: 1.25;
+  text-align: center;
+  text-shadow: none;
+}
+
+.difficulty-button * {
+  text-shadow: none;
+}
+
+.difficulty-name {
+  display: block;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.difficulty-meta {
+  color: #404040;
+  display: block;
+  font-size: 11px;
+  font-weight: normal;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.difficulty-button.is-active {
+  color: #fff;
+  background: #0a246a;
+  border-color: #7da0d8 #001342 #001342 #7da0d8;
+  box-shadow: inset 1px 1px rgba(255, 255, 255, 0.32);
+  text-shadow: none;
+}
+
+.difficulty-button.is-active * {
+  text-shadow: none;
+}
+
+.difficulty-button.is-active .difficulty-meta {
+  color: #d7e2f7;
+}
+
+.difficulty-note {
+  margin: 8px 0 0;
+  padding: 7px;
+  background: #ffffe1;
+  border: 1px solid #808080;
+}
+
+.difficulty-current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.difficulty-current-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.difficulty-current-info span {
+  color: #404040;
+  font-size: 12px;
+}
+
+.difficulty-current-info strong {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.difficulty-current-info small {
+  color: #404040;
+  line-height: 1.3;
+}
+
+.difficulty-current button {
+  flex: 0 0 auto;
+}
+
+/* ===== v1.4 难度伪弹窗 ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(10, 36, 106, 0.45);
+}
+
+.modal-window {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  background: #d4d0c8;
+  border: 2px solid;
+  border-color: #fff #1f1f1f #1f1f1f #fff;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+}
+
+.modal-window .title-bar {
+  position: static;
+}
+
+.window-buttons button {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 20px;
+  min-height: 0;
+  padding: 0;
+  color: #000;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1;
+  background: #d4d0c8;
+  border: 1px solid;
+  border-color: #fff #404040 #404040 #fff;
+  box-shadow: none;
+}
+
+.modal-body {
+  padding: 14px;
+}
+
+.modal-window-notice {
+  width: min(420px, 100%);
+}
+
+.modal-body-notice {
+  display: grid;
+  gap: 12px;
+}
+
+.modal-body-notice p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ===== v1.4 装备图鉴 ===== */
+.atlas-list {
+  display: grid;
+  gap: 12px;
+}
+
+.atlas-group-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.atlas-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.atlas-card {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px;
+  background: #fff;
+  border: 2px solid #9b9b9b;
+  border-radius: 6px;
+}
+
+.atlas-card.is-owned {
+  border-color: #0a246a;
+  box-shadow: inset 0 0 0 1px #b4c8ef;
+}
+
+.atlas-card.is-unowned {
+  color: #4c4c4c;
+  background: #f0f0f0;
+}
+
+.atlas-card.is-out-of-pool {
+  background: #f1f1f1;
+  border-style: dashed;
+}
+
+.atlas-card-empty {
+  gap: 4px;
+}
+
+.atlas-card-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.atlas-card-head h4 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.atlas-rate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 4px 6px;
+  background: #eef2fa;
+  border: 1px solid #c4cfe6;
+  border-radius: 4px;
+}
+
+.atlas-rate-label {
+  color: #404040;
+  font-size: 12px;
+}
+
+.atlas-rate-value {
+  font-weight: bold;
+  overflow-wrap: anywhere;
+}
+
+.atlas-meta-list {
+  display: grid;
+  gap: 5px;
+}
+
+.atlas-meta-list p {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 8px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.atlas-meta-list strong {
+  color: #555;
+}
+
+.achievement-list {
+  display: grid;
+  gap: 8px;
+}
+
+.achievement-card {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px;
+  background: #fff;
+  border: 2px solid #9b9b9b;
+  border-radius: 6px;
+}
+
+.achievement-card.is-complete {
+  border-color: #0a246a;
+  box-shadow: inset 0 0 0 1px #afc5ee;
+}
+
+.achievement-card.is-incomplete {
+  color: #555;
+  background: #efefef;
+}
+
+.achievement-card.is-hidden {
+  background: #e7e7e7;
+}
+
+.achievement-card p,
+.achievement-card small {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.achievement-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.achievement-head strong {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.achievement-head span {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  color: #0a246a;
+  font-size: 12px;
+  font-weight: bold;
+  background: #e7eefc;
+  border: 1px solid #b7c8ea;
+  border-radius: 999px;
+}
+
+.profile-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.profile-stats div:nth-child(7),
+.profile-stats div:nth-child(8) {
+  grid-column: span 2;
+}
+
+.difficulty-panel-inline {
+  padding: 8px;
+  background: #fff;
+  border: 2px inset #fff;
+}
+
+.version-card {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  background: #fff;
+  border: 2px solid #9b9b9b;
+  border-radius: 6px;
+}
+
+.version-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.version-card strong,
+.version-card p,
+.version-card small,
+.version-qq {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.version-card strong {
+  font-size: 18px;
+}
+
+.version-qq {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  color: #0a246a;
+  font-size: 12px;
+  font-weight: bold;
+  background: #e7eefc;
+  border: 1px solid #b7c8ea;
+  border-radius: 999px;
+}
+
+.achievement-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 18px;
+  z-index: 40;
+  display: grid;
+  gap: 3px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 10px 12px;
+  color: #fff;
+  background: rgba(10, 36, 106, 0.96);
+  border: 2px solid #b5c8ee;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.achievement-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.achievement-toast strong,
+.achievement-toast span {
+  line-height: 1.35;
+}
+
+.achievement-toast strong {
+  font-size: 14px;
+}
+
+.achievement-toast span {
+  color: #dfe8fa;
+  font-size: 12px;
+}
