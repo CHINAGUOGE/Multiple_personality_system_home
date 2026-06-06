@@ -37,6 +37,7 @@ lab-public/race/
 ├─ favicon.ico         # 页面图标
 └─ scripts/
    ├─ config.js        # 常量、难度、奖池、零件配置
+   ├─ race-formulas.js # 比赛平衡与起步判定的共享纯公式
    ├─ state.js         # 全局状态与 DOM 引用
    ├─ core.js          # 页面切换、渲染、通用逻辑、自动保存
    ├─ race.js          # 比赛流程、起步判定、奖励结算
@@ -69,6 +70,7 @@ npm run build:lab
 ### 修改建议
 
 - 调整玩法数值：优先修改 `scripts/config.js`
+- 调整比赛平衡公式：优先修改 `scripts/race-formulas.js`
 - 调整比赛流程：修改 `scripts/race.js`
 - 调整商店、改装、图鉴：修改 `scripts/parts.js`
 - 调整成就、统计、档案：修改 `scripts/achievements.js`

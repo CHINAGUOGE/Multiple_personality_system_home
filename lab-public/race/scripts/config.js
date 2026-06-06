@@ -96,19 +96,23 @@ const PART_RARITY_MIGRATIONS = {
 const DIFFICULTIES = {
   easy: {
     name: '休闲',
-    opponentMultiplier: 0.98,
+    opponentMultiplier: 0.92,
     rewardMultiplier: 0.8,
     dropRateMultiplier: 1.2,
     entryFeeMultiplier: 0.8,
-    chaseRate: 0.02,
+    chaseRate: 0.015,
+    earlyRaceAssist: 0.2,
+    reactionGrace: 0.06,
   },
   normal: {
     name: '标准',
-    opponentMultiplier: 1.12,
+    opponentMultiplier: 1.04,
     rewardMultiplier: 1.0,
     dropRateMultiplier: 1.0,
     entryFeeMultiplier: 1.0,
-    chaseRate: 0.06,
+    chaseRate: 0.045,
+    earlyRaceAssist: 0.18,
+    reactionGrace: 0.04,
   },
   hard: {
     name: '挑战',

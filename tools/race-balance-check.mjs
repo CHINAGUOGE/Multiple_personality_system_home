@@ -9,6 +9,7 @@ import { performance } from 'node:perf_hooks';
 const ROOT_DIR = path.resolve(import.meta.dirname, '..');
 const SOURCE_FILES = {
   config: path.join(ROOT_DIR, 'lab-public/race/scripts/config.js'),
+  formulas: path.join(ROOT_DIR, 'lab-public/race/scripts/race-formulas.js'),
   core: path.join(ROOT_DIR, 'lab-public/race/scripts/core.js'),
   race: path.join(ROOT_DIR, 'lab-public/race/scripts/race.js'),
 };
@@ -137,13 +138,16 @@ function loadRaceData() {
   });
 
   const configCode = fs.readFileSync(SOURCE_FILES.config, 'utf8');
+  const formulasCode = fs.readFileSync(SOURCE_FILES.formulas, 'utf8');
   const coreSource = fs.readFileSync(SOURCE_FILES.core, 'utf8');
   const raceSource = fs.readFileSync(SOURCE_FILES.race, 'utf8');
+  const formulasSource = fs.readFileSync(SOURCE_FILES.formulas, 'utf8');
 
   const context = { console };
   vm.createContext(context);
   vm.runInContext(
     `${configCode}
+${formulasCode}
 globalThis.__raceBalanceData = {
   BASE_PLAYER_STATS,
   DIFFICULTIES,
@@ -157,6 +161,7 @@ globalThis.__raceBalanceData = {
   OPPONENT_CHASE_START_RACE,
   PART_POOL,
   PRIZES,
+  RaceFormulaUtils,
   TICK_MS,
 };`,
     context,
@@ -167,6 +172,7 @@ globalThis.__raceBalanceData = {
     ...context.__raceBalanceData,
     sourceText: {
       core: coreSource,
+      formulas: formulasSource,
       race: raceSource,
     },
   };
@@ -174,13 +180,14 @@ globalThis.__raceBalanceData = {
 
 function validateSourceTexts(sourceText) {
   const requiredCoreTokens = ['function getDifficultyEntryFee', 'Math.round((ENTRY_FEE * multiplier)'];
-  const requiredRaceTokens = [
-    'function getPlayerPower',
-    'function getPlayerRating',
-    'function getOpponentPower',
-    'function getOpponentCarPower',
-    'function tickRace',
+  const requiredFormulaTokens = [
+    'function computePlayerPower',
+    'function computePlayerRating',
+    'function computeOpponentStrength',
+    'function computeOpponentCarPower',
+    'function computeReactionOutcome',
   ];
+  const requiredRaceTokens = ['function tickRace', 'function startPlayerCar'];
 
   requiredCoreTokens.forEach((token) => {
     if (!sourceText.core.includes(token)) {
@@ -188,9 +195,15 @@ function validateSourceTexts(sourceText) {
     }
   });
 
+  requiredFormulaTokens.forEach((token) => {
+    if (!sourceText.formulas.includes(token)) {
+      throw new Error(`未在 race-formulas.js 中找到关键公式片段：${token}`);
+    }
+  });
+
   requiredRaceTokens.forEach((token) => {
     if (!sourceText.race.includes(token)) {
-      throw new Error(`未在 race.js 中找到关键公式片段：${token}`);
+      throw new Error(`未在 race.js 中找到关键流程片段：${token}`);
     }
   });
 }
@@ -256,96 +269,6 @@ function computePlayerStats(raceData, totals) {
   };
 }
 
-function computePlayerPower(stats) {
-  const weightPenalty = (stats.weight - 1000) / 85;
-  const lowStabilityPenalty = Math.max(0, 8 - clamp(stats.stability, 1, 8));
-  return {
-    base:
-      0.53 +
-      stats.hp / 580 +
-      stats.engine / 165 -
-      weightPenalty / 75 -
-      lowStabilityPenalty * 0.045,
-    acceleration:
-      0.02 + stats.engine / 3800 + stats.gearbox / 4500 - lowStabilityPenalty * 0.0012,
-    launch: stats.tire / 85,
-    mid: stats.gearbox / 195 - lowStabilityPenalty * 0.01,
-    stability: clamp(stats.stability, 1, 80),
-  };
-}
-
-function computePlayerRating(stats) {
-  return (
-    stats.hp * 0.0026 +
-    stats.engine * 0.019 +
-    stats.gearbox * 0.014 +
-    stats.tire * 0.02 +
-    stats.stability * 0.012 -
-    Math.max(0, stats.weight - 1000) * 0.0012
-  );
-}
-
-function computeOpponentStrength(raceData, difficultyKey, raceCount, playerRating) {
-  const difficulty = raceData.DIFFICULTIES[difficultyKey];
-  let base;
-
-  if (raceCount < 5) {
-    base = 1 + raceCount * 0.1;
-  } else if (raceCount < 12) {
-    base = 1.45 + (raceCount - 5) * 0.07;
-  } else {
-    base = Math.min(2.35, 1.95 + (raceCount - 12) * 0.035);
-  }
-
-  const growth = Math.min(raceCount * 0.015, 1.5);
-  const scaledBase = base * (1 + growth * 0.18) * difficulty.opponentMultiplier;
-  const lateGameFactor = clamp(
-    (raceCount - raceData.OPPONENT_CHASE_START_RACE) / raceData.OPPONENT_CHASE_RAMP_RACES,
-    0,
-    1
-  );
-  const chaseBonus = clamp(
-    playerRating * (difficulty.chaseRate || 0) * lateGameFactor,
-    0,
-    raceData.OPPONENT_CHASE_CAP
-  );
-
-  return scaledBase + chaseBonus;
-}
-
-function computeOpponentPowerFromStrength(opponentStrength, id, rng) {
-  const lateBoost = Math.max(0, opponentStrength - 2.2);
-
-  return {
-    base:
-      0.53 +
-      opponentStrength * 0.092 +
-      lateBoost * 0.048 +
-      randomBetween(rng, -0.05, 0.09) +
-      (PERSONALITY_BY_ID[id] || 0),
-    acceleration:
-      0.021 +
-      opponentStrength * 0.0023 +
-      lateBoost * 0.0008 +
-      randomBetween(rng, -0.0015, 0.0025),
-    launch:
-      0.1 +
-      opponentStrength * 0.017 +
-      lateBoost * 0.0045 +
-      randomBetween(rng, 0, 0.05),
-    mid:
-      0.08 +
-      opponentStrength * 0.023 +
-      lateBoost * 0.009 +
-      randomBetween(rng, -0.02, 0.04),
-    stability:
-      10 +
-      opponentStrength * 2.2 +
-      lateBoost * 2.7 +
-      randomBetween(rng, -3, 4),
-  };
-}
-
 function computeMeanOpponentPower(opponentStrength, id) {
   const lateBoost = Math.max(0, opponentStrength - 2.2);
 
@@ -390,12 +313,14 @@ function computeProxyMargins(raceData, difficultyKey, checkpoints, playerRating,
   const playerScore = computePowerScore(playerPower);
 
   return checkpoints.reduce((margins, checkpoint) => {
-    const opponentStrength = computeOpponentStrength(
-      raceData,
-      difficultyKey,
-      checkpoint,
-      playerRating
-    );
+    const opponentStrength = raceData.RaceFormulaUtils.computeOpponentStrength({
+      raceCount: checkpoint,
+      difficulty: raceData.DIFFICULTIES[difficultyKey],
+      playerRating,
+      chaseStartRace: raceData.OPPONENT_CHASE_START_RACE,
+      chaseRampRaces: raceData.OPPONENT_CHASE_RAMP_RACES,
+      chaseCap: raceData.OPPONENT_CHASE_CAP,
+    });
     const meanOpponentScore =
       [2, 3, 4, 5].reduce((sum, id) => {
         return sum + computePowerScore(computeMeanOpponentPower(opponentStrength, id));
@@ -445,8 +370,8 @@ function createCandidateSnapshot({
   totalCost,
 }) {
   const stats = computePlayerStats(raceData, totals);
-  const playerRating = computePlayerRating(stats);
-  const playerPower = computePlayerPower(stats);
+  const playerRating = raceData.RaceFormulaUtils.computePlayerRating(stats);
+  const playerPower = raceData.RaceFormulaUtils.computePlayerPower(stats);
   const proxyMargins = computeProxyMargins(
     raceData,
     difficultyKey,
@@ -528,15 +453,20 @@ function maybePushBudget(list, size, snapshot) {
 
 function simulateRace(raceData, candidate, difficultyKey, raceCount, seed, reactionSeconds) {
   const rng = createMulberry32(seed);
-  const opponentStrength = computeOpponentStrength(
-    raceData,
-    difficultyKey,
+  const difficulty = raceData.DIFFICULTIES[difficultyKey] || {};
+  const opponentStrength = raceData.RaceFormulaUtils.computeOpponentStrength({
     raceCount,
-    candidate.playerRating
-  );
+    difficulty,
+    playerRating: candidate.playerRating,
+    chaseStartRace: raceData.OPPONENT_CHASE_START_RACE,
+    chaseRampRaces: raceData.OPPONENT_CHASE_RAMP_RACES,
+    chaseCap: raceData.OPPONENT_CHASE_CAP,
+  });
   const playerPower = candidate.playerPower;
-  const reactionBonus = clamp(0.45 - reactionSeconds, 0, 0.35);
-  const slowPenalty = clamp(reactionSeconds - 0.65, 0, 1.2);
+  const reaction = raceData.RaceFormulaUtils.computeReactionOutcome({
+    reactionSeconds,
+    reactionGrace: difficulty.reactionGrace || 0,
+  });
   const startTick = Math.max(0, Math.ceil(reactionSeconds / (raceData.TICK_MS / 1000)));
 
   const cars = [
@@ -547,8 +477,8 @@ function simulateRace(raceData, candidate, difficultyKey, raceCount, seed, react
       currentSpeed: 0,
       started: false,
       finishTick: null,
-      reactionPenalty: slowPenalty,
-      launchBonus: playerPower.launch + reactionBonus,
+      reactionPenalty: reaction.slowPenalty,
+      launchBonus: playerPower.launch + reaction.reactionBonus,
       power: playerPower,
     },
     ...[2, 3, 4, 5].map((id) => ({
@@ -560,7 +490,11 @@ function simulateRace(raceData, candidate, difficultyKey, raceCount, seed, react
       finishTick: null,
       reactionPenalty: 0,
       launchBonus: 0,
-      power: computeOpponentPowerFromStrength(opponentStrength, id, rng),
+      power: raceData.RaceFormulaUtils.computeOpponentCarPower({
+        opponentStrength,
+        id,
+        randomBetween: (min, max) => randomBetween(rng, min, max),
+      }),
     })),
   ];
 

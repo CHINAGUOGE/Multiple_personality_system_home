@@ -63,75 +63,30 @@ function createCar(id, name, color, isPlayer) {
 }
 
 function getPlayerPower() {
-  const p = gameState.player;
-  const weightPenalty = (p.weight - 1000) / 85;
-  const lowStabilityPenalty = Math.max(0, 8 - clamp(p.stability, 1, 8));
-  return {
-    // 极低稳定性会拖慢高配车，避免只堆马力就能无脑碾压高难度。
-    base: 0.53 + p.hp / 580 + p.engine / 165 - weightPenalty / 75 - lowStabilityPenalty * 0.045,
-    acceleration: 0.02 + p.engine / 3800 + p.gearbox / 4500 - lowStabilityPenalty * 0.0012,
-    launch: p.tire / 85,
-    mid: p.gearbox / 195 - lowStabilityPenalty * 0.01,
-    stability: clamp(p.stability, 1, 80),
-  };
+  return RaceFormulaUtils.computePlayerPower(gameState.player);
 }
 
 function getPlayerRating() {
-  const p = gameState.player;
-  return (
-    p.hp * 0.0026 +
-    p.engine * 0.019 +
-    p.gearbox * 0.014 +
-    p.tire * 0.02 +
-    p.stability * 0.012 -
-    Math.max(0, p.weight - 1000) * 0.0012
-  );
+  return RaceFormulaUtils.computePlayerRating(gameState.player);
 }
 
 function getOpponentPower() {
-  const count = gameState.raceCount;
-  const difficulty = getDifficulty();
-  let base;
-  if (count < 5) {
-    base = 1 + count * 0.1;
-  } else if (count < 12) {
-    base = 1.45 + (count - 5) * 0.07;
-  } else {
-    base = Math.min(2.35, 1.95 + (count - 12) * 0.035);
-  }
-
-  const growth = Math.min(count * 0.015, 1.5);
-  const scaledBase = base * (1 + growth * 0.18) * difficulty.opponentMultiplier;
-  const lateGameFactor = clamp(
-    (count - OPPONENT_CHASE_START_RACE) / OPPONENT_CHASE_RAMP_RACES,
-    0,
-    1
-  );
-  const chaseBonus = clamp(
-    getPlayerRating() * (difficulty.chaseRate || 0) * lateGameFactor,
-    0,
-    OPPONENT_CHASE_CAP
-  );
-
-  return scaledBase + chaseBonus;
+  return RaceFormulaUtils.computeOpponentStrength({
+    raceCount: gameState.raceCount,
+    difficulty: getDifficulty(),
+    playerRating: getPlayerRating(),
+    chaseStartRace: OPPONENT_CHASE_START_RACE,
+    chaseRampRaces: OPPONENT_CHASE_RAMP_RACES,
+    chaseCap: OPPONENT_CHASE_CAP,
+  });
 }
 
 function getOpponentCarPower(id) {
-  const difficulty = getOpponentPower();
-  const variance = randomBetween(-0.05, 0.09);
-  const personality = [0, -0.02, 0.02, 0.05, -0.04][id] || 0;
-  const lateBoost = Math.max(0, difficulty - 2.2);
-  return {
-    base: 0.53 + difficulty * 0.092 + lateBoost * 0.048 + variance + personality,
-    acceleration:
-      0.021 +
-      difficulty * 0.0023 +
-      lateBoost * 0.0008 +
-      randomBetween(-0.0015, 0.0025),
-    launch: 0.1 + difficulty * 0.017 + lateBoost * 0.0045 + randomBetween(0, 0.05),
-    mid: 0.08 + difficulty * 0.023 + lateBoost * 0.009 + randomBetween(-0.02, 0.04),
-    stability: 10 + difficulty * 2.2 + lateBoost * 2.7 + randomBetween(-3, 4),
-  };
+  return RaceFormulaUtils.computeOpponentCarPower({
+    opponentStrength: getOpponentPower(),
+    id,
+    randomBetween,
+  });
 }
 
 function registerRace() {
@@ -286,15 +241,17 @@ function startPlayerCar() {
   const playerCar = gameState.cars.find((car) => car.isPlayer);
   const now = performance.now();
   const reactionSeconds = (now - gameState.greenAt) / 1000;
-  const reactionBonus = clamp(0.45 - reactionSeconds, 0, 0.35);
-  const slowPenalty = clamp(reactionSeconds - 0.65, 0, 1.2);
+  const reaction = RaceFormulaUtils.computeReactionOutcome({
+    reactionSeconds,
+    reactionGrace: getDifficulty().reactionGrace || 0,
+  });
 
   gameState.reactionTime = reactionSeconds;
   gameState.lastReactionTime = reactionSeconds;
   gameState.playerStarted = true;
   playerCar.started = true;
-  playerCar.reactionPenalty = slowPenalty;
-  playerCar.launchBonus = playerCar.power.launch + reactionBonus;
+  playerCar.reactionPenalty = reaction.slowPenalty;
+  playerCar.launchBonus = playerCar.power.launch + reaction.reactionBonus;
   updateBestReactionRecord(reactionSeconds);
 
   addLog(`你起步反应时间：${reactionSeconds.toFixed(3)} 秒`);
