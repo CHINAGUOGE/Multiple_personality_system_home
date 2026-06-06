@@ -4,6 +4,10 @@ function hasCompletedAchievement(id) {
   return Boolean(gameState.achievements.completed[id]);
 }
 
+function getAchievementById(id) {
+  return ACHIEVEMENTS.find((achievement) => achievement.id === id) || null;
+}
+
 function getCompletedAchievementCount() {
   return Object.keys(gameState.achievements.completed).length;
 }
@@ -105,6 +109,22 @@ function completeAchievement(achievement, options = {}) {
   return true;
 }
 
+function unlockAchievementById(id, options = {}) {
+  const achievement = getAchievementById(id);
+  if (!achievement) {
+    return false;
+  }
+
+  const unlocked = completeAchievement(achievement, options);
+
+  if (unlocked) {
+    autoSaveGame();
+  }
+
+  renderProfile();
+  return unlocked;
+}
+
 function checkAchievementCondition(achievement) {
   const stats = gameState.stats;
 
@@ -149,6 +169,8 @@ function checkAchievementCondition(achievement) {
       return stats.wonWithSpecialParts.includes('gearbox_xue_wrench');
     case 'xiaoyuSponsorWin':
       return stats.wonWithSpecialParts.includes('stability_xiaoyu_sponsor');
+    case 'brokeEntryAttempt':
+      return false;
     default:
       return false;
   }

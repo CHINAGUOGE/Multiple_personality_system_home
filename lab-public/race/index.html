@@ -472,6 +472,30 @@
       </div>
     </div>
 
+    <div id="noticeModal" class="modal-overlay" hidden>
+      <div
+        class="modal-window modal-window-notice"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="noticeModalTitle"
+        aria-describedby="noticeModalMessage"
+      >
+        <div class="title-bar">
+          <span class="title-icon"></span>
+          <span id="noticeModalTitle">提示</span>
+          <div class="window-buttons">
+            <button id="noticeModalCloseBtn" type="button" aria-label="关闭">×</button>
+          </div>
+        </div>
+        <div class="modal-body modal-body-notice">
+          <p id="noticeModalMessage">请确认当前操作。</p>
+          <div class="modal-actions">
+            <button id="noticeModalConfirmBtn" type="button">确定</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="./game.js"></script>
   </body>
 </html>

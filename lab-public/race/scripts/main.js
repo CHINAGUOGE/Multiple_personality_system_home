@@ -8,7 +8,7 @@ function shouldIgnoreRaceShortcut(event) {
     event.repeat ||
     ['input', 'textarea', 'select', 'button'].includes(tagName) ||
     (target && target.isContentEditable) ||
-    (el.difficultyModal && !el.difficultyModal.hidden)
+    isAnyModalOpen()
   );
 }
 
@@ -72,7 +72,34 @@ function bindEvents() {
     });
   }
 
+  if (el.noticeModalCloseBtn) {
+    el.noticeModalCloseBtn.addEventListener('click', (event) => {
+      closeNoticeModal();
+      blurAfterPointerClick(event);
+    });
+  }
+
+  if (el.noticeModalConfirmBtn) {
+    el.noticeModalConfirmBtn.addEventListener('click', (event) => {
+      closeNoticeModal();
+      blurAfterPointerClick(event);
+    });
+  }
+
+  if (el.noticeModal) {
+    el.noticeModal.addEventListener('click', (event) => {
+      if (event.target === el.noticeModal) {
+        closeNoticeModal();
+      }
+    });
+  }
+
   document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && el.noticeModal && !el.noticeModal.hidden) {
+      closeNoticeModal();
+      return;
+    }
+
     if (event.key === 'Escape' && el.difficultyModal && !el.difficultyModal.hidden) {
       closeDifficultyModal();
       return;

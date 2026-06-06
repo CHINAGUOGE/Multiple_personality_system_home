@@ -1070,6 +1070,25 @@ select {
   padding: 14px;
 }
 
+.modal-window-notice {
+  width: min(420px, 100%);
+}
+
+.modal-body-notice {
+  display: grid;
+  gap: 12px;
+}
+
+.modal-body-notice p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* ===== v1.4 装备图鉴 ===== */
 .atlas-list {
   display: grid;

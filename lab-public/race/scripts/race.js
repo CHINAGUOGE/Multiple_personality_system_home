@@ -136,15 +136,15 @@ function getOpponentCarPower(id) {
 
 function registerRace() {
   if (gameState.cash < getEntryFee()) {
-    if (checkGameFailure()) {
-      return;
-    }
+    const reachedGameOver = checkGameFailure();
     addLog(`现金不足以支付「${getDifficulty().name}」难度报名费 ${getEntryFee()} 元。`);
-    if (gameState.cash >= getMinEntryFee()) {
+    if (!reachedGameOver && gameState.cash >= getMinEntryFee()) {
       addLog('可降低难度以减少报名费，或进改装页卸下/卖掉零件。');
-    } else {
+    } else if (!reachedGameOver) {
       addLog('可以进改装页卸下或卖掉零件，未装备零件回收价为原价 8 折。');
     }
+    unlockAchievementById('broke_entry_attempt');
+    openNoticeModal('报名失败', '钱包空空，报名处拒绝了你的参赛申请。');
     return;
   }
 

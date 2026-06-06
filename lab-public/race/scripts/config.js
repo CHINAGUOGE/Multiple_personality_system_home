@@ -346,6 +346,15 @@ const ACHIEVEMENTS = [
     check: 'xiaoyuSponsorWin',
     flavor: '明天小报标题已经想好了。',
   },
+  {
+    id: 'broke_entry_attempt',
+    name: '家财散尽',
+    description: '钱包空空，还想上赛道。',
+    category: '趣味',
+    hidden: true,
+    check: 'brokeEntryAttempt',
+    flavor: '钱不够也要点报名，精神可嘉。',
+  },
 ];
 
 const RAW_PART_POOL = [

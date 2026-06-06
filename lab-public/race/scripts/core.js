@@ -313,6 +313,42 @@ function closeDifficultyModal() {
   }
 }
 
+function isModalOpen(node) {
+  return Boolean(node && !node.hidden);
+}
+
+function isAnyModalOpen() {
+  return isModalOpen(el.difficultyModal) || isModalOpen(el.noticeModal);
+}
+
+function openNoticeModal(title, message) {
+  if (!el.noticeModal) {
+    return;
+  }
+
+  if (el.noticeModalTitle) {
+    el.noticeModalTitle.textContent = title || '提示';
+  }
+
+  if (el.noticeModalMessage) {
+    el.noticeModalMessage.textContent = message || '';
+  }
+
+  el.noticeModal.hidden = false;
+
+  if (el.noticeModalConfirmBtn) {
+    requestAnimationFrame(() => {
+      el.noticeModalConfirmBtn.focus();
+    });
+  }
+}
+
+function closeNoticeModal() {
+  if (el.noticeModal) {
+    el.noticeModal.hidden = true;
+  }
+}
+
 function getPartById(partId) {
   return gameState.inventory.find((part) => part.id === partId) || null;
 }
