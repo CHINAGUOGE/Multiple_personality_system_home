@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>赛车小游戏 v1.6.3｜MPS Lab 复古赛车经营游戏</title>
+    <title>赛车小游戏 v1.6.4｜MPS Lab 复古赛车经营游戏</title>
     <meta
       name="description"
       content="MPS Lab 赛车小游戏是一个复古 Windows 风格的网页赛车经营小游戏，支持手机和电脑访问，包含赛道比赛、金币收益、车辆升级与轻量经营玩法。"
@@ -18,7 +18,7 @@
       <main class="app-window" aria-label="横线赛车经营赛">
         <div class="title-bar">
           <span class="title-icon"></span>
-          <span>横线赛车经营赛 v1.6.3</span>
+          <span>横线赛车经营赛 v1.6.4</span>
           <div class="window-buttons" aria-hidden="true">
             <span>_</span>
             <span>□</span>
@@ -92,7 +92,7 @@
                 <div class="difficulty-current-info">
                   <span>当前难度</span>
                   <strong id="difficultyCurrentName">标准</strong>
-                  <small id="difficultyCurrentMeta">奖金×1 · 强度×1</small>
+                  <small id="difficultyCurrentMeta">报名200元 · 奖金×1 · 强度×1.04 · 上限2.85</small>
                 </div>
                 <button
                   id="difficultyOpenBtn"
@@ -104,7 +104,7 @@
                 </button>
               </div>
               <p class="difficulty-note">
-                难度影响电脑强度、奖金倍率与商店奖池范围。比赛进行中不可更改。
+                难度影响电脑强度、奖金倍率与商店奖池范围；除噩梦外会限制后期电脑最终强度。
               </p>
             </section>
 
@@ -301,14 +301,14 @@
                 <div class="difficulty-current-info">
                   <span>当前难度</span>
                   <strong id="profileDifficultyName">标准</strong>
-                  <small id="profileDifficultyMeta">报名200元 · 奖金×1 · 强度×1</small>
+                  <small id="profileDifficultyMeta">报名200元 · 奖金×1 · 强度×1.04 · 上限2.85</small>
                 </div>
                 <button type="button" data-action="open-difficulty" aria-haspopup="dialog">
                   更改难度
                 </button>
               </div>
               <p class="difficulty-note">
-                比赛进行中不可更改难度。赛事页原入口仍保留，档案页仅补系统入口。
+                比赛进行中不可更改难度。非噩梦难度有后期电脑强度上限，噩梦保持追赶压力。
               </p>
             </section>
 
@@ -378,10 +378,12 @@
               <h2>版本信息</h2>
               <div class="version-card">
                 <div class="version-card-head">
-                  <strong id="versionText">v1.6.3</strong>
+                  <strong id="versionText">v1.6.4</strong>
                   <span class="version-qq">QQ群 727419840</span>
                 </div>
-                <p id="versionNote">补充趣味成就与失败反馈，新增抢跑、极限反应、破产、名次、改装流派与最高难度挑战相关成就。</p>
+                <p id="versionNote">
+                  为非噩梦难度加入电脑最终强度上限，标准与挑战后期更有毕业感，噩梦保持高压追赶。
+                </p>
                 <small>材料系统尚未开放，本次版本不新增维修、耐久、排行或每日任务。</small>
               </div>
             </section>
@@ -431,7 +433,7 @@
             </a>
           </div>
           <div class="status-panel status-panel-version">
-            <span>v1.6.3</span>
+            <span>v1.6.4</span>
           </div>
         </footer>
       </main>
@@ -466,7 +468,7 @@
             aria-label="选择比赛难度"
           ></div>
           <p class="difficulty-note">
-            难度影响电脑强度、奖金倍率与商店奖池范围。比赛进行中不可更改。
+            难度影响电脑强度、奖金倍率与商店奖池范围；除噩梦外会限制后期电脑最终强度。
           </p>
         </div>
       </div>

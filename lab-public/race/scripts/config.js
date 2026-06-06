@@ -20,8 +20,8 @@ const PART_SELL_RATE = 0.8;
 const FINISH = 100;
 const TICK_MS = 45;
 const STORAGE_KEY = 'mpsteam-race-save-v1';
-const GAME_VERSION = 'v1.6.3';
-const GAME_VERSION_NOTE = '补充趣味成就与失败反馈，新增抢跑、极限反应、破产、名次、改装流派与最高难度挑战相关成就。';
+const GAME_VERSION = 'v1.6.4';
+const GAME_VERSION_NOTE = '为非噩梦难度加入电脑最终强度上限，标准与挑战后期更有毕业感，噩梦保持高压追赶。';
 
 const BASE_PLAYER_STATS = {
   engine: 10,
@@ -108,6 +108,7 @@ const DIFFICULTIES = {
     entryFeeMultiplier: 0.8,
     chaseRate: 0.015,
     opponentChaseCap: 0.7,
+    maxOpponentStrength: 2.45,
     opponentChaseStartRace: 6,
     opponentChaseRampRaces: 14,
     earlyRaceAssist: 0.2,
@@ -121,6 +122,7 @@ const DIFFICULTIES = {
     entryFeeMultiplier: 1.0,
     chaseRate: 0.045,
     opponentChaseCap: 0.85,
+    maxOpponentStrength: 2.85,
     opponentChaseStartRace: 6,
     opponentChaseRampRaces: 14,
     earlyRaceAssist: 0.18,
@@ -134,6 +136,7 @@ const DIFFICULTIES = {
     entryFeeMultiplier: 1.3,
     chaseRate: 0.12,
     opponentChaseCap: 0.95,
+    maxOpponentStrength: 3.45,
     opponentChaseStartRace: 6,
     opponentChaseRampRaces: 14,
   },
@@ -145,6 +148,7 @@ const DIFFICULTIES = {
     entryFeeMultiplier: 1.7,
     chaseRate: 0.24,
     opponentChaseCap: 1.0,
+    maxOpponentStrength: 4.35,
     opponentChaseStartRace: 7,
     opponentChaseRampRaces: 16,
   },
@@ -156,6 +160,7 @@ const DIFFICULTIES = {
     entryFeeMultiplier: 2.4,
     chaseRate: 0.25,
     opponentChaseCap: 1.0,
+    maxOpponentStrength: null,
     opponentChaseStartRace: 10,
     opponentChaseRampRaces: 24,
   },

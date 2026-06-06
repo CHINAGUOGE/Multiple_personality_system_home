@@ -239,6 +239,17 @@ function isNightmareDifficulty(key = getDifficultyKey()) {
   return key === 'nightmare';
 }
 
+function formatOpponentStrengthCap(config) {
+  return Number.isFinite(config && config.maxOpponentStrength)
+    ? config.maxOpponentStrength.toFixed(2)
+    : '∞';
+}
+
+function formatDifficultyMeta(key) {
+  const config = DIFFICULTIES[key] || DIFFICULTIES[DEFAULT_DIFFICULTY];
+  return `报名${getDifficultyEntryFee(key)}元 · 奖金×${config.rewardMultiplier} · 强度×${config.opponentMultiplier} · 上限${formatOpponentStrengthCap(config)}`;
+}
+
 // 报名费按当前难度倍率缩放，向上取整到 10 元。
 function getEntryFee() {
   return getDifficultyEntryFee(getDifficultyKey());
@@ -1190,13 +1201,13 @@ function renderDifficulty() {
     el.difficultyCurrentName.textContent = activeConfig.name;
   }
   if (el.difficultyCurrentMeta && activeConfig) {
-    el.difficultyCurrentMeta.textContent = `报名${getDifficultyEntryFee(activeKey)}元 · 奖金×${activeConfig.rewardMultiplier} · 强度×${activeConfig.opponentMultiplier}`;
+    el.difficultyCurrentMeta.textContent = formatDifficultyMeta(activeKey);
   }
   if (el.profileDifficultyName && activeConfig) {
     el.profileDifficultyName.textContent = activeConfig.name;
   }
   if (el.profileDifficultyMeta && activeConfig) {
-    el.profileDifficultyMeta.textContent = `报名${getDifficultyEntryFee(activeKey)}元 · 奖金×${activeConfig.rewardMultiplier} · 强度×${activeConfig.opponentMultiplier}`;
+    el.profileDifficultyMeta.textContent = formatDifficultyMeta(activeKey);
   }
 
   if (!el.difficultyChoices) {
@@ -1218,7 +1229,7 @@ function renderDifficulty() {
     button.setAttribute('aria-pressed', key === activeKey ? 'true' : 'false');
     button.innerHTML = `
       <span class="difficulty-name">${config.name}</span>
-      <span class="difficulty-meta">报名${getDifficultyEntryFee(key)}元 · 奖金×${config.rewardMultiplier} · 强度×${config.opponentMultiplier}</span>
+      <span class="difficulty-meta">${formatDifficultyMeta(key)}</span>
     `;
     el.difficultyChoices.appendChild(button);
   });
