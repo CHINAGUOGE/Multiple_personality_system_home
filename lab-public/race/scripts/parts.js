@@ -164,23 +164,24 @@ function buyPart(index) {
   part.bought = true;
 
   addLog(`购买 ${part.name}，${part.effectText}，花费 ${part.price} 元。`);
-  addLog(`${ownedPart.name} 已进入仓库。`);
+  addLog(`${ownedPart.name} 已收入车队库存。`);
   if (equippedPart) {
-    addLog(
-      `${formatPartType(ownedPart.type)}槽已有 ${equippedPart.name}，如需替换请去仓库手动换装。`
-    );
+    addLog(`${formatPartType(ownedPart.type)}槽已有 ${equippedPart.name}，如需替换请去改装页手动换装。`);
   } else {
     addLog(`${formatPartType(ownedPart.type)}槽为空，已自动装备 ${ownedPart.name}。`);
   }
   updateStats();
   renderShop();
   renderGarage();
+  renderAtlas();
+  if (typeof checkAchievements === 'function') {
+    checkAchievements({ source: 'buyPart' });
+  }
   autoSaveGame();
 }
 
 function renderGarage() {
   renderTuning();
-  renderStorage();
 }
 
 function renderTuning() {
@@ -327,7 +328,7 @@ function createTuningPartCard(part, equipped) {
       </div>
       <p>类型：${formatPartType(part.type)}</p>
       ${renderPartComparison(part, equippedPart)}
-      <small>${equipped ? '当前车辆已装备' : '仓库零件，可装备或出售'}</small>
+      <small>${equipped ? '当前车辆已装备' : '库存零件，可装备或出售'}</small>
     </div>
   `;
 
@@ -345,39 +346,6 @@ function createTuningPartCard(part, equipped) {
   }
   card.appendChild(actionButton);
   return card;
-}
-
-function renderStorage() {
-  el.storageInventoryBody.innerHTML = '';
-  el.storageMaterialsBody.innerHTML = '';
-
-  if (gameState.inventory.length === 0) {
-    el.storageInventoryBody.appendChild(
-      createTuningEmptyCard('暂无零件', '去商店购买零件后会显示在这里。')
-    );
-  } else {
-    gameState.inventory.forEach((part) => {
-      const equipped = gameState.equippedParts[part.type] === part.id;
-      const card = document.createElement('article');
-      card.className = `inventory-card${equipped ? ' is-current' : ''}`;
-      card.innerHTML = `
-        <div>
-          <div class="card-title-row">
-            <h3>${renderPartName(part, true)}</h3>
-            ${renderPartRarity(part)}
-          </div>
-          <p>类型：${formatPartType(part.type)}</p>
-          <p>效果：${part.effectText}</p>
-          <small>${equipped ? '已装备在当前车辆' : '仓库库存零件'}</small>
-        </div>
-      `;
-      el.storageInventoryBody.appendChild(card);
-    });
-  }
-
-  el.storageMaterialsBody.appendChild(
-    createTuningEmptyCard('暂无材料', '材料系统尚未开放，敬请期待。')
-  );
 }
 
 function changeEquipment(type, value) {
@@ -404,6 +372,10 @@ function changeEquipment(type, value) {
 
   updateStats();
   renderGarage();
+  renderAtlas();
+  if (typeof checkAchievements === 'function') {
+    checkAchievements({ source: 'equipPart' });
+  }
   checkGameFailure();
   autoSaveGame();
 }
@@ -423,6 +395,10 @@ function unequipPart(partId) {
   addLog(`${formatPartType(part.type)}槽卸下 ${part.name}。`);
   updateStats();
   renderGarage();
+  renderAtlas();
+  if (typeof checkAchievements === 'function') {
+    checkAchievements({ source: 'equipPart' });
+  }
   checkGameFailure();
   autoSaveGame();
 }
@@ -447,16 +423,56 @@ function sellPart(partId) {
   gameState.inventory = gameState.inventory.filter((ownedPart) => ownedPart.id !== part.id);
   gameState.cash += sellPrice;
 
-  addLog(`仓库出售 ${part.name}，回收 ${sellPrice} 元。`);
+  addLog(`库存出售 ${part.name}，回收 ${sellPrice} 元。`);
   addLog(`现金余额：${gameState.cash} 元`);
   updateStats();
   renderGarage();
+  renderAtlas();
+  if (typeof checkAchievements === 'function') {
+    checkAchievements({ source: 'cashChange' });
+  }
   checkGameFailure();
   autoSaveGame();
 }
 
-// 装备图鉴：只读展示，按零件类型分组。
-// 所有出现率数值从配置计算（getPartShopRate），不在模板写死。
+function shouldShowAtlasPart(part, filter, ownedCount, inPool) {
+  if (filter === 'owned') {
+    return ownedCount > 0;
+  }
+  if (filter === 'unowned') {
+    return ownedCount === 0;
+  }
+  if (filter === 'pool') {
+    return inPool;
+  }
+  return true;
+}
+
+function getAtlasOwnershipText(ownedCount) {
+  if (ownedCount <= 0) {
+    return '未拥有';
+  }
+  return ownedCount > 1 ? `已拥有 ×${ownedCount}` : '已拥有';
+}
+
+function createAtlasEmptyState(filter) {
+  const messages = {
+    owned: ['暂无已拥有零件', '去商店买到第一件零件后，这里会开始记录。'],
+    unowned: ['图鉴已收集完毕', '当前筛选下已经没有未拥有零件。'],
+    pool: ['当前奖池没有匹配零件', '可以切换难度查看别的奖池范围。'],
+    all: ['暂无图鉴数据', '当前没有可展示的零件。'],
+  };
+  const [title, hint] = messages[filter] || messages.all;
+  const card = document.createElement('article');
+  card.className = 'atlas-card atlas-card-empty';
+  card.innerHTML = `
+    <h4>${title}</h4>
+    <p>${hint}</p>
+  `;
+  return card;
+}
+
+// 图鉴页只负责查看数据和收集状态，不承担装备操作。
 function renderAtlas() {
   if (!el.atlasBody) {
     return;
@@ -464,13 +480,28 @@ function renderAtlas() {
 
   const difficulty = getDifficulty();
   const pool = getCurrentLootPool();
+  const ownedCounts = getOwnedPartCounts();
+  const filter = gameState.atlasFilter || 'all';
+  const totalParts = PART_POOL.length;
+  const ownedTemplates = PART_POOL.filter((part) => (ownedCounts[part.templateId] || 0) > 0).length;
+  const equippedCount = EQUIPMENT_SLOTS.filter((type) => Boolean(gameState.equippedParts[type])).length;
+  const poolCount = PART_POOL.filter((part) => pool.includes(getPartRarity(part))).length;
 
   if (el.atlasDifficultyText) {
     const poolNames = pool.map((rarity) => PART_RARITY_LABELS[rarity]).join(' / ');
     el.atlasDifficultyText.textContent = `当前难度「${difficulty.name}」：商店奖池 ${poolNames}`;
   }
+  if (el.atlasSummaryText) {
+    el.atlasSummaryText.textContent = `已收集 ${ownedTemplates} / ${totalParts} 件，当前已装备 ${equippedCount} / ${EQUIPMENT_SLOTS.length} 槽，本难度奖池共 ${poolCount} 件。`;
+  }
+  el.atlasFilters.forEach((button) => {
+    const active = button.dataset.atlasFilter === filter;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
 
   el.atlasBody.innerHTML = '';
+  let renderedCount = 0;
 
   EQUIPMENT_SLOTS.forEach((type) => {
     const parts = PART_POOL.filter((part) => part.type === type);
@@ -491,7 +522,6 @@ function renderAtlas() {
     const heading = document.createElement('h3');
     heading.className = 'atlas-group-title';
     heading.textContent = `${formatPartType(type)}（${parts.length} 件）`;
-    group.appendChild(heading);
 
     const list = document.createElement('div');
     list.className = 'atlas-cards';
@@ -499,23 +529,50 @@ function renderAtlas() {
     sorted.forEach((part) => {
       const rate = getPartShopRate(part);
       const inPool = pool.includes(getPartRarity(part));
+      const ownedCount = ownedCounts[part.templateId] || 0;
+      if (!shouldShowAtlasPart(part, filter, ownedCount, inPool)) {
+        return;
+      }
+      renderedCount += 1;
+      const equipped = gameState.equippedParts[part.type]
+        ? getPartById(gameState.equippedParts[part.type])
+        : null;
+      const isEquipped = equipped ? getPartTemplateId(equipped) === part.templateId : false;
       const card = document.createElement('article');
-      card.className = `atlas-card${inPool ? '' : ' is-out-of-pool'}`;
+      card.className = `atlas-card${inPool ? '' : ' is-out-of-pool'}${ownedCount ? ' is-owned' : ' is-unowned'}`;
       card.innerHTML = `
         <div class="atlas-card-head">
           <h4>${renderPartName(part)}</h4>
           ${renderPartRarity(part)}
         </div>
+        <div class="atlas-meta-list">
+          <p><strong>槽位</strong><span>${formatPartType(part.type)}</span></p>
+          <p><strong>品质</strong><span>${PART_RARITY_LABELS[getPartRarity(part)]}</span></p>
+          <p><strong>属性效果</strong><span>${part.effectText}</span></p>
+          <p><strong>基础出现率</strong><span>${inPool ? formatShopRate(rate) : '0%'}</span></p>
+          <p><strong>当前难度</strong><span>${inPool ? '可刷出' : '不可刷出'}</span></p>
+          <p><strong>拥有状态</strong><span>${getAtlasOwnershipText(ownedCount)}</span></p>
+          <p><strong>装备状态</strong><span>${isEquipped ? '已装备' : '未装备'}</span></p>
+        </div>
         <div class="atlas-rate">
-          <span class="atlas-rate-label">当前难度基础出现率</span>
-          <span class="atlas-rate-value">${inPool ? formatShopRate(rate) : '本难度不出现'}</span>
+          <span class="atlas-rate-label">${ownedCount > 0 ? '收集状态' : '当前状态'}</span>
+          <span class="atlas-rate-value">${ownedCount > 0 ? getAtlasOwnershipText(ownedCount) : `未拥有｜${inPool ? '当前难度可刷出' : '当前难度不可刷出'}`}</span>
         </div>
         ${renderPartChangeList(part.changes)}
       `;
       list.appendChild(card);
     });
 
+    if (!list.childNodes.length) {
+      return;
+    }
+
+    group.appendChild(heading);
     group.appendChild(list);
     el.atlasBody.appendChild(group);
   });
+
+  if (!renderedCount) {
+    el.atlasBody.appendChild(createAtlasEmptyState(filter));
+  }
 }
