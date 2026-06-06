@@ -228,12 +228,16 @@ function handleFalseStart() {
   gameState.lastReactionTime = null;
   gameState.playerStarted = false;
   gameState.currentWinStreak = 0;
+  gameState.stats.fifthPlaceStreak = 0;
   syncProgressStats();
   gameState.lastRank = '犯规';
   setPhase('false_start');
   setLights('red');
   addLog(`${falseStartPhase === 'countdown_yellow' ? '黄灯' : '红灯'}抢跑犯规！`);
   addLog('本场成绩无效，奖金 0 元，报名费不退。');
+  if (typeof unlockAchievementById === 'function') {
+    unlockAchievementById('false_start_hot_tofu');
+  }
   finishPostRace();
 }
 
@@ -364,6 +368,8 @@ function completeRace() {
   gameState.raceCount += 1;
   gameState.lastRank = `第 ${playerRank} 名`;
   updateWinStreak(playerRank);
+  gameState.stats.fifthPlaceStreak =
+    playerRank === 5 ? (gameState.stats.fifthPlaceStreak || 0) + 1 : 0;
   gameState.stats.totalRaces += 1;
   if (playerRank === 1) {
     const difficultyKey = getDifficultyKey();

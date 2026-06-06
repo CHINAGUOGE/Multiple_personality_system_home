@@ -355,6 +355,30 @@ const ACHIEVEMENTS = [
     check: 'brokeEntryAttempt',
     flavor: '钱不够也要点报名，精神可嘉。',
   },
+  {
+    id: 'false_start_hot_tofu',
+    name: '心急吃不了热豆腐',
+    description: '还没起步就抢跑，裁判都愣了一下。',
+    category: '趣味',
+    check: 'falseStartHotTofu',
+    flavor: '还没亮绿灯，脚已经先替脑子做了决定。',
+  },
+  {
+    id: 'racing_enthusiast_50_wins',
+    name: '竞速爱好者',
+    description: '连续赢下 50 场比赛，赛道已经认识你了。',
+    category: '挑战',
+    check: 'racingEnthusiast50Wins',
+    flavor: '跑到第五十场还在连胜，连终点线都开始眼熟了。',
+  },
+  {
+    id: 'five_fifth_places',
+    name: '五五大顺',
+    description: '连续五场第五名，也是一种稳定发挥。',
+    category: '趣味',
+    check: 'fiveFifthPlaces',
+    flavor: '每次都精准停在第五，稳定得有点离谱。',
+  },
 ];
 
 const RAW_PART_POOL = [

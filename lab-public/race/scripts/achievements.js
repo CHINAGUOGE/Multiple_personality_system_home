@@ -170,7 +170,12 @@ function checkAchievementCondition(achievement) {
     case 'xiaoyuSponsorWin':
       return stats.wonWithSpecialParts.includes('stability_xiaoyu_sponsor');
     case 'brokeEntryAttempt':
+    case 'falseStartHotTofu':
       return false;
+    case 'racingEnthusiast50Wins':
+      return stats.bestStreak >= 50;
+    case 'fiveFifthPlaces':
+      return stats.fifthPlaceStreak >= 5;
     default:
       return false;
   }

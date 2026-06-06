@@ -500,6 +500,10 @@ function sanitizeStatsData(data, fallback = {}) {
     currentStreak,
     Math.floor(Number((data && data.bestStreak) ?? fallback.bestStreak) || 0)
   );
+  const fifthPlaceStreak = Math.max(
+    0,
+    Math.floor(Number((data && data.fifthPlaceStreak) ?? fallback.fifthPlaceStreak) || 0)
+  );
   const highestCash = Math.max(
     0,
     Math.floor(Number((data && data.highestCash) ?? fallback.highestCash) || 0)
@@ -539,6 +543,7 @@ function sanitizeStatsData(data, fallback = {}) {
     totalLosses: Math.min(totalRaces, totalLosses),
     currentStreak,
     bestStreak,
+    fifthPlaceStreak,
     highestCash,
     winsByDifficulty,
     bestStreakByDifficulty,
@@ -703,6 +708,7 @@ function sanitizeSaveData(data) {
     totalLosses: Math.max(0, totalRaces - estimateMigratedTotalWins(data, totalRaces)),
     currentStreak: Math.max(0, Math.floor(Number(data.currentWinStreak) || 0)),
     bestStreak: Math.max(0, Math.floor(Number(data.bestWinStreak) || 0)),
+    fifthPlaceStreak: 0,
     highestCash: Math.max(1500, Math.floor(Number(data.cash) || 0)),
     winsByDifficulty: createDifficultyStatsMap(),
     bestStreakByDifficulty: createDifficultyStatsMap(),
