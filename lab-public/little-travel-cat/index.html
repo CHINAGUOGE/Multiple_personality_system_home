@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light" data-theme-mode="system">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>小旅猫 v0.1｜MPS Lab 放置旅行小游戏</title>
+    <meta
+      name="description"
+      content="小旅猫是 MPS Lab 的原创低压力放置旅行小游戏。收集露珠，准备行李，等猫出门再叼回明信片和奇怪的小东西。"
+    />
+    <meta name="robots" content="index,follow" />
+    <link rel="canonical" href="https://lab.mpsteam.cn/little-travel-cat/" />
+    <link rel="icon" type="image/png" href="https://mpsteam.cn/favicon.png" />
+    <script>
+      (() => {
+        const key = 'littleTravelCatTheme:v1';
+
+        try {
+          const savedTheme = localStorage.getItem(key) || 'system';
+          const theme = savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'system';
+          const resolved =
+            theme === 'system'
+              ? window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+              : theme;
+
+          document.documentElement.dataset.theme = resolved;
+          document.documentElement.dataset.themeMode = theme;
+        } catch {
+          document.documentElement.dataset.theme = 'light';
+          document.documentElement.dataset.themeMode = 'system';
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./scripts/app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <a class="lab-link" href="../">MPS Lab</a>
+          <div>
+            <p class="eyebrow">Little Travel Cat</p>
+            <h1>小旅猫</h1>
+          </div>
+        </div>
+
+        <div class="top-status" aria-label="当前状态">
+          <button
+            id="themeToggleBtn"
+            class="theme-toggle"
+            type="button"
+            aria-label="主题：跟随系统，点击切换主题"
+          >
+            主题：跟随系统
+          </button>
+          <span id="currentSlotText">槽位 1</span>
+          <span id="dewBalance">0 露珠</span>
+          <span id="statusBadge">在家</span>
+        </div>
+      </header>
+
+      <section class="save-strip" aria-label="自动存档">
+        <div class="slot-area">
+          <div id="slotButtons" class="slot-buttons"></div>
+        </div>
+        <div class="save-meta">
+          <span id="saveStatus">自动加载中</span>
+          <span class="dev-note">测试节奏：1 小时 = 1 分钟</span>
+        </div>
+      </section>
+
+      <main>
+        <section class="home-panel" aria-labelledby="homeTitle">
+          <div id="catScene" class="cat-scene" aria-hidden="true">
+            <div class="window-shape"></div>
+            <div class="cat-shape">
+              <span class="ear left-ear"></span>
+              <span class="ear right-ear"></span>
+              <span class="face"></span>
+              <span class="tail"></span>
+            </div>
+            <div class="away-traces">
+              <span class="luggage-dot"></span>
+              <span class="paw-dot paw-dot-one"></span>
+              <span class="paw-dot paw-dot-two"></span>
+              <span class="paw-dot paw-dot-three"></span>
+            </div>
+          </div>
+
+          <div class="home-copy">
+            <p class="section-kicker">小屋</p>
+            <h2 id="homeTitle">今天也慢慢来</h2>
+            <p id="homeText" class="home-text">小旅猫正在窗边晒太阳。</p>
+            <p id="returnNotice" class="return-notice">打开看看，猫可能正在盘算下一趟路。</p>
+          </div>
+
+          <aside class="trip-card" aria-label="旅行状态">
+            <div class="trip-row">
+              <span>路线</span>
+              <strong id="tripRoute">还没出门</strong>
+            </div>
+            <div class="trip-row">
+              <span>回来</span>
+              <strong id="tripReturnTime">等待行李</strong>
+            </div>
+            <div class="trip-row">
+              <span>剩余</span>
+              <strong id="tripRemaining">猫在家</strong>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <span id="tripProgressBar"></span>
+            </div>
+          </aside>
+        </section>
+
+        <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+        <section class="content-grid">
+          <section class="panel garden-panel" aria-labelledby="gardenTitle">
+            <div class="panel-heading">
+              <div>
+                <p class="section-kicker">庭院</p>
+                <h2 id="gardenTitle">露珠慢慢落下来</h2>
+              </div>
+              <strong id="gardenPending">0 / 20</strong>
+            </div>
+            <p id="gardenHint" class="panel-note">下一颗露珠正在路上。</p>
+            <button id="collectDewBtn" class="primary-action" type="button">收集露珠</button>
+          </section>
+
+          <section class="panel luggage-panel" id="luggagePanel" aria-labelledby="luggageTitle">
+            <div class="panel-heading">
+              <div>
+                <p class="section-kicker">行李</p>
+                <h2 id="luggageTitle">给猫塞一点东西</h2>
+              </div>
+              <span>道具 <strong id="toolCount">0 / 2</strong></span>
+            </div>
+            <div class="luggage-section">
+              <h3>食物</h3>
+              <div id="foodChoices" class="choice-list"></div>
+            </div>
+            <div class="luggage-section">
+              <h3>道具</h3>
+              <div id="toolChoices" class="choice-list"></div>
+            </div>
+            <button id="startTripBtn" class="primary-action wide" type="button">
+              准备好了，让猫出门
+            </button>
+          </section>
+
+          <section class="panel shop-panel" aria-labelledby="shopTitle">
+            <div class="panel-heading">
+              <div>
+                <p class="section-kicker">小店</p>
+                <h2 id="shopTitle">买一点路上用的</h2>
+              </div>
+            </div>
+            <div id="shopLists" class="shop-lists"></div>
+          </section>
+
+          <section class="panel collection-panel" aria-labelledby="collectionTitle">
+            <div class="panel-heading">
+              <div>
+                <p class="section-kicker">收藏册</p>
+                <h2 id="collectionTitle">猫叼回来的证据</h2>
+              </div>
+              <span id="collectionStats">0 张明信片 · 0 件小东西</span>
+            </div>
+
+            <div id="collectionTabs" class="segmented-control" aria-label="收藏分类">
+              <button
+                id="postcardTab"
+                class="is-active"
+                type="button"
+                data-collection-view="postcards"
+              >
+                明信片
+              </button>
+              <button id="souvenirTab" type="button" data-collection-view="souvenirs">
+                纪念品
+              </button>
+            </div>
+
+            <div id="collectionList" class="collection-list"></div>
+          </section>
+        </section>
+
+        <footer class="app-footer">
+          <button id="resetSaveBtn" class="ghost-action" type="button">重置当前存档</button>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>
