@@ -1,18 +1,124 @@
 :root {
+  color-scheme: light;
   --bg: #f5f8fb;
+  --page-bg:
+    linear-gradient(135deg, rgba(95, 140, 255, 0.12), transparent 34%),
+    linear-gradient(155deg, rgba(71, 196, 157, 0.2), transparent 46%), var(--bg);
   --surface: #ffffff;
   --surface-soft: #edf6f2;
+  --surface-glass: rgba(255, 255, 255, 0.82);
   --ink: #17202a;
+  --heading: #314052;
   --muted: #687485;
   --line: #dbe4ec;
+  --panel-line: rgba(219, 228, 236, 0.9);
   --mint: #47c49d;
   --mint-dark: #24846a;
+  --mint-soft: rgba(71, 196, 157, 0.18);
   --coral: #ff8069;
   --sun: #f4c542;
   --blue: #5f8cff;
+  --primary-gradient: linear-gradient(135deg, var(--mint), #54a8ff);
+  --primary-ink: #ffffff;
+  --primary-shadow: 0 12px 26px rgba(71, 196, 157, 0.25);
+  --interactive-line: rgba(71, 196, 157, 0.65);
+  --active-line: rgba(71, 196, 157, 0.9);
+  --dark-button: #17202a;
+  --dark-button-ink: #ffffff;
+  --active-bg: #e9faf4;
+  --selected-bg: #eefbf6;
+  --tag-bg: #eef6ff;
+  --tag-ink: #2c63c7;
+  --control-bg: #f3f6fa;
+  --scene-bg: linear-gradient(180deg, rgba(95, 140, 255, 0.18), rgba(71, 196, 157, 0.12)), #f7fbff;
+  --window-frame: rgba(255, 255, 255, 0.86);
+  --window-line: rgba(255, 255, 255, 0.8);
+  --window-glow: rgba(255, 255, 255, 0.35);
+  --cat: #26313f;
+  --cat-shadow: rgba(38, 49, 63, 0.14);
+  --cat-eye: #f4c542;
+  --cat-blush: #f8c0b2;
+  --paw: rgba(38, 49, 63, 0.22);
+  --luggage-line: rgba(38, 49, 63, 0.72);
+  --luggage-bg: rgba(255, 255, 255, 0.58);
+  --dev-bg: rgba(244, 197, 66, 0.2);
+  --dev-ink: #846100;
+  --toast-bg: #ffffff;
+  --toast-line: rgba(71, 196, 157, 0.45);
+  --postcard-bg: linear-gradient(180deg, rgba(244, 197, 66, 0.16), transparent 52%), var(--surface);
+  --souvenir-bg:
+    linear-gradient(180deg, rgba(255, 128, 105, 0.14), transparent 52%), var(--surface);
+  --rare-ink: #9a4d00;
+  --rare-bg: rgba(244, 197, 66, 0.24);
+  --danger-ink: #a64231;
+  --danger-line: rgba(255, 128, 105, 0.4);
+  --danger-bg: rgba(255, 255, 255, 0.76);
+  --control-shadow: 0 4px 14px rgba(31, 47, 70, 0.08);
   --shadow: 0 18px 50px rgba(31, 47, 70, 0.12);
   --soft-shadow: 0 10px 28px rgba(31, 47, 70, 0.08);
   --radius: 8px;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #141820;
+  --page-bg:
+    linear-gradient(135deg, rgba(95, 140, 255, 0.16), transparent 34%),
+    linear-gradient(155deg, rgba(232, 179, 108, 0.12), transparent 48%), var(--bg);
+  --surface: #222a38;
+  --surface-soft: #1d2330;
+  --surface-glass: rgba(31, 38, 51, 0.86);
+  --ink: #f4eadf;
+  --heading: #f2e2ce;
+  --muted: #b8aa9d;
+  --line: rgba(244, 234, 223, 0.14);
+  --panel-line: rgba(244, 234, 223, 0.14);
+  --mint: #77d5b8;
+  --mint-dark: #9ce6cd;
+  --mint-soft: rgba(119, 213, 184, 0.15);
+  --coral: #e89984;
+  --sun: #e8b36c;
+  --blue: #88a8ff;
+  --primary-gradient: linear-gradient(135deg, #e8b36c, #7bd5bc);
+  --primary-ink: #171820;
+  --primary-shadow: 0 14px 28px rgba(0, 0, 0, 0.26);
+  --interactive-line: rgba(232, 179, 108, 0.46);
+  --active-line: rgba(232, 179, 108, 0.68);
+  --dark-button: #e8b36c;
+  --dark-button-ink: #1d1820;
+  --active-bg: rgba(119, 213, 184, 0.14);
+  --selected-bg: rgba(119, 213, 184, 0.12);
+  --tag-bg: rgba(136, 168, 255, 0.16);
+  --tag-ink: #cbd7ff;
+  --control-bg: rgba(20, 24, 32, 0.42);
+  --scene-bg:
+    linear-gradient(180deg, rgba(136, 168, 255, 0.16), rgba(232, 179, 108, 0.08)), #1a2130;
+  --window-frame: rgba(244, 234, 223, 0.46);
+  --window-line: rgba(244, 234, 223, 0.34);
+  --window-glow: rgba(232, 179, 108, 0.16);
+  --cat: #0f141d;
+  --cat-shadow: rgba(232, 179, 108, 0.1);
+  --cat-eye: #e8b36c;
+  --cat-blush: rgba(232, 153, 132, 0.72);
+  --paw: rgba(244, 234, 223, 0.22);
+  --luggage-line: rgba(244, 234, 223, 0.54);
+  --luggage-bg: rgba(244, 234, 223, 0.12);
+  --dev-bg: rgba(232, 179, 108, 0.16);
+  --dev-ink: #f0c98c;
+  --toast-bg: #222a38;
+  --toast-line: rgba(232, 179, 108, 0.38);
+  --postcard-bg:
+    linear-gradient(180deg, rgba(232, 179, 108, 0.13), transparent 56%), var(--surface);
+  --souvenir-bg:
+    linear-gradient(180deg, rgba(232, 153, 132, 0.12), transparent 56%), var(--surface);
+  --rare-ink: #ffd18d;
+  --rare-bg: rgba(232, 179, 108, 0.16);
+  --danger-ink: #f0a792;
+  --danger-line: rgba(232, 153, 132, 0.34);
+  --danger-bg: rgba(34, 42, 56, 0.76);
+  --control-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  --shadow: 0 18px 42px rgba(0, 0, 0, 0.32);
+  --soft-shadow: 0 10px 30px rgba(0, 0, 0, 0.24);
 }
 
 * {
@@ -40,9 +146,7 @@ body {
   min-height: 100vh;
   margin: 0;
   overflow-x: hidden;
-  background:
-    linear-gradient(135deg, rgba(95, 140, 255, 0.12), transparent 34%),
-    linear-gradient(155deg, rgba(71, 196, 157, 0.2), transparent 46%), #f5f8fb;
+  background: var(--page-bg);
 }
 
 button,
@@ -74,9 +178,9 @@ a {
 .save-strip,
 .home-panel,
 .panel {
-  border: 1px solid rgba(219, 228, 236, 0.9);
+  border: 1px solid var(--panel-line);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--surface-glass);
   box-shadow: var(--soft-shadow);
   backdrop-filter: blur(18px);
 }
@@ -97,7 +201,8 @@ a {
 .panel-heading,
 .item-heading,
 .trip-row,
-.segmented-control {
+.segmented-control,
+.theme-toggle {
   display: flex;
   align-items: center;
 }
@@ -168,7 +273,8 @@ h4 {
 
 .top-status span,
 .panel-heading > span,
-.route-pill {
+.route-pill,
+.theme-toggle {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
@@ -177,6 +283,19 @@ h4 {
   font-weight: 700;
   line-height: 1;
   padding: 9px 10px;
+}
+
+.theme-toggle {
+  min-height: 34px;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--interactive-line);
+  transform: translateY(-1px);
 }
 
 .save-strip {
@@ -201,7 +320,7 @@ h4 {
   min-width: 92px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #ffffff;
+  background: var(--surface);
   color: var(--ink);
   padding: 8px 10px;
   text-align: left;
@@ -212,13 +331,13 @@ h4 {
 }
 
 .slot-button:hover {
-  border-color: rgba(71, 196, 157, 0.65);
+  border-color: var(--interactive-line);
   transform: translateY(-1px);
 }
 
 .slot-button.is-active {
-  border-color: rgba(71, 196, 157, 0.9);
-  background: #e9faf4;
+  border-color: var(--active-line);
+  background: var(--active-bg);
 }
 
 .slot-button span,
@@ -248,8 +367,8 @@ h4 {
 
 .dev-note {
   border-radius: var(--radius);
-  background: rgba(244, 197, 66, 0.2);
-  color: #846100;
+  background: var(--dev-bg);
+  color: var(--dev-ink);
   padding: 7px 9px;
 }
 
@@ -271,7 +390,7 @@ main {
   min-height: 220px;
   overflow: hidden;
   border-radius: var(--radius);
-  background: linear-gradient(180deg, rgba(95, 140, 255, 0.18), rgba(71, 196, 157, 0.12)), #f7fbff;
+  background: var(--scene-bg);
 }
 
 .window-shape {
@@ -280,13 +399,13 @@ main {
   left: 24px;
   width: 118px;
   height: 138px;
-  border: 8px solid rgba(255, 255, 255, 0.86);
+  border: 8px solid var(--window-frame);
   border-radius: 26px 26px 8px 8px;
   background:
-    linear-gradient(90deg, transparent 47%, rgba(255, 255, 255, 0.8) 48% 52%, transparent 53%),
-    linear-gradient(180deg, transparent 47%, rgba(255, 255, 255, 0.8) 48% 52%, transparent 53%),
+    linear-gradient(90deg, transparent 47%, var(--window-line) 48% 52%, transparent 53%),
+    linear-gradient(180deg, transparent 47%, var(--window-line) 48% 52%, transparent 53%),
     rgba(95, 140, 255, 0.16);
-  box-shadow: inset 0 -20px 0 rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 -20px 0 var(--window-glow);
 }
 
 .cat-shape {
@@ -296,8 +415,8 @@ main {
   width: 112px;
   height: 82px;
   border-radius: 42px 42px 24px 24px;
-  background: #26313f;
-  box-shadow: -22px 18px 0 rgba(38, 49, 63, 0.14);
+  background: var(--cat);
+  box-shadow: -22px 18px 0 var(--cat-shadow);
   opacity: 1;
   transform: translateY(0);
   transition:
@@ -310,7 +429,7 @@ main {
   top: -18px;
   width: 34px;
   height: 34px;
-  background: #26313f;
+  background: var(--cat);
   clip-path: polygon(50% 0, 0 100%, 100% 100%);
 }
 
@@ -329,10 +448,10 @@ main {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #f4c542;
+  background: var(--cat-eye);
   box-shadow:
-    40px 0 0 #f4c542,
-    20px 20px 0 -3px #f8c0b2;
+    40px 0 0 var(--cat-eye),
+    20px 20px 0 -3px var(--cat-blush);
 }
 
 .tail {
@@ -341,7 +460,7 @@ main {
   bottom: 10px;
   width: 42px;
   height: 58px;
-  border: 12px solid #26313f;
+  border: 12px solid var(--cat);
   border-left: 0;
   border-bottom: 0;
   border-radius: 0 36px 0 0;
@@ -368,8 +487,8 @@ main {
   bottom: 4px;
   width: 42px;
   height: 26px;
-  border: 3px solid rgba(38, 49, 63, 0.72);
-  background: rgba(255, 255, 255, 0.58);
+  border: 3px solid var(--luggage-line);
+  background: var(--luggage-bg);
 }
 
 .luggage-dot::before {
@@ -378,7 +497,7 @@ main {
   left: 10px;
   width: 18px;
   height: 12px;
-  border: 3px solid rgba(38, 49, 63, 0.72);
+  border: 3px solid var(--luggage-line);
   border-bottom: 0;
   border-radius: 999px 999px 0 0;
   content: '';
@@ -387,7 +506,7 @@ main {
 .paw-dot {
   width: 14px;
   height: 10px;
-  background: rgba(38, 49, 63, 0.22);
+  background: var(--paw);
 }
 
 .paw-dot-one {
@@ -425,7 +544,7 @@ main {
   display: grid;
   gap: 7px;
   margin: 18px 0 14px;
-  color: #314052;
+  color: var(--heading);
   font-size: 20px;
   line-height: 1.55;
 }
@@ -448,7 +567,7 @@ main {
   align-content: center;
   gap: 14px;
   border-radius: var(--radius);
-  background: #f5fbf9;
+  background: var(--surface-soft);
   padding: 18px;
 }
 
@@ -468,7 +587,7 @@ main {
   overflow: hidden;
   height: 10px;
   border-radius: 999px;
-  background: rgba(71, 196, 157, 0.18);
+  background: var(--mint-soft);
 }
 
 .progress-track span {
@@ -487,9 +606,9 @@ main {
   width: fit-content;
   max-width: min(100%, 560px);
   margin: 12px auto 0;
-  border: 1px solid rgba(71, 196, 157, 0.45);
+  border: 1px solid var(--toast-line);
   border-radius: var(--radius);
-  background: #ffffff;
+  background: var(--toast-bg);
   box-shadow: var(--soft-shadow);
   color: var(--mint-dark);
   font-weight: 800;
@@ -537,9 +656,9 @@ main {
 
 .primary-action {
   width: 100%;
-  background: linear-gradient(135deg, var(--mint), #54a8ff);
-  box-shadow: 0 12px 26px rgba(71, 196, 157, 0.25);
-  color: #ffffff;
+  background: var(--primary-gradient);
+  box-shadow: var(--primary-shadow);
+  color: var(--primary-ink);
   padding: 0 16px;
 }
 
@@ -565,7 +684,7 @@ main {
 
 .shop-group h3,
 .luggage-section h3 {
-  color: #314052;
+  color: var(--heading);
 }
 
 .item-grid {
@@ -599,8 +718,8 @@ main {
 .item-heading span {
   flex: 0 0 auto;
   border-radius: var(--radius);
-  background: #eef6ff;
-  color: #2c63c7;
+  background: var(--tag-bg);
+  color: var(--tag-ink);
   font-size: 12px;
   font-weight: 850;
   padding: 6px 8px;
@@ -620,8 +739,8 @@ main {
 }
 
 .item-card button {
-  background: #17202a;
-  color: #ffffff;
+  background: var(--dark-button);
+  color: var(--dark-button-ink);
   padding: 0 14px;
 }
 
@@ -680,8 +799,8 @@ main {
 }
 
 .choice-card.is-selected {
-  border-color: rgba(71, 196, 157, 0.9);
-  background: #eefbf6;
+  border-color: var(--active-line);
+  background: var(--selected-bg);
 }
 
 .choice-card.is-disabled {
@@ -694,7 +813,7 @@ main {
   margin-bottom: 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #f3f6fa;
+  background: var(--control-bg);
   padding: 4px;
 }
 
@@ -708,9 +827,9 @@ main {
 }
 
 .segmented-control button.is-active {
-  background: #ffffff;
+  background: var(--surface);
   color: var(--ink);
-  box-shadow: 0 4px 14px rgba(31, 47, 70, 0.08);
+  box-shadow: var(--control-shadow);
 }
 
 .collection-list {
@@ -736,11 +855,11 @@ main {
 }
 
 .postcard-card {
-  background: linear-gradient(180deg, rgba(244, 197, 66, 0.16), transparent 52%), #ffffff;
+  background: var(--postcard-bg);
 }
 
 .souvenir-card {
-  background: linear-gradient(180deg, rgba(255, 128, 105, 0.14), transparent 52%), #ffffff;
+  background: var(--souvenir-bg);
 }
 
 .route-pill {
@@ -750,13 +869,13 @@ main {
 }
 
 .rarity-uncommon {
-  color: #2c63c7;
-  background: #eef6ff;
+  color: var(--tag-ink);
+  background: var(--tag-bg);
 }
 
 .rarity-rare {
-  color: #9a4d00;
-  background: rgba(244, 197, 66, 0.24);
+  color: var(--rare-ink);
+  background: var(--rare-bg);
 }
 
 .empty-state {
@@ -773,9 +892,9 @@ main {
 }
 
 .ghost-action {
-  border: 1px solid rgba(255, 128, 105, 0.4);
-  background: rgba(255, 255, 255, 0.76);
-  color: #a64231;
+  border: 1px solid var(--danger-line);
+  background: var(--danger-bg);
+  color: var(--danger-ink);
   padding: 0 14px;
 }
 

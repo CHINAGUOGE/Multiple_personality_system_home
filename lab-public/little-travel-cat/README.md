@@ -10,6 +10,7 @@
 - 存档：浏览器 `localStorage`
 - 默认测试节奏：`1 小时 = 1 分钟`
 - 新存档开局：`25` 个露珠
+- 主题：默认跟随系统，支持浅色 / 夜间切换
 
 ## v0.1 玩法
 
@@ -31,8 +32,11 @@
 - 槽位存档：`littleTravelCatSave:v1:slot:1`
 - 槽位存档：`littleTravelCatSave:v1:slot:2`
 - 槽位存档：`littleTravelCatSave:v1:slot:3`
+- 全局主题：`littleTravelCatTheme:v1`
 
 重置按钮只会重置当前槽位，并且必须二次确认。
+
+主题设置是全局偏好，不跟随存档槽位切换。可选值为 `system`、`light`、`dark`。
 
 ## 开发说明
 

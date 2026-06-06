@@ -5,6 +5,7 @@ import {
   RESOURCE_CAP,
   RESOURCE_INTERVAL_MS,
   RETURNED_LINES,
+  THEME_KEY,
   TOOLS,
   TRAVELING_LINES,
 } from './data.js';
@@ -22,6 +23,7 @@ import { createTrip, getRouteName, settleTrip } from './trip.js';
 const state = {
   slot: 1,
   save: null,
+  theme: 'system',
   selectedFoodId: null,
   selectedToolIds: new Set(),
   collectionView: 'postcards',
@@ -31,10 +33,18 @@ const state = {
 };
 
 const $ = (selector) => document.querySelector(selector);
+const THEME_SEQUENCE = ['system', 'light', 'dark'];
+const THEME_LABELS = {
+  system: '主题：跟随系统',
+  light: '主题：浅色',
+  dark: '主题：夜间',
+};
+const systemThemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
 document.addEventListener('DOMContentLoaded', init);
 
 function init() {
+  initTheme();
   state.slot = getActiveSlot();
   state.save = loadSave(state.slot);
   state.saveStatus = `已自动加载 槽位 ${state.slot}`;
@@ -62,6 +72,8 @@ function init() {
 }
 
 function bindEvents() {
+  $('#themeToggleBtn').addEventListener('click', cycleTheme);
+
   $('#slotButtons').addEventListener('click', (event) => {
     const button = event.target.closest('[data-slot]');
 
@@ -109,6 +121,66 @@ function bindEvents() {
     state.collectionView = button.dataset.collectionView;
     renderCollection();
   });
+}
+
+function initTheme() {
+  state.theme = getSavedTheme();
+  applyTheme(state.theme);
+  renderThemeButton(state.theme);
+
+  systemThemeQuery.addEventListener('change', () => {
+    if (getSavedTheme() !== 'system') {
+      return;
+    }
+
+    state.theme = 'system';
+    applyTheme('system');
+    renderThemeButton('system');
+  });
+}
+
+function getSavedTheme() {
+  try {
+    const theme = localStorage.getItem(THEME_KEY);
+    return THEME_SEQUENCE.includes(theme) ? theme : 'system';
+  } catch {
+    return 'system';
+  }
+}
+
+function saveTheme(theme) {
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    // 主题只影响显示，localStorage 不可用时继续按当前页面会话生效。
+  }
+}
+
+function resolveTheme(theme) {
+  if (theme === 'dark' || theme === 'light') {
+    return theme;
+  }
+
+  return systemThemeQuery.matches ? 'dark' : 'light';
+}
+
+function applyTheme(theme) {
+  const normalizedTheme = THEME_SEQUENCE.includes(theme) ? theme : 'system';
+  const resolvedTheme = resolveTheme(normalizedTheme);
+
+  document.documentElement.dataset.theme = resolvedTheme;
+  document.documentElement.dataset.themeMode = normalizedTheme;
+}
+
+function cycleTheme() {
+  const currentTheme = THEME_SEQUENCE.includes(state.theme) ? state.theme : getSavedTheme();
+  const nextTheme =
+    currentTheme === 'system' ? 'light' : currentTheme === 'light' ? 'dark' : 'system';
+
+  state.theme = nextTheme;
+  saveTheme(nextTheme);
+  applyTheme(nextTheme);
+  renderThemeButton(nextTheme);
 }
 
 function syncCurrentSave() {
@@ -288,6 +360,7 @@ function render() {
 }
 
 function renderHeader() {
+  renderThemeButton(state.theme);
   $('#currentSlotText').textContent = `槽位 ${state.slot}`;
   $('#dewBalance').textContent = `${state.save.dew} 露珠`;
   $('#statusBadge').textContent = state.save.traveler.status === 'traveling' ? '旅行中' : '在家';
@@ -305,6 +378,20 @@ function renderHeader() {
       `;
     })
     .join('');
+}
+
+function renderThemeButton(theme = getSavedTheme()) {
+  const button = $('#themeToggleBtn');
+
+  if (!button) {
+    return;
+  }
+
+  const normalizedTheme = THEME_SEQUENCE.includes(theme) ? theme : 'system';
+  const label = THEME_LABELS[normalizedTheme];
+  button.textContent = label;
+  button.dataset.themeMode = normalizedTheme;
+  button.setAttribute('aria-label', `${label}，点击切换主题`);
 }
 
 function renderSaveStatus() {

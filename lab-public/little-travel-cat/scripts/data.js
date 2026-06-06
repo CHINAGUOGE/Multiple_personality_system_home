@@ -2,6 +2,7 @@ export const SAVE_VERSION = 1;
 export const SLOT_COUNT = 3;
 export const ACTIVE_SLOT_KEY = 'littleTravelCatActiveSlot:v1';
 export const SAVE_KEY_PREFIX = 'littleTravelCatSave:v1:slot:';
+export const THEME_KEY = 'littleTravelCatTheme:v1';
 
 export const RESOURCE_INTERVAL_MS = 5 * 60 * 1000;
 export const RESOURCE_CAP = 20;
