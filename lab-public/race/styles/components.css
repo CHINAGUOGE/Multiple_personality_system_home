@@ -84,6 +84,10 @@
   gap: 8px;
 }
 
+.card-title-row h3 {
+  min-width: 0;
+}
+
 .card-main {
   display: grid;
   gap: 5px;
@@ -152,28 +156,104 @@
   background: #f4f4f4;
 }
 
+.part-rarity-frame {
+  --part-accent: #303030;
+  --part-accent-bg: #f4f4f4;
+  --part-accent-border: #9b9b9b;
+
+  box-shadow: inset 4px 0 0 var(--part-accent);
+}
+
+.part-quality-common,
+.part-level-common,
+.part-rarity-frame-common {
+  --part-accent: #303030;
+  --part-accent-bg: #f4f4f4;
+  --part-accent-border: #9b9b9b;
+}
+
+.part-quality-rare,
+.part-level-rare,
+.part-rarity-frame-rare {
+  --part-accent: #1f55d6;
+  --part-accent-bg: #eef4ff;
+  --part-accent-border: #8fb0ec;
+}
+
+.part-quality-epic,
+.part-level-epic,
+.part-rarity-frame-epic {
+  --part-accent: #8a2be2;
+  --part-accent-bg: #f4ecff;
+  --part-accent-border: #c7a2ef;
+}
+
+.part-quality-legendary,
+.part-level-legendary,
+.part-rarity-frame-legendary {
+  --part-accent: #b75b00;
+  --part-accent-bg: #fff3df;
+  --part-accent-border: #e1aa6d;
+}
+
+.part-quality-mythic,
+.part-level-mythic,
+.part-rarity-frame-mythic {
+  --part-accent: #d6175b;
+  --part-accent-bg: #fff0f6;
+  --part-accent-border: #eda0be;
+}
+
 .part-quality {
   font-weight: bold;
 }
 
 .part-quality-common {
-  color: #303030;
+  color: var(--part-accent);
 }
 
 .part-quality-rare {
-  color: #1f55d6;
+  color: var(--part-accent);
 }
 
 .part-quality-epic {
-  color: #8a2be2;
+  color: var(--part-accent);
 }
 
 .part-quality-legendary {
-  color: #b75b00;
+  color: var(--part-accent);
 }
 
 .part-quality-mythic {
-  color: #d6175b;
+  color: var(--part-accent);
+}
+
+.part-meta-badges {
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-end;
+  max-width: 100%;
+}
+
+.part-badge,
+.part-level {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+  padding: 2px 6px;
+  overflow-wrap: normal;
+  color: var(--part-accent);
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1.2;
+  white-space: nowrap;
+  background: var(--part-accent-bg);
+  border: 1px solid var(--part-accent-border);
+  border-radius: 4px;
 }
 
 .current-badge {
@@ -196,6 +276,12 @@
 .inventory-card.is-current {
   border-color: #0a246a;
   box-shadow: inset 0 0 0 2px #9fb9e8;
+}
+
+.inventory-card.part-rarity-frame.is-current {
+  box-shadow:
+    inset 4px 0 0 var(--part-accent),
+    inset 0 0 0 2px #9fb9e8;
 }
 
 .storage-stats {
@@ -273,6 +359,13 @@
 .slot-detail-panel {
   border-color: #0a246a;
   box-shadow: inset 0 0 0 2px #9fb9e8;
+}
+
+.slot-summary-card.part-rarity-frame.is-active,
+.slot-detail-panel.part-rarity-frame {
+  box-shadow:
+    inset 4px 0 0 var(--part-accent),
+    inset 0 0 0 2px #9fb9e8;
 }
 
 .slot-summary-card .slot-detail-panel {
@@ -410,6 +503,12 @@
 .part-option-row.is-current {
   background: #eef4ff;
   border-color: #89a7de;
+}
+
+.part-option-row.part-rarity-frame.is-current {
+  box-shadow:
+    inset 4px 0 0 var(--part-accent),
+    inset 0 0 0 1px #9fb9e8;
 }
 
 .part-option-top {

@@ -44,7 +44,33 @@ function formatPartRarity(part) {
 
 function renderPartRarity(part) {
   const rarity = getPartRarity(part);
-  return `<span class="part-quality part-quality-${rarity}">${PART_RARITY_LABELS[rarity]}</span>`;
+  return `<span class="part-badge part-quality part-quality-${rarity}">${PART_RARITY_LABELS[rarity]}</span>`;
+}
+
+function getPartLevel(part) {
+  const level = PART_RARITY_ORDER.indexOf(getPartRarity(part)) + 1;
+  return level > 0 ? level : 1;
+}
+
+function formatPartLevel(part) {
+  return `Lv.${getPartLevel(part)}`;
+}
+
+function renderPartLevel(part) {
+  const rarity = getPartRarity(part);
+  return `<span class="part-level part-level-${rarity}">${formatPartLevel(part)}</span>`;
+}
+
+function renderPartBadges(part) {
+  return `<span class="part-meta-badges">${renderPartRarity(part)}${renderPartLevel(part)}</span>`;
+}
+
+function renderPartInlineLabel(part, includeId = false) {
+  return `${renderPartName(part, includeId)} ${renderPartLevel(part)}`;
+}
+
+function getPartRarityFrameClass(part) {
+  return `part-rarity-frame part-rarity-frame-${getPartRarity(part)}`;
 }
 
 function renderPartName(part, includeId = false) {
@@ -185,10 +211,10 @@ function renderPartComparison(part, equippedPart) {
 
 function formatPartOption(part, equippedPart = null) {
   if (equippedPart && equippedPart.id === part.id) {
-    return `[${formatPartRarity(part)}] #${part.id} ${part.name}（当前已装备）`;
+    return `[${formatPartRarity(part)} ${formatPartLevel(part)}] #${part.id} ${part.name}（当前已装备）`;
   }
 
-  return `[${formatPartRarity(part)}] #${part.id} ${part.name}（${formatPartChangeText(
+  return `[${formatPartRarity(part)} ${formatPartLevel(part)}] #${part.id} ${part.name}（${formatPartChangeText(
     getPartComparisonChanges(part, equippedPart)
   )}）`;
 }

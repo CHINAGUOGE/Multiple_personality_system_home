@@ -202,6 +202,12 @@
   box-shadow: inset 0 0 0 1px #b4c8ef;
 }
 
+.atlas-card.part-rarity-frame.is-owned {
+  box-shadow:
+    inset 4px 0 0 var(--part-accent),
+    inset 0 0 0 1px #b4c8ef;
+}
+
 .atlas-card.is-unowned {
   color: #4c4c4c;
   background: #f0f0f0;
@@ -224,6 +230,7 @@
 }
 
 .atlas-card-head h4 {
+  min-width: 0;
   margin: 0;
   font-size: 14px;
   line-height: 1.3;
