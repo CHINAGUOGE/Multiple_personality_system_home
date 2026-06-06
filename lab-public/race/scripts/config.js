@@ -20,8 +20,8 @@ const PART_SELL_RATE = 0.8;
 const FINISH = 100;
 const TICK_MS = 45;
 const STORAGE_KEY = 'mpsteam-race-save-v1';
-const GAME_VERSION = 'v1.6.4';
-const GAME_VERSION_NOTE = '为非噩梦难度加入电脑最终强度上限，标准与挑战后期更有毕业感，噩梦保持高压追赶。';
+const GAME_VERSION = 'v1.6.5';
+const GAME_VERSION_NOTE = '修复低余额卸下装备后误进入失败态的问题，库存零件可正常出售回血。';
 
 const BASE_PLAYER_STATS = {
   engine: 10,

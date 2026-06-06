@@ -741,8 +741,14 @@ function isVehicleStripped() {
   return EQUIPMENT_SLOTS.every((type) => !gameState.equippedParts[type]);
 }
 
+function hasSellableInventory() {
+  return gameState.inventory.some(
+    (part) => gameState.equippedParts[part.type] !== part.id && getPartSellPrice(part) > 0
+  );
+}
+
 function shouldFailForNoEntryFee() {
-  return gameState.cash < getMinEntryFee() && isVehicleStripped();
+  return gameState.cash < getMinEntryFee() && isVehicleStripped() && !hasSellableInventory();
 }
 
 function checkGameFailure() {
@@ -753,7 +759,7 @@ function checkGameFailure() {
   if (gameState.phase !== 'game_over') {
     setPhase('game_over');
     setLights('none');
-    addLog('游戏失败：车辆已无装备，现金不足以支付最低难度报名费。');
+    addLog('游戏失败：车辆已无装备和可出售库存，现金不足以支付最低难度报名费。');
     addLog('请点击“重开并清档”重新开始。');
   }
 
@@ -1098,7 +1104,7 @@ function updateResultMessage() {
     racing: gameState.playerStarted ? '比赛进行中。' : '电脑车已起跑，立即点击起步。',
     finished: `比赛结束，上场名次：${gameState.lastRank}。`,
     false_start: '抢跑犯规，本场成绩无效。',
-    game_over: '游戏失败：现金不足且车辆无装备，请重开。',
+    game_over: '游戏失败：现金不足且无可出售库存，请重开。',
   };
   el.resultMessage.textContent = messages[gameState.phase] || PHASE_LABELS[gameState.phase];
 }
