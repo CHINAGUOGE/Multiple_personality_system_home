@@ -251,16 +251,17 @@ function pressStart(options = {}) {
 }
 
 function updateBestReactionRecord(reactionSeconds) {
-  if (!Number.isFinite(reactionSeconds) || reactionSeconds < 0) {
+  const manualReactionTime = normalizeManualReactionTime(reactionSeconds);
+  if (manualReactionTime === null) {
     return;
   }
 
   if (
     gameState.bestManualReactionTime === null ||
-    reactionSeconds < gameState.bestManualReactionTime
+    manualReactionTime < gameState.bestManualReactionTime
   ) {
-    gameState.bestManualReactionTime = reactionSeconds;
-    gameState.bestReactionTime = reactionSeconds;
+    gameState.bestManualReactionTime = manualReactionTime;
+    gameState.bestReactionTime = manualReactionTime;
     addLog(`刷新最快反应记录：${gameState.bestReactionTime.toFixed(3)} 秒！`);
   }
 }
@@ -384,9 +385,10 @@ function startPlayerCar(options = {}) {
     addLog(`AI 以 ${reactionSeconds.toFixed(3)} 秒反应起步。`);
     addLog('本场为 AI 托管，操作类成就不会解锁。');
   } else {
-    gameState.lastReactionTime = reactionSeconds;
-    gameState.lastManualReactionTime = reactionSeconds;
-    updateBestReactionRecord(reactionSeconds);
+    const manualReactionTime = normalizeManualReactionTime(reactionSeconds);
+    gameState.lastReactionTime = manualReactionTime;
+    gameState.lastManualReactionTime = manualReactionTime;
+    updateBestReactionRecord(manualReactionTime);
     addLog(`你起步反应时间：${reactionSeconds.toFixed(3)} 秒`);
     if (reactionSeconds < 0.25) {
       addLog('无违规，起步完美！');

@@ -333,7 +333,14 @@ function isAiRace(race) {
 }
 
 function isManualRace(race) {
-  return !isAiRace(race);
+  return Boolean(race && race.controlledBy === 'manual');
+}
+
+function normalizeManualReactionTime(value) {
+  const reactionTime = Number(value);
+  return Number.isFinite(reactionTime) && reactionTime >= MIN_MANUAL_REACTION_SECONDS
+    ? reactionTime
+    : null;
 }
 
 function getCurrentRaceControl() {
@@ -821,14 +828,16 @@ function checkGameFailure() {
 
 function createSaveData() {
   syncProgressStats();
+  const bestManualReactionTime = normalizeManualReactionTime(gameState.bestManualReactionTime);
+  const lastManualReactionTime = normalizeManualReactionTime(gameState.lastManualReactionTime);
   return {
     cash: gameState.cash,
     raceCount: gameState.raceCount,
     lastRank: gameState.lastRank,
-    bestReactionTime: gameState.bestReactionTime,
-    bestManualReactionTime: gameState.bestManualReactionTime,
-    lastReactionTime: gameState.lastReactionTime,
-    lastManualReactionTime: gameState.lastManualReactionTime,
+    bestReactionTime: bestManualReactionTime,
+    bestManualReactionTime,
+    lastReactionTime: lastManualReactionTime,
+    lastManualReactionTime,
     currentWinStreak: gameState.currentWinStreak,
     bestWinStreak: gameState.bestWinStreak,
     difficulty: getDifficultyKey(),
@@ -946,36 +955,29 @@ function sanitizeSaveData(data) {
     wonWithBuildAchievements: [],
     wonWithSpecialParts: [],
   };
+  const bestManualReactionTime =
+    normalizeManualReactionTime(data.bestManualReactionTime) ??
+    normalizeManualReactionTime(data.bestReactionTime);
+  const lastManualReactionTime =
+    normalizeManualReactionTime(data.lastManualReactionTime) ??
+    normalizeManualReactionTime(data.lastReactionTime);
+  const achievements = sanitizeAchievementsData(data.achievements);
+  const hasZeroBestReactionRecord = [data.bestManualReactionTime, data.bestReactionTime].some(
+    (value) => Number(value) === 0
+  );
+  if (bestManualReactionTime === null && hasZeroBestReactionRecord) {
+    delete achievements.completed.neural_link;
+    achievements.lastUnlocked = achievements.lastUnlocked.filter((id) => id !== 'neural_link');
+  }
 
   return {
     cash: Math.max(0, Math.floor(Number(data.cash) || 0)),
     raceCount: totalRaces,
     lastRank: String(data.lastRank || '-'),
-    bestReactionTime:
-      Number.isFinite(Number(data.bestReactionTime)) && Number(data.bestReactionTime) >= 0
-        ? Number(data.bestReactionTime)
-        : Number.isFinite(Number(data.bestManualReactionTime)) &&
-            Number(data.bestManualReactionTime) >= 0
-          ? Number(data.bestManualReactionTime)
-        : null,
-    bestManualReactionTime:
-      Number.isFinite(Number(data.bestManualReactionTime)) &&
-      Number(data.bestManualReactionTime) >= 0
-        ? Number(data.bestManualReactionTime)
-        : Number.isFinite(Number(data.bestReactionTime)) && Number(data.bestReactionTime) >= 0
-          ? Number(data.bestReactionTime)
-          : null,
-    lastReactionTime:
-      Number.isFinite(Number(data.lastReactionTime)) && Number(data.lastReactionTime) >= 0
-        ? Number(data.lastReactionTime)
-        : null,
-    lastManualReactionTime:
-      Number.isFinite(Number(data.lastManualReactionTime)) &&
-      Number(data.lastManualReactionTime) >= 0
-        ? Number(data.lastManualReactionTime)
-        : Number.isFinite(Number(data.lastReactionTime)) && Number(data.lastReactionTime) >= 0
-          ? Number(data.lastReactionTime)
-          : null,
+    bestReactionTime: bestManualReactionTime,
+    bestManualReactionTime,
+    lastReactionTime: lastManualReactionTime,
+    lastManualReactionTime,
     currentWinStreak: Math.max(0, Math.floor(Number(data.currentWinStreak) || 0)),
     bestWinStreak: Math.max(0, Math.floor(Number(data.bestWinStreak) || 0)),
     difficulty: DIFFICULTIES[data.difficulty] ? data.difficulty : DEFAULT_DIFFICULTY,
@@ -987,7 +989,7 @@ function sanitizeSaveData(data) {
     equippedParts,
     nextPartId,
     stats: sanitizeStatsData(data.stats, fallbackStats),
-    achievements: sanitizeAchievementsData(data.achievements),
+    achievements,
   };
 }
 

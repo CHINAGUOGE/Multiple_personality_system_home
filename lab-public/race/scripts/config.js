@@ -24,6 +24,7 @@ const GAME_VERSION = 'v1.7';
 const GAME_VERSION_NOTE =
   '新增「AI 托管一场」，会模拟普通玩家反应自动跑完本场，保留完整赛道动画和正常结算。';
 const AI_ASSIST_REACTION_RANGE_SECONDS = [0.12, 0.3];
+const MIN_MANUAL_REACTION_SECONDS = 0.001;
 
 const BASE_PLAYER_STATS = {
   engine: 10,
