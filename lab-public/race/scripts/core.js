@@ -148,6 +148,27 @@ function renderPartChangeList(changes) {
   `;
 }
 
+function renderPartChangeTags(changes, emptyText = '属性无变化') {
+  const items = PART_STAT_ORDER.filter((key) => changes[key]).map((key) => {
+    const value = changes[key];
+    const tone = getPartChangeTone(key, value);
+    return `<span class="part-change part-change-${tone}">${formatSignedPartChange(
+      key,
+      value
+    )}</span>`;
+  });
+
+  if (!items.length) {
+    return `
+      <div class="part-change-list part-change-list-compact">
+        <span class="part-change part-change-neutral">${emptyText}</span>
+      </div>
+    `;
+  }
+
+  return `<div class="part-change-list part-change-list-compact">${items.join('')}</div>`;
+}
+
 function renderPartComparison(part, equippedPart) {
   const isCurrent = equippedPart && equippedPart.id === part.id;
   const referencePart = isCurrent ? null : equippedPart;
@@ -936,6 +957,13 @@ function updateButtons() {
       const part = getPartById(Number(button.dataset.partId));
       const equipped = part && gameState.equippedParts[part.type] === part.id;
       button.disabled = !canManageTuning() || !part || equipped;
+    }
+  );
+
+  Array.from(el.garageSlotsBody.querySelectorAll('[data-action="unequip-slot"]')).forEach(
+    (button) => {
+      const part = getEquippedPart(button.dataset.slot);
+      button.disabled = !canManageTuning() || !part;
     }
   );
 
