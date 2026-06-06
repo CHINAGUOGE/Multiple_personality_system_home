@@ -127,12 +127,12 @@ function renderShop() {
 
   gameState.shopItems.forEach((part, index) => {
     const card = document.createElement('article');
-    card.className = 'shop-card';
+    card.className = `shop-card ${getPartRarityFrameClass(part)}`;
     card.innerHTML = `
       <div class="card-main">
         <div class="card-title-row">
           <h3>${renderPartName(part)}</h3>
-          ${renderPartRarity(part)}
+          ${renderPartBadges(part)}
         </div>
         <p>类型：${formatPartType(part.type)}</p>
         <p>效果：${part.effectText}</p>
@@ -260,7 +260,9 @@ function createSlotSummaryCard(type, layout) {
   const stateLabel = active ? (layout === 'desktop' ? '已选中' : '已展开') : '更换';
   const card = document.createElement('article');
 
-  card.className = `slot-summary-card${active ? ' is-active' : ''}`;
+  card.className = `slot-summary-card${active ? ' is-active' : ''}${
+    equippedPart ? ` ${getPartRarityFrameClass(equippedPart)}` : ''
+  }`;
   card.innerHTML = `
     <button
       type="button"
@@ -273,7 +275,7 @@ function createSlotSummaryCard(type, layout) {
         <div class="slot-summary-copy">
           <h3>${formatPartType(type)}</h3>
           <p class="slot-summary-current">${
-            equippedPart ? `当前：#${equippedPart.id} ${equippedPart.name}` : '当前：未装备'
+            equippedPart ? `当前：${renderPartInlineLabel(equippedPart, true)}` : '当前：未装备'
           }</p>
         </div>
         <span class="slot-summary-state">${stateLabel}</span>
@@ -314,10 +316,12 @@ function createPartOptionList(type) {
           .map((part) => {
             const equipped = equippedPart && equippedPart.id === part.id;
             return `
-              <li class="part-option-row${equipped ? ' is-current' : ''}">
+              <li class="part-option-row${equipped ? ' is-current' : ''} ${getPartRarityFrameClass(
+                part
+              )}">
                 <div class="part-option-top">
                   <div class="part-option-meta">
-                    ${renderPartRarity(part)}
+                    ${renderPartBadges(part)}
                     <span class="part-option-id">#${part.id}</span>
                     <span class="part-option-name part-quality part-quality-${getPartRarity(part)}">${part.name}</span>
                   </div>
@@ -347,14 +351,16 @@ function createSlotDetailPanel(type, mobile = false) {
   const equippedPart = getEquippedPart(type);
   const panel = document.createElement(mobile ? 'div' : 'section');
 
-  panel.className = `slot-detail-panel${mobile ? ' is-mobile' : ''}`;
+  panel.className = `slot-detail-panel${mobile ? ' is-mobile' : ''}${
+    equippedPart ? ` ${getPartRarityFrameClass(equippedPart)}` : ''
+  }`;
   panel.innerHTML = `
     <div class="slot-detail-header">
       <div class="slot-detail-copy">
         <small class="slot-detail-kicker">${mobile ? '候选零件' : '当前槽位'}</small>
         <h3>${formatPartType(type)}</h3>
         <p class="slot-detail-current">${
-          equippedPart ? `当前装备：#${equippedPart.id} ${equippedPart.name}` : '当前装备：未装备'
+          equippedPart ? `当前装备：${renderPartInlineLabel(equippedPart, true)}` : '当前装备：未装备'
         }</p>
       </div>
       <button
@@ -488,12 +494,14 @@ function createTuningEmptyCard(title, hint) {
 function createTuningPartCard(part, equipped) {
   const equippedPart = getEquippedPart(part.type);
   const card = document.createElement('article');
-  card.className = `inventory-card${equipped ? ' is-current' : ''}`;
+  card.className = `inventory-card${equipped ? ' is-current' : ''} ${getPartRarityFrameClass(
+    part
+  )}`;
   card.innerHTML = `
     <div>
       <div class="card-title-row">
         <h3>${renderPartName(part, true)}</h3>
-        ${renderPartRarity(part)}
+        ${renderPartBadges(part)}
       </div>
       <p>类型：${formatPartType(part.type)}</p>
       ${renderPartComparison(part, equippedPart)}
@@ -708,15 +716,18 @@ function renderAtlas() {
         : null;
       const isEquipped = equipped ? getPartTemplateId(equipped) === part.templateId : false;
       const card = document.createElement('article');
-      card.className = `atlas-card${inPool ? '' : ' is-out-of-pool'}${ownedCount ? ' is-owned' : ' is-unowned'}`;
+      card.className = `atlas-card ${getPartRarityFrameClass(part)}${
+        inPool ? '' : ' is-out-of-pool'
+      }${ownedCount ? ' is-owned' : ' is-unowned'}`;
       card.innerHTML = `
         <div class="atlas-card-head">
           <h4>${renderPartName(part)}</h4>
-          ${renderPartRarity(part)}
+          ${renderPartBadges(part)}
         </div>
         <div class="atlas-meta-list">
           <p><strong>槽位</strong><span>${formatPartType(part.type)}</span></p>
           <p><strong>品质</strong><span>${PART_RARITY_LABELS[getPartRarity(part)]}</span></p>
+          <p><strong>等级</strong><span>${formatPartLevel(part)}</span></p>
           <p><strong>属性效果</strong><span>${part.effectText}</span></p>
           <p><strong>基础出现率</strong><span>${inPool ? formatShopRate(rate) : '0%'}</span></p>
           <p><strong>当前难度</strong><span>${inPool ? '可刷出' : '不可刷出'}</span></p>
