@@ -171,10 +171,21 @@ function init() {
   setActivePage('race');
   setLights('none');
   updateStats();
+  const startupLoadResult = autoLoadGameOnInit();
   gameState.ready = true;
   checkAchievements({ source: 'init', silent: true });
   addLog('横线赛车经营赛启动。');
   addLog(`${GAME_VERSION}：${GAME_VERSION_NOTE}`);
+  if (startupLoadResult.status === 'loaded') {
+    addLog('已自动加载上次存档。');
+  } else if (startupLoadResult.status === 'missing') {
+    addLog('未找到存档，已开始新游戏。');
+  } else if (startupLoadResult.status === 'invalid') {
+    addLog(`存档读取失败：${startupLoadResult.message}`);
+    addLog('当前未自动覆盖原存档；自动保存已暂停，请点击“重开并清档”或手动保存覆盖。');
+  } else if (startupLoadResult.status === 'access_error') {
+    addLog(`本地存档不可用：${startupLoadResult.message} 当前已开始新游戏。`);
+  }
   addLog('电脑端可按空格键报名 / 起步 / 下一场。');
   addLog('先报名比赛，等绿灯后点“起步 / 踩油门”。红灯或黄灯点击会抢跑。');
 }

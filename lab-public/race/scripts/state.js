@@ -73,6 +73,7 @@ const gameState = {
   achievementToastQueue: [],
   achievementToastTimer: null,
   noticeModalConfig: null,
+  storageWriteBlockedReason: '',
 };
 
 const el = {

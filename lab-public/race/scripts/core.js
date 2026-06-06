@@ -1119,7 +1119,7 @@ function renderDifficulty() {
 
 // 安全自动保存：失败只写日志，不阻塞游戏；比赛锁定阶段或初始化未完成时跳过。
 function autoSaveGame() {
-  if (!gameState.ready || isRaceLockedPhase(gameState.phase)) {
+  if (!gameState.ready || isRaceLockedPhase(gameState.phase) || gameState.storageWriteBlockedReason) {
     return;
   }
   try {
