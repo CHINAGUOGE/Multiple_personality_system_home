@@ -148,6 +148,27 @@ function renderPartChangeList(changes) {
   `;
 }
 
+function renderPartChangeTags(changes, emptyText = '属性无变化') {
+  const items = PART_STAT_ORDER.filter((key) => changes[key]).map((key) => {
+    const value = changes[key];
+    const tone = getPartChangeTone(key, value);
+    return `<span class="part-change part-change-${tone}">${formatSignedPartChange(
+      key,
+      value
+    )}</span>`;
+  });
+
+  if (!items.length) {
+    return `
+      <div class="part-change-list part-change-list-compact">
+        <span class="part-change part-change-neutral">${emptyText}</span>
+      </div>
+    `;
+  }
+
+  return `<div class="part-change-list part-change-list-compact">${items.join('')}</div>`;
+}
+
 function renderPartComparison(part, equippedPart) {
   const isCurrent = equippedPart && equippedPart.id === part.id;
   const referencePart = isCurrent ? null : equippedPart;
@@ -313,6 +334,85 @@ function closeDifficultyModal() {
   }
 }
 
+function isModalOpen(node) {
+  return Boolean(node && !node.hidden);
+}
+
+function isAnyModalOpen() {
+  return isModalOpen(el.difficultyModal) || isModalOpen(el.noticeModal);
+}
+
+function openNoticeModal(title, message, options = {}) {
+  if (!el.noticeModal) {
+    return;
+  }
+
+  gameState.noticeModalConfig = {
+    showCancel: Boolean(options.showCancel),
+    confirmText: options.confirmText || '确定',
+    cancelText: options.cancelText || '取消',
+    onConfirm: typeof options.onConfirm === 'function' ? options.onConfirm : null,
+    onCancel: typeof options.onCancel === 'function' ? options.onCancel : null,
+  };
+
+  if (el.noticeModalTitle) {
+    el.noticeModalTitle.textContent = title || '提示';
+  }
+
+  if (el.noticeModalMessage) {
+    el.noticeModalMessage.textContent = message || '';
+  }
+
+  if (el.noticeModalCancelBtn) {
+    el.noticeModalCancelBtn.hidden = !gameState.noticeModalConfig.showCancel;
+    el.noticeModalCancelBtn.textContent = gameState.noticeModalConfig.cancelText;
+  }
+
+  if (el.noticeModalConfirmBtn) {
+    el.noticeModalConfirmBtn.textContent = gameState.noticeModalConfig.confirmText;
+  }
+
+  el.noticeModal.hidden = false;
+
+  const focusTarget =
+    gameState.noticeModalConfig.showCancel && el.noticeModalCancelBtn
+      ? el.noticeModalCancelBtn
+      : el.noticeModalConfirmBtn;
+
+  if (focusTarget) {
+    requestAnimationFrame(() => {
+      focusTarget.focus();
+    });
+  }
+}
+
+function closeNoticeModal(action = 'cancel') {
+  const noticeModalConfig = gameState.noticeModalConfig || null;
+  gameState.noticeModalConfig = null;
+
+  if (el.noticeModal) {
+    el.noticeModal.hidden = true;
+  }
+
+  if (el.noticeModalCancelBtn) {
+    el.noticeModalCancelBtn.hidden = true;
+    el.noticeModalCancelBtn.textContent = '取消';
+  }
+
+  if (el.noticeModalConfirmBtn) {
+    el.noticeModalConfirmBtn.textContent = '确定';
+  }
+
+  if (action === 'confirm' && noticeModalConfig && noticeModalConfig.onConfirm) {
+    noticeModalConfig.onConfirm();
+    return;
+  }
+
+  if (action !== 'confirm' && noticeModalConfig && noticeModalConfig.onCancel) {
+    noticeModalConfig.onCancel();
+  }
+}
+
 function getPartById(partId) {
   return gameState.inventory.find((part) => part.id === partId) || null;
 }
@@ -360,6 +460,201 @@ function hasOwnedPart(part) {
   return gameState.inventory.some((ownedPart) => isSamePart(part, ownedPart));
 }
 
+function getPartTemplate(part) {
+  if (!part) {
+    return null;
+  }
+  if (part.templateId && PART_POOL_BY_TEMPLATE_ID[part.templateId]) {
+    return PART_POOL_BY_TEMPLATE_ID[part.templateId];
+  }
+  return (
+    PART_POOL.find(
+      (candidate) =>
+        candidate.type === part.type &&
+        candidate.name === part.name &&
+        candidate.price === part.price &&
+        getPartRarity(candidate) === getPartRarity(part)
+    ) ||
+    PART_POOL.find(
+      (candidate) => candidate.type === part.type && candidate.name === part.name
+    ) ||
+    null
+  );
+}
+
+function getPartTemplateId(part) {
+  const template = getPartTemplate(part);
+  if (template) {
+    return template.templateId;
+  }
+  if (part && part.templateId) {
+    return part.templateId;
+  }
+  return part ? createPartTemplateId(part) : '';
+}
+
+function getOwnedPartCounts() {
+  return gameState.inventory.reduce((counts, part) => {
+    const templateId = getPartTemplateId(part);
+    if (!templateId) {
+      return counts;
+    }
+    counts[templateId] = (counts[templateId] || 0) + 1;
+    return counts;
+  }, {});
+}
+
+function isAllSlotsFilled() {
+  return EQUIPMENT_SLOTS.every((type) => Boolean(gameState.equippedParts[type]));
+}
+
+function formatDateTime(value) {
+  if (!value) {
+    return '--';
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '--';
+  }
+  return date.toLocaleString('zh-CN', { hour12: false });
+}
+
+function formatDifficultyStatMap(values) {
+  return DIFFICULTY_ORDER.map((key) => `${DIFFICULTIES[key].name} ${values[key] || 0}`).join(' / ');
+}
+
+function normalizeDifficultyStatMap(source) {
+  const next = createDifficultyStatsMap();
+  const raw = source && typeof source === 'object' ? source : {};
+  DIFFICULTY_ORDER.forEach((key) => {
+    next[key] = Math.max(0, Math.floor(Number(raw[key]) || 0));
+  });
+  return next;
+}
+
+function estimateMigratedTotalWins(data, totalRaces) {
+  const inferredWin = String(data.lastRank || '-') === '第 1 名' ? 1 : 0;
+  const streakFloor = Math.max(
+    0,
+    Math.floor(Number(data.bestWinStreak) || 0),
+    Math.floor(Number(data.currentWinStreak) || 0),
+    inferredWin
+  );
+  return Math.min(totalRaces, streakFloor);
+}
+
+function sanitizeStatsData(data, fallback = {}) {
+  const totalRaces = Math.max(
+    0,
+    Math.floor(Number((data && data.totalRaces) ?? fallback.totalRaces) || 0)
+  );
+  const totalWins = Math.max(
+    0,
+    Math.floor(Number((data && data.totalWins) ?? fallback.totalWins) || 0)
+  );
+  const totalLosses = Math.max(
+    0,
+    Math.floor(Number((data && data.totalLosses) ?? fallback.totalLosses) || 0)
+  );
+  const currentStreak = Math.max(
+    0,
+    Math.floor(Number((data && data.currentStreak) ?? fallback.currentStreak) || 0)
+  );
+  const bestStreak = Math.max(
+    currentStreak,
+    Math.floor(Number((data && data.bestStreak) ?? fallback.bestStreak) || 0)
+  );
+  const fifthPlaceStreak = Math.max(
+    0,
+    Math.floor(Number((data && data.fifthPlaceStreak) ?? fallback.fifthPlaceStreak) || 0)
+  );
+  const highestCash = Math.max(
+    0,
+    Math.floor(Number((data && data.highestCash) ?? fallback.highestCash) || 0)
+  );
+  const winsByDifficulty = normalizeDifficultyStatMap(
+    (data && data.winsByDifficulty) || fallback.winsByDifficulty
+  );
+  const bestStreakByDifficulty = normalizeDifficultyStatMap(
+    (data && data.bestStreakByDifficulty) || fallback.bestStreakByDifficulty
+  );
+  const wonWithBuildAchievements = Array.isArray(data && data.wonWithBuildAchievements)
+    ? Array.from(
+        new Set(
+          data.wonWithBuildAchievements
+            .map((value) => String(value || '').trim())
+            .filter(Boolean)
+        )
+      )
+    : Array.isArray(fallback.wonWithBuildAchievements)
+      ? Array.from(new Set(fallback.wonWithBuildAchievements))
+      : [];
+  const wonWithSpecialParts = Array.isArray(data && data.wonWithSpecialParts)
+    ? Array.from(
+        new Set(
+          data.wonWithSpecialParts
+            .map((value) => String(value || '').trim())
+            .filter(Boolean)
+        )
+      )
+    : Array.isArray(fallback.wonWithSpecialParts)
+      ? Array.from(new Set(fallback.wonWithSpecialParts))
+      : [];
+
+  return {
+    totalRaces,
+    totalWins: Math.min(totalRaces, totalWins),
+    totalLosses: Math.min(totalRaces, totalLosses),
+    currentStreak,
+    bestStreak,
+    fifthPlaceStreak,
+    highestCash,
+    winsByDifficulty,
+    bestStreakByDifficulty,
+    hasFilledAllSlots: Boolean(
+      (data && data.hasFilledAllSlots) ?? fallback.hasFilledAllSlots
+    ),
+    wonWithBuildAchievements,
+    wonWithSpecialParts,
+  };
+}
+
+function sanitizeAchievementsData(data) {
+  const completed = {};
+  const rawCompleted = data && typeof data.completed === 'object' ? data.completed : {};
+
+  ACHIEVEMENTS.forEach((achievement) => {
+    const completedAt = rawCompleted[achievement.id];
+    if (typeof completedAt === 'string' && completedAt.trim()) {
+      completed[achievement.id] = completedAt;
+    }
+  });
+
+  const lastUnlocked = Array.isArray(data && data.lastUnlocked)
+    ? data.lastUnlocked
+        .map((value) => String(value || '').trim())
+        .filter((value) => Boolean(completed[value]))
+        .slice(0, 8)
+    : [];
+
+  return {
+    completed,
+    lastUnlocked,
+  };
+}
+
+function syncProgressStats() {
+  if (!gameState.stats) {
+    gameState.stats = createDefaultStats();
+  }
+
+  gameState.stats.currentStreak = gameState.currentWinStreak;
+  gameState.stats.bestStreak = Math.max(gameState.stats.bestStreak, gameState.bestWinStreak);
+  gameState.stats.highestCash = Math.max(gameState.stats.highestCash, gameState.cash);
+  gameState.stats.hasFilledAllSlots =
+    gameState.stats.hasFilledAllSlots || isAllSlotsFilled();
+}
+
 function isVehicleStripped() {
   return EQUIPMENT_SLOTS.every((type) => !gameState.equippedParts[type]);
 }
@@ -377,13 +672,14 @@ function checkGameFailure() {
     setPhase('game_over');
     setLights('none');
     addLog('游戏失败：车辆已无装备，现金不足以支付最低难度报名费。');
-    addLog('请点击“重开”重新开始。');
+    addLog('请点击“重开并清档”重新开始。');
   }
 
   return true;
 }
 
 function createSaveData() {
+  syncProgressStats();
   return {
     cash: gameState.cash,
     raceCount: gameState.raceCount,
@@ -395,6 +691,7 @@ function createSaveData() {
     difficulty: getDifficultyKey(),
     inventory: gameState.inventory.map((part) => ({
       id: part.id,
+      templateId: getPartTemplateId(part),
       name: part.name,
       type: part.type,
       rarity: getPartRarity(part),
@@ -404,6 +701,17 @@ function createSaveData() {
     })),
     equippedParts: { ...gameState.equippedParts },
     nextPartId: gameState.nextPartId,
+    stats: {
+      ...gameState.stats,
+      winsByDifficulty: { ...gameState.stats.winsByDifficulty },
+      bestStreakByDifficulty: { ...gameState.stats.bestStreakByDifficulty },
+      wonWithBuildAchievements: gameState.stats.wonWithBuildAchievements.slice(),
+      wonWithSpecialParts: gameState.stats.wonWithSpecialParts.slice(),
+    },
+    achievements: {
+      completed: { ...gameState.achievements.completed },
+      lastUnlocked: gameState.achievements.lastUnlocked.slice(),
+    },
   };
 }
 
@@ -434,6 +742,7 @@ function sanitizeSaveData(data) {
 
         parts.push({
           id,
+          templateId: getPartTemplateId(part),
           name: String(part.name || '未命名零件'),
           type: part.type,
           rarity: normalizeRarity(part.rarity),
@@ -456,10 +765,25 @@ function sanitizeSaveData(data) {
 
   const maxPartId = inventory.reduce((maxId, part) => Math.max(maxId, part.id), 0);
   const nextPartId = Math.max(Number(data.nextPartId) || 1, maxPartId + 1);
+  const totalRaces = Math.max(0, Math.floor(Number(data.raceCount) || 0));
+  const fallbackStats = {
+    totalRaces,
+    totalWins: estimateMigratedTotalWins(data, totalRaces),
+    totalLosses: Math.max(0, totalRaces - estimateMigratedTotalWins(data, totalRaces)),
+    currentStreak: Math.max(0, Math.floor(Number(data.currentWinStreak) || 0)),
+    bestStreak: Math.max(0, Math.floor(Number(data.bestWinStreak) || 0)),
+    fifthPlaceStreak: 0,
+    highestCash: Math.max(1500, Math.floor(Number(data.cash) || 0)),
+    winsByDifficulty: createDifficultyStatsMap(),
+    bestStreakByDifficulty: createDifficultyStatsMap(),
+    hasFilledAllSlots: EQUIPMENT_SLOTS.every((type) => Boolean(equippedParts[type])),
+    wonWithBuildAchievements: [],
+    wonWithSpecialParts: [],
+  };
 
   return {
     cash: Math.max(0, Math.floor(Number(data.cash) || 0)),
-    raceCount: Math.max(0, Math.floor(Number(data.raceCount) || 0)),
+    raceCount: totalRaces,
     lastRank: String(data.lastRank || '-'),
     bestReactionTime:
       Number.isFinite(Number(data.bestReactionTime)) && Number(data.bestReactionTime) >= 0
@@ -475,6 +799,8 @@ function sanitizeSaveData(data) {
     inventory,
     equippedParts,
     nextPartId,
+    stats: sanitizeStatsData(data.stats, fallbackStats),
+    achievements: sanitizeAchievementsData(data.achievements),
   };
 }
 
@@ -493,7 +819,10 @@ function applyPersistentState(data) {
   gameState.inventory = data.inventory;
   gameState.equippedParts = data.equippedParts;
   gameState.nextPartId = data.nextPartId;
+  gameState.stats = sanitizeStatsData(data.stats, data.stats);
+  gameState.achievements = sanitizeAchievementsData(data.achievements);
   recalculatePlayerStats();
+  syncProgressStats();
 }
 
 function refreshAfterPersistentChange() {
@@ -501,13 +830,17 @@ function refreshAfterPersistentChange() {
   gameState.reactionTime = null;
   gameState.playerStarted = false;
   gameState.panelReturnPhase = 'idle';
-  gameState.restartArmed = false;
-  el.restartBtn.textContent = '重开';
+  if (el.restartBtn) {
+    el.restartBtn.textContent = '重开并清档';
+  }
   resetCars();
   refreshShop();
   renderGarage();
   renderDifficulty();
   renderAtlas();
+  if (typeof renderProfile === 'function') {
+    renderProfile();
+  }
   setLights('none');
   setPhase('idle');
   updateStats();
@@ -559,6 +892,10 @@ function setActivePage(page) {
     renderAtlas();
   }
 
+  if (page === 'profile' && typeof renderProfile === 'function') {
+    renderProfile();
+  }
+
   updateButtons();
 }
 
@@ -577,9 +914,15 @@ function updateButtons() {
   el.registerBtn.disabled = phase !== 'idle';
   el.startBtn.disabled = !countdownOrRace || gameState.playerStarted;
   el.nextBtn.disabled = !canPrepareNextRace;
-  el.saveBtn.disabled = countdownOrRace || gameOver;
-  el.loadBtn.disabled = countdownOrRace;
-  el.restartBtn.disabled = countdownOrRace;
+  if (el.saveBtn) {
+    el.saveBtn.disabled = countdownOrRace || gameOver;
+  }
+  if (el.loadBtn) {
+    el.loadBtn.disabled = countdownOrRace;
+  }
+  if (el.restartBtn) {
+    el.restartBtn.disabled = countdownOrRace;
+  }
 
   Array.from(el.shopBody.querySelectorAll('button')).forEach((button) => {
     const index = Number(button.dataset.index);
@@ -617,6 +960,13 @@ function updateButtons() {
     }
   );
 
+  Array.from(el.garageSlotsBody.querySelectorAll('[data-action="unequip-slot"]')).forEach(
+    (button) => {
+      const part = getEquippedPart(button.dataset.slot);
+      button.disabled = !canManageTuning() || !part;
+    }
+  );
+
   const inventoryButtons = [
     ...el.tuningEquippedBody.querySelectorAll('button'),
     ...el.tuningUnequippedBody.querySelectorAll('button'),
@@ -633,9 +983,9 @@ function updateButtons() {
 
   if (el.difficultyChoices) {
     const canChangeDifficulty = !countdownOrRace && !gameOver;
-    if (el.difficultyOpenBtn) {
-      el.difficultyOpenBtn.disabled = !canChangeDifficulty;
-    }
+    el.difficultyOpenButtons.forEach((button) => {
+      button.disabled = !canChangeDifficulty;
+    });
     if (!canChangeDifficulty) {
       closeDifficultyModal();
     }
@@ -676,6 +1026,7 @@ function setLights(active) {
 }
 
 function updateStats() {
+  syncProgressStats();
   const player = gameState.player;
   el.engineStat.textContent = player.engine;
   el.tireStat.textContent = player.tire;
@@ -686,7 +1037,9 @@ function updateStats() {
   el.cashStat.textContent = `${gameState.cash} 元`;
   el.shopCashStat.textContent = `${gameState.cash} 元`;
   el.tuningCashStat.textContent = `${gameState.cash} 元`;
-  el.storageCashStat.textContent = `${gameState.cash} 元`;
+  if (el.profileCashStat) {
+    el.profileCashStat.textContent = `${gameState.cash} 元`;
+  }
   if (el.atlasCashStat) {
     el.atlasCashStat.textContent = `${gameState.cash} 元`;
   }
@@ -735,7 +1088,16 @@ function updateStats() {
   el.registerBtn.textContent = `报名比赛（${getEntryFee()} 元）`;
   el.opponentPowerText.textContent = getOpponentPower().toFixed(2);
   el.currentVehicleText.textContent = '玩家破车';
+  if (el.versionText) {
+    el.versionText.textContent = GAME_VERSION;
+  }
+  if (el.versionNote) {
+    el.versionNote.textContent = GAME_VERSION_NOTE;
+  }
   renderDifficulty();
+  if (typeof renderProfile === 'function') {
+    renderProfile();
+  }
   updateButtons();
 }
 
@@ -748,6 +1110,12 @@ function renderDifficulty() {
   }
   if (el.difficultyCurrentMeta && activeConfig) {
     el.difficultyCurrentMeta.textContent = `报名${getDifficultyEntryFee(activeKey)}元 · 奖金×${activeConfig.rewardMultiplier} · 强度×${activeConfig.opponentMultiplier}`;
+  }
+  if (el.profileDifficultyName && activeConfig) {
+    el.profileDifficultyName.textContent = activeConfig.name;
+  }
+  if (el.profileDifficultyMeta && activeConfig) {
+    el.profileDifficultyMeta.textContent = `报名${getDifficultyEntryFee(activeKey)}元 · 奖金×${activeConfig.rewardMultiplier} · 强度×${activeConfig.opponentMultiplier}`;
   }
 
   if (!el.difficultyChoices) {
@@ -779,7 +1147,7 @@ function renderDifficulty() {
 
 // 安全自动保存：失败只写日志，不阻塞游戏；比赛锁定阶段或初始化未完成时跳过。
 function autoSaveGame() {
-  if (!gameState.ready || isRaceLockedPhase(gameState.phase)) {
+  if (!gameState.ready || isRaceLockedPhase(gameState.phase) || gameState.storageWriteBlockedReason) {
     return;
   }
   try {

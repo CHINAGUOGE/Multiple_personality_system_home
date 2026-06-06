@@ -10,7 +10,7 @@ const PHASE_LABELS = {
   finished: '比赛结束',
   false_start: '抢跑犯规',
   shop: '商店',
-  garage: '仓库',
+  garage: '改装',
   game_over: '游戏失败',
 };
 
@@ -20,6 +20,8 @@ const PART_SELL_RATE = 0.8;
 const FINISH = 100;
 const TICK_MS = 45;
 const STORAGE_KEY = 'mpsteam-race-save-v1';
+const GAME_VERSION = 'v1.6';
+const GAME_VERSION_NOTE = '新增自动加载存档、保存成功提示与重开清档确认。';
 
 const BASE_PLAYER_STATS = {
   engine: 10,
@@ -94,19 +96,29 @@ const PART_RARITY_MIGRATIONS = {
 const DIFFICULTIES = {
   easy: {
     name: '休闲',
-    opponentMultiplier: 0.98,
+    opponentMultiplier: 0.92,
     rewardMultiplier: 0.8,
     dropRateMultiplier: 1.2,
     entryFeeMultiplier: 0.8,
-    chaseRate: 0.02,
+    chaseRate: 0.015,
+    opponentChaseCap: 0.7,
+    opponentChaseStartRace: 6,
+    opponentChaseRampRaces: 14,
+    earlyRaceAssist: 0.2,
+    reactionGrace: 0.06,
   },
   normal: {
     name: '标准',
-    opponentMultiplier: 1.12,
+    opponentMultiplier: 1.04,
     rewardMultiplier: 1.0,
     dropRateMultiplier: 1.0,
     entryFeeMultiplier: 1.0,
-    chaseRate: 0.06,
+    chaseRate: 0.045,
+    opponentChaseCap: 0.85,
+    opponentChaseStartRace: 6,
+    opponentChaseRampRaces: 14,
+    earlyRaceAssist: 0.18,
+    reactionGrace: 0.04,
   },
   hard: {
     name: '挑战',
@@ -115,6 +127,9 @@ const DIFFICULTIES = {
     dropRateMultiplier: 0.85,
     entryFeeMultiplier: 1.3,
     chaseRate: 0.12,
+    opponentChaseCap: 0.95,
+    opponentChaseStartRace: 6,
+    opponentChaseRampRaces: 14,
   },
   expert: {
     name: '专家',
@@ -123,6 +138,9 @@ const DIFFICULTIES = {
     dropRateMultiplier: 0.65,
     entryFeeMultiplier: 1.7,
     chaseRate: 0.24,
+    opponentChaseCap: 1.0,
+    opponentChaseStartRace: 7,
+    opponentChaseRampRaces: 16,
   },
   nightmare: {
     name: '噩梦',
@@ -130,7 +148,10 @@ const DIFFICULTIES = {
     rewardMultiplier: 2.2,
     dropRateMultiplier: 0.45,
     entryFeeMultiplier: 2.4,
-    chaseRate: 0.3,
+    chaseRate: 0.25,
+    opponentChaseCap: 1.0,
+    opponentChaseStartRace: 10,
+    opponentChaseRampRaces: 24,
   },
 };
 
@@ -154,7 +175,232 @@ const RACE_TIERS = [
   { minRaceCount: 12, label: '地下高速赛' },
 ];
 
-const PART_POOL = [
+const PART_TEMPLATE_ID_OVERRIDES = {
+  'Gearbox:雪主任祖传扳手': 'gearbox_xue_wrench',
+  'Stability:小雨小报赞助': 'stability_xiaoyu_sponsor',
+};
+
+function createPartTemplateSeed(part) {
+  return `${part.type}|${part.name}|${part.rarity}|${part.price}|${part.effectText}`;
+}
+
+function createStableToken(value) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function createPartTemplateId(part) {
+  const overrideKey = `${part.type}:${part.name}`;
+  if (PART_TEMPLATE_ID_OVERRIDES[overrideKey]) {
+    return PART_TEMPLATE_ID_OVERRIDES[overrideKey];
+  }
+
+  return `${part.type.toLowerCase()}_${createStableToken(createPartTemplateSeed(part))}`;
+}
+
+const ACHIEVEMENTS = [
+  {
+    id: 'firstRace',
+    name: '初次上路',
+    description: '完成第一场比赛。',
+    category: '入门',
+    check: 'firstRace',
+    flavor: '第一张参赛单终于不是空白。',
+  },
+  {
+    id: 'firstWin',
+    name: '第一桶金',
+    description: '首次赢得一场比赛。',
+    category: '入门',
+    check: 'firstWin',
+    flavor: '奖金到账，车队账本终于不是纯亏损了。',
+  },
+  {
+    id: 'firstPart',
+    name: '改装开始',
+    description: '首次购买零件。',
+    category: '入门',
+    check: 'firstPart',
+    flavor: '车库里第一次传出了拧螺丝的声音。',
+  },
+  {
+    id: 'firstEquip',
+    name: '拧上去了',
+    description: '首次装备零件。',
+    category: '入门',
+    check: 'firstEquip',
+    flavor: '总之先装上，跑起来再说。',
+  },
+  {
+    id: 'fullSlots',
+    name: '装满再说',
+    description: '首次装满全部槽位。',
+    category: '入门',
+    check: 'fullSlots',
+    flavor: '这下每个位置都塞进东西了。',
+  },
+  {
+    id: 'normalWin',
+    name: '标准车手',
+    description: '在标准难度赢得一场比赛。',
+    category: '难度',
+    check: 'normalWin',
+    flavor: '标准难度的门票算是拿稳了。',
+  },
+  {
+    id: 'hardWin',
+    name: '挑战者',
+    description: '在挑战难度赢得一场比赛。',
+    category: '难度',
+    check: 'hardWin',
+    flavor: '开始有人认真看你这台车了。',
+  },
+  {
+    id: 'expertWin',
+    name: '专家入场券',
+    description: '在专家难度赢得一场比赛。',
+    category: '难度',
+    check: 'expertWin',
+    flavor: '再往上，已经不是随便乱跑的局了。',
+  },
+  {
+    id: 'nightmareWin',
+    name: '噩梦执照',
+    description: '在噩梦难度赢得一场比赛。',
+    category: '难度',
+    check: 'nightmareWin',
+    flavor: '雪主任在文件角落签了个名。',
+  },
+  {
+    id: 'nightmareStreak3',
+    name: '噩梦不是梦',
+    description: '在噩梦难度达成 3 连胜。',
+    category: '难度',
+    check: 'nightmareStreak3',
+    flavor: '连噩梦局都开始像固定节目了。',
+  },
+  {
+    id: 'win10',
+    name: '十胜车手',
+    description: '累计赢得 10 场比赛。',
+    category: '经营',
+    check: 'win10',
+    flavor: '奖杯还不多，胜场已经像样了。',
+  },
+  {
+    id: 'race30',
+    name: '再来一局',
+    description: '累计完成 30 场比赛。',
+    category: '经营',
+    check: 'race30',
+    flavor: '今天最后一把这种话，已经没人信了。',
+  },
+  {
+    id: 'cash5000',
+    name: '小有积蓄',
+    description: '资金首次达到 5000。',
+    category: '经营',
+    check: 'cash5000',
+    flavor: '账面终于有点样子了。',
+  },
+  {
+    id: 'cash20000',
+    name: '王都富婆车队',
+    description: '资金首次达到 20000。',
+    category: '经营',
+    check: 'cash20000',
+    flavor: '财务看着余额，语气都稳了不少。',
+  },
+  {
+    id: 'streak3',
+    name: '手感来了',
+    description: '达成 3 连胜。',
+    category: '经营',
+    check: 'streak3',
+    flavor: '这两天上赛道，方向盘都顺手了。',
+  },
+  {
+    id: 'streak5',
+    name: '一路狂飙',
+    description: '达成 5 连胜。',
+    category: '经营',
+    check: 'streak5',
+    flavor: '维修站已经开始默认你会赢。',
+  },
+  {
+    id: 'hpBeliever',
+    name: '大马力信仰',
+    description: '以 hp 主属性倾向超过 55% 的配置赢得一场比赛。',
+    category: '整活',
+    check: 'hpBeliever',
+    flavor: '所有问题，都被试着用马力解决了。',
+  },
+  {
+    id: 'stableDriver',
+    name: '稳字当头',
+    description: '以高稳定配置赢得一场比赛。',
+    category: '整活',
+    check: 'stableDriver',
+    flavor: '方向稳了，心态也跟着稳了。',
+  },
+  {
+    id: 'xueWrenchWin',
+    name: '雪主任认可',
+    description: '装备“雪主任祖传扳手”并赢得一场比赛。',
+    category: '整活',
+    hidden: true,
+    check: 'xueWrenchWin',
+    flavor: '扳手上那层旧漆，好像真的带点玄学。',
+  },
+  {
+    id: 'xiaoyuSponsorWin',
+    name: '小雨小报头条',
+    description: '装备“小雨小报赞助”并赢得一场比赛。',
+    category: '整活',
+    hidden: true,
+    check: 'xiaoyuSponsorWin',
+    flavor: '明天小报标题已经想好了。',
+  },
+  {
+    id: 'broke_entry_attempt',
+    name: '家财散尽',
+    description: '钱包空空，还想上赛道。',
+    category: '趣味',
+    hidden: true,
+    check: 'brokeEntryAttempt',
+    flavor: '钱不够也要点报名，精神可嘉。',
+  },
+  {
+    id: 'false_start_hot_tofu',
+    name: '心急吃不了热豆腐',
+    description: '还没起步就抢跑，裁判都愣了一下。',
+    category: '趣味',
+    check: 'falseStartHotTofu',
+    flavor: '还没亮绿灯，脚已经先替脑子做了决定。',
+  },
+  {
+    id: 'racing_enthusiast_50_wins',
+    name: '竞速爱好者',
+    description: '连续赢下 50 场比赛，赛道已经认识你了。',
+    category: '挑战',
+    check: 'racingEnthusiast50Wins',
+    flavor: '跑到第五十场还在连胜，连终点线都开始眼熟了。',
+  },
+  {
+    id: 'five_fifth_places',
+    name: '五五大顺',
+    description: '连续五场第五名，也是一种稳定发挥。',
+    category: '趣味',
+    check: 'fiveFifthPlaces',
+    flavor: '每次都精准停在第五，稳定得有点离谱。',
+  },
+];
+
+const RAW_PART_POOL = [
   {
     name: '便宜机油',
     type: 'Engine',
@@ -375,6 +621,14 @@ const PART_POOL = [
     changes: { stability: 4, weight: -2 },
   },
   {
+    name: '轻量复合车门',
+    type: 'Body',
+    price: 2100,
+    rarity: 'epic',
+    effectText: '重量 -45kg，稳定性 -3，马力 +3',
+    changes: { weight: -45, stability: -3, hp: 3 },
+  },
+  {
     name: '碳纤维全车壳',
     type: 'Body',
     price: 3400,
@@ -489,6 +743,14 @@ const PART_POOL = [
     changes: { hp: 16, engine: 4, stability: -4 },
   },
   {
+    name: '静音高流量排气',
+    type: 'Exhaust',
+    price: 1850,
+    rarity: 'epic',
+    effectText: '马力 +15，引擎 +4，稳定性 -2，重量 -4kg',
+    changes: { hp: 15, engine: 4, stability: -2, weight: -4 },
+  },
+  {
     name: '午夜噪声投诉套件',
     type: 'Exhaust',
     price: 3200,
@@ -593,6 +855,14 @@ const PART_POOL = [
     rarity: 'epic',
     effectText: '稳定性 +10，重量 +18kg',
     changes: { stability: 10, weight: 18 },
+  },
+  {
+    name: '街赛稳定套件',
+    type: 'Stability',
+    price: 1650,
+    rarity: 'rare',
+    effectText: '稳定性 +11，轮胎 +3，重量 +10kg',
+    changes: { stability: 11, tire: 3, weight: 10 },
   },
   {
     name: '小雨小报赞助',
@@ -735,3 +1005,13 @@ const PART_POOL = [
     changes: { stability: 32, tire: 6, weight: 34, hp: -4 },
   },
 ];
+
+const PART_POOL = RAW_PART_POOL.map((part) => ({
+  ...part,
+  templateId: part.templateId || createPartTemplateId(part),
+}));
+
+const PART_POOL_BY_TEMPLATE_ID = PART_POOL.reduce((map, part) => {
+  map[part.templateId] = part;
+  return map;
+}, {});

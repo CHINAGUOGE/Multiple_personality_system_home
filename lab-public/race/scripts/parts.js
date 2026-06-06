@@ -1,5 +1,27 @@
 'use strict';
 
+const tuningLayoutMedia =
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(max-width: 900px)')
+    : null;
+let activeTuningSlot = EQUIPMENT_SLOTS[0] || null;
+let expandedTuningSlot = null;
+let lastTuningLayout = null;
+
+if (tuningLayoutMedia) {
+  const rerenderTuningForLayout = () => {
+    if (el.garageSlotsBody) {
+      renderTuning();
+    }
+  };
+
+  if (typeof tuningLayoutMedia.addEventListener === 'function') {
+    tuningLayoutMedia.addEventListener('change', rerenderTuningForLayout);
+  } else if (typeof tuningLayoutMedia.addListener === 'function') {
+    tuningLayoutMedia.addListener(rerenderTuningForLayout);
+  }
+}
+
 function getShopPartWeight(part) {
   return hasOwnedPart(part) ? SHOP_OWNED_PART_WEIGHT : 1;
 }
@@ -164,114 +186,262 @@ function buyPart(index) {
   part.bought = true;
 
   addLog(`购买 ${part.name}，${part.effectText}，花费 ${part.price} 元。`);
-  addLog(`${ownedPart.name} 已进入仓库。`);
+  addLog(`${ownedPart.name} 已收入车队库存。`);
   if (equippedPart) {
-    addLog(
-      `${formatPartType(ownedPart.type)}槽已有 ${equippedPart.name}，如需替换请去仓库手动换装。`
-    );
+    addLog(`${formatPartType(ownedPart.type)}槽已有 ${equippedPart.name}，如需替换请去改装页手动换装。`);
   } else {
     addLog(`${formatPartType(ownedPart.type)}槽为空，已自动装备 ${ownedPart.name}。`);
   }
   updateStats();
   renderShop();
   renderGarage();
+  renderAtlas();
+  if (typeof checkAchievements === 'function') {
+    checkAchievements({ source: 'buyPart' });
+  }
   autoSaveGame();
 }
 
 function renderGarage() {
   renderTuning();
-  renderStorage();
+}
+
+function isTuningMobileLayout() {
+  return tuningLayoutMedia ? tuningLayoutMedia.matches : window.innerWidth <= 900;
+}
+
+function syncTuningLayoutState() {
+  const nextLayout = isTuningMobileLayout() ? 'mobile' : 'desktop';
+
+  if (!EQUIPMENT_SLOTS.includes(activeTuningSlot)) {
+    activeTuningSlot = EQUIPMENT_SLOTS[0] || null;
+  }
+
+  if (expandedTuningSlot && !EQUIPMENT_SLOTS.includes(expandedTuningSlot)) {
+    expandedTuningSlot = null;
+  }
+
+  if (nextLayout === 'desktop') {
+    activeTuningSlot = activeTuningSlot || expandedTuningSlot || EQUIPMENT_SLOTS[0] || null;
+  } else if (lastTuningLayout === null) {
+    expandedTuningSlot = null;
+  }
+
+  lastTuningLayout = nextLayout;
+  return nextLayout;
+}
+
+function getTuningPartsByType(type) {
+  const equippedPart = getEquippedPart(type);
+  return gameState.inventory
+    .filter((part) => part.type === type)
+    .sort((a, b) => {
+      if (equippedPart) {
+        if (a.id === equippedPart.id) {
+          return -1;
+        }
+        if (b.id === equippedPart.id) {
+          return 1;
+        }
+      }
+
+      return a.id - b.id;
+    });
+}
+
+function getSlotSummaryTags(part) {
+  return renderPartChangeTags(part ? part.changes : {}, part ? '属性无变化' : '当前无加成');
+}
+
+function createSlotSummaryCard(type, layout) {
+  const equippedPart = getEquippedPart(type);
+  const active = layout === 'desktop' ? activeTuningSlot === type : expandedTuningSlot === type;
+  const triggerAction = layout === 'desktop' ? 'select-slot' : 'toggle-slot';
+  const stateLabel = active ? (layout === 'desktop' ? '已选中' : '已展开') : '更换';
+  const card = document.createElement('article');
+
+  card.className = `slot-summary-card${active ? ' is-active' : ''}`;
+  card.innerHTML = `
+    <button
+      type="button"
+      class="slot-summary-trigger"
+      data-action="${triggerAction}"
+      data-slot="${type}"
+      ${layout === 'mobile' ? `aria-expanded="${active}"` : ''}
+    >
+      <div class="slot-summary-top">
+        <div class="slot-summary-copy">
+          <h3>${formatPartType(type)}</h3>
+          <p class="slot-summary-current">${
+            equippedPart ? `当前：#${equippedPart.id} ${equippedPart.name}` : '当前：未装备'
+          }</p>
+        </div>
+        <span class="slot-summary-state">${stateLabel}</span>
+      </div>
+      <p class="slot-summary-effect">${
+        equippedPart ? `效果：${equippedPart.effectText}` : '效果：没有装备效果'
+      }</p>
+      ${getSlotSummaryTags(equippedPart)}
+    </button>
+  `;
+
+  if (layout === 'mobile' && active) {
+    card.appendChild(createSlotDetailPanel(type, true));
+  }
+
+  return card;
+}
+
+function createPartOptionList(type) {
+  const parts = getTuningPartsByType(type);
+  const equippedPart = getEquippedPart(type);
+  const choices = document.createElement('div');
+
+  choices.className = 'slot-choices';
+  if (parts.length === 0) {
+    choices.innerHTML = `
+      <div class="slot-empty-state">
+        <p>当前槽位还没有可用零件。</p>
+      </div>
+    `;
+    return choices;
+  }
+
+  choices.innerHTML = `
+    <div class="slot-choice-scroller">
+      <ul class="part-option-list">
+        ${parts
+          .map((part) => {
+            const equipped = equippedPart && equippedPart.id === part.id;
+            return `
+              <li class="part-option-row${equipped ? ' is-current' : ''}">
+                <div class="part-option-top">
+                  <div class="part-option-meta">
+                    ${renderPartRarity(part)}
+                    <span class="part-option-id">#${part.id}</span>
+                    <span class="part-option-name part-quality part-quality-${getPartRarity(part)}">${part.name}</span>
+                  </div>
+                  <button
+                    type="button"
+                    class="part-option-button"
+                    data-action="equip-slot"
+                    data-part-id="${part.id}"
+                    ${equipped ? 'disabled' : ''}
+                  >
+                    ${equipped ? '已装备' : '装备'}
+                  </button>
+                </div>
+                ${renderPartChangeTags(getPartComparisonChanges(part, equippedPart))}
+              </li>
+            `;
+          })
+          .join('')}
+      </ul>
+    </div>
+  `;
+
+  return choices;
+}
+
+function createSlotDetailPanel(type, mobile = false) {
+  const equippedPart = getEquippedPart(type);
+  const panel = document.createElement(mobile ? 'div' : 'section');
+
+  panel.className = `slot-detail-panel${mobile ? ' is-mobile' : ''}`;
+  panel.innerHTML = `
+    <div class="slot-detail-header">
+      <div class="slot-detail-copy">
+        <small class="slot-detail-kicker">${mobile ? '候选零件' : '当前槽位'}</small>
+        <h3>${formatPartType(type)}</h3>
+        <p class="slot-detail-current">${
+          equippedPart ? `当前装备：#${equippedPart.id} ${equippedPart.name}` : '当前装备：未装备'
+        }</p>
+      </div>
+      <button
+        type="button"
+        class="slot-detail-unequip"
+        data-action="unequip-slot"
+        data-slot="${type}"
+        ${equippedPart ? '' : 'disabled'}
+      >
+        ${equippedPart ? '卸下当前' : '当前空槽'}
+      </button>
+    </div>
+    <p class="slot-detail-effect">${
+      equippedPart ? `效果：${equippedPart.effectText}` : '效果：没有装备效果'
+    }</p>
+    ${getSlotSummaryTags(equippedPart)}
+  `;
+  panel.appendChild(createPartOptionList(type));
+  return panel;
+}
+
+function bindTuningSlotEvents() {
+  Array.from(el.garageSlotsBody.querySelectorAll('[data-action="select-slot"]')).forEach(
+    (button) => {
+      button.addEventListener('click', () => {
+        activeTuningSlot = button.dataset.slot;
+        renderTuning();
+      });
+    }
+  );
+
+  Array.from(el.garageSlotsBody.querySelectorAll('[data-action="toggle-slot"]')).forEach(
+    (button) => {
+      button.addEventListener('click', () => {
+        const slot = button.dataset.slot;
+        expandedTuningSlot = expandedTuningSlot === slot ? null : slot;
+        activeTuningSlot = slot;
+        renderTuning();
+      });
+    }
+  );
+
+  Array.from(el.garageSlotsBody.querySelectorAll('[data-action="equip-slot"]')).forEach((button) => {
+    button.addEventListener('click', () => {
+      const part = getPartById(Number(button.dataset.partId));
+      if (!part) {
+        return;
+      }
+
+      activeTuningSlot = part.type;
+      expandedTuningSlot = part.type;
+      changeEquipment(part.type, button.dataset.partId);
+    });
+  });
+
+  Array.from(el.garageSlotsBody.querySelectorAll('[data-action="unequip-slot"]')).forEach(
+    (button) => {
+      button.addEventListener('click', () => {
+        activeTuningSlot = button.dataset.slot;
+        expandedTuningSlot = button.dataset.slot;
+        changeEquipment(button.dataset.slot, '');
+      });
+    }
+  );
 }
 
 function renderTuning() {
   el.garageSlotsBody.innerHTML = '';
   el.tuningEquippedBody.innerHTML = '';
   el.tuningUnequippedBody.innerHTML = '';
+  const layout = syncTuningLayoutState();
+  const tuningLayout = document.createElement('div');
+  const slotOverview = document.createElement('div');
+
+  tuningLayout.className = `tuning-layout tuning-layout-${layout}`;
+  slotOverview.className = 'slot-overview';
 
   EQUIPMENT_SLOTS.forEach((type) => {
-    const parts = gameState.inventory.filter((part) => part.type === type);
-    const equippedPart = getEquippedPart(type);
-    const card = document.createElement('article');
-    card.className = 'slot-card';
-
-    const select = document.createElement('select');
-    select.className = 'slot-card-select';
-    select.dataset.slot = type;
-    select.setAttribute('aria-label', `${formatPartType(type)}槽位`);
-
-    const emptyOption = document.createElement('option');
-    emptyOption.value = '';
-    emptyOption.textContent = parts.length > 0 ? '无部件' : '无可用零件';
-    select.appendChild(emptyOption);
-
-    parts.forEach((part) => {
-      const option = document.createElement('option');
-      option.value = String(part.id);
-      option.textContent = formatPartOption(part, equippedPart);
-      option.className = `part-quality-${getPartRarity(part)}`;
-      select.appendChild(option);
-    });
-
-    select.value = equippedPart ? String(equippedPart.id) : '';
-    if (equippedPart) {
-      select.classList.add(`part-quality-${getPartRarity(equippedPart)}`);
-    }
-    select.addEventListener('change', () => changeEquipment(type, select.value));
-
-    const details = document.createElement('div');
-    details.className = 'slot-card-details';
-    details.innerHTML = `
-      <h3>${formatPartType(type)}</h3>
-      <p class="slot-card-current">${equippedPart ? `当前：${renderPartName(equippedPart, true)}` : '当前：未装备'}</p>
-      ${
-        equippedPart
-          ? renderPartComparison(equippedPart, equippedPart)
-          : '<small>没有装备效果</small>'
-      }
-    `;
-
-    const choices = document.createElement('div');
-    choices.className = 'slot-choices';
-    if (parts.length > 0) {
-      choices.innerHTML = `
-        <small class="part-compare-label">可选零件对比</small>
-        <ul class="part-option-list">
-          ${parts
-            .map((part) => {
-              const equipped = equippedPart && equippedPart.id === part.id;
-              return `
-                <li class="part-option-row${equipped ? ' is-current' : ''}">
-                  <div class="part-option-heading">
-                    ${renderPartOptionLabel(part, equippedPart)}
-                    <button
-                      type="button"
-                      class="part-option-button"
-                      data-action="equip-slot"
-                      data-part-id="${part.id}"
-                      ${equipped ? 'disabled' : ''}
-                    >
-                      ${equipped ? '已装备' : '装备'}
-                    </button>
-                  </div>
-                  ${renderPartComparison(part, equippedPart)}
-                </li>
-              `;
-            })
-            .join('')}
-        </ul>
-      `;
-    } else {
-      choices.innerHTML = '<small>当前槽位还没有可用零件。</small>';
-    }
-    Array.from(choices.querySelectorAll('[data-action="equip-slot"]')).forEach((button) => {
-      button.addEventListener('click', () => changeEquipment(type, button.dataset.partId));
-    });
-
-    card.appendChild(details);
-    card.appendChild(select);
-    card.appendChild(choices);
-    el.garageSlotsBody.appendChild(card);
+    slotOverview.appendChild(createSlotSummaryCard(type, layout));
   });
+
+  tuningLayout.appendChild(slotOverview);
+  if (layout === 'desktop' && activeTuningSlot) {
+    tuningLayout.appendChild(createSlotDetailPanel(activeTuningSlot));
+  }
+  el.garageSlotsBody.appendChild(tuningLayout);
+  bindTuningSlotEvents();
 
   const equippedItems = gameState.inventory.filter(
     (part) => gameState.equippedParts[part.type] === part.id
@@ -327,7 +497,7 @@ function createTuningPartCard(part, equipped) {
       </div>
       <p>类型：${formatPartType(part.type)}</p>
       ${renderPartComparison(part, equippedPart)}
-      <small>${equipped ? '当前车辆已装备' : '仓库零件，可装备或出售'}</small>
+      <small>${equipped ? '当前车辆已装备' : '库存零件，可装备或出售'}</small>
     </div>
   `;
 
@@ -345,39 +515,6 @@ function createTuningPartCard(part, equipped) {
   }
   card.appendChild(actionButton);
   return card;
-}
-
-function renderStorage() {
-  el.storageInventoryBody.innerHTML = '';
-  el.storageMaterialsBody.innerHTML = '';
-
-  if (gameState.inventory.length === 0) {
-    el.storageInventoryBody.appendChild(
-      createTuningEmptyCard('暂无零件', '去商店购买零件后会显示在这里。')
-    );
-  } else {
-    gameState.inventory.forEach((part) => {
-      const equipped = gameState.equippedParts[part.type] === part.id;
-      const card = document.createElement('article');
-      card.className = `inventory-card${equipped ? ' is-current' : ''}`;
-      card.innerHTML = `
-        <div>
-          <div class="card-title-row">
-            <h3>${renderPartName(part, true)}</h3>
-            ${renderPartRarity(part)}
-          </div>
-          <p>类型：${formatPartType(part.type)}</p>
-          <p>效果：${part.effectText}</p>
-          <small>${equipped ? '已装备在当前车辆' : '仓库库存零件'}</small>
-        </div>
-      `;
-      el.storageInventoryBody.appendChild(card);
-    });
-  }
-
-  el.storageMaterialsBody.appendChild(
-    createTuningEmptyCard('暂无材料', '材料系统尚未开放，敬请期待。')
-  );
 }
 
 function changeEquipment(type, value) {
@@ -404,6 +541,10 @@ function changeEquipment(type, value) {
 
   updateStats();
   renderGarage();
+  renderAtlas();
+  if (typeof checkAchievements === 'function') {
+    checkAchievements({ source: 'equipPart' });
+  }
   checkGameFailure();
   autoSaveGame();
 }
@@ -423,6 +564,10 @@ function unequipPart(partId) {
   addLog(`${formatPartType(part.type)}槽卸下 ${part.name}。`);
   updateStats();
   renderGarage();
+  renderAtlas();
+  if (typeof checkAchievements === 'function') {
+    checkAchievements({ source: 'equipPart' });
+  }
   checkGameFailure();
   autoSaveGame();
 }
@@ -447,16 +592,56 @@ function sellPart(partId) {
   gameState.inventory = gameState.inventory.filter((ownedPart) => ownedPart.id !== part.id);
   gameState.cash += sellPrice;
 
-  addLog(`仓库出售 ${part.name}，回收 ${sellPrice} 元。`);
+  addLog(`库存出售 ${part.name}，回收 ${sellPrice} 元。`);
   addLog(`现金余额：${gameState.cash} 元`);
   updateStats();
   renderGarage();
+  renderAtlas();
+  if (typeof checkAchievements === 'function') {
+    checkAchievements({ source: 'cashChange' });
+  }
   checkGameFailure();
   autoSaveGame();
 }
 
-// 装备图鉴：只读展示，按零件类型分组。
-// 所有出现率数值从配置计算（getPartShopRate），不在模板写死。
+function shouldShowAtlasPart(part, filter, ownedCount, inPool) {
+  if (filter === 'owned') {
+    return ownedCount > 0;
+  }
+  if (filter === 'unowned') {
+    return ownedCount === 0;
+  }
+  if (filter === 'pool') {
+    return inPool;
+  }
+  return true;
+}
+
+function getAtlasOwnershipText(ownedCount) {
+  if (ownedCount <= 0) {
+    return '未拥有';
+  }
+  return ownedCount > 1 ? `已拥有 ×${ownedCount}` : '已拥有';
+}
+
+function createAtlasEmptyState(filter) {
+  const messages = {
+    owned: ['暂无已拥有零件', '去商店买到第一件零件后，这里会开始记录。'],
+    unowned: ['图鉴已收集完毕', '当前筛选下已经没有未拥有零件。'],
+    pool: ['当前奖池没有匹配零件', '可以切换难度查看别的奖池范围。'],
+    all: ['暂无图鉴数据', '当前没有可展示的零件。'],
+  };
+  const [title, hint] = messages[filter] || messages.all;
+  const card = document.createElement('article');
+  card.className = 'atlas-card atlas-card-empty';
+  card.innerHTML = `
+    <h4>${title}</h4>
+    <p>${hint}</p>
+  `;
+  return card;
+}
+
+// 图鉴页只负责查看数据和收集状态，不承担装备操作。
 function renderAtlas() {
   if (!el.atlasBody) {
     return;
@@ -464,13 +649,28 @@ function renderAtlas() {
 
   const difficulty = getDifficulty();
   const pool = getCurrentLootPool();
+  const ownedCounts = getOwnedPartCounts();
+  const filter = gameState.atlasFilter || 'all';
+  const totalParts = PART_POOL.length;
+  const ownedTemplates = PART_POOL.filter((part) => (ownedCounts[part.templateId] || 0) > 0).length;
+  const equippedCount = EQUIPMENT_SLOTS.filter((type) => Boolean(gameState.equippedParts[type])).length;
+  const poolCount = PART_POOL.filter((part) => pool.includes(getPartRarity(part))).length;
 
   if (el.atlasDifficultyText) {
     const poolNames = pool.map((rarity) => PART_RARITY_LABELS[rarity]).join(' / ');
     el.atlasDifficultyText.textContent = `当前难度「${difficulty.name}」：商店奖池 ${poolNames}`;
   }
+  if (el.atlasSummaryText) {
+    el.atlasSummaryText.textContent = `已收集 ${ownedTemplates} / ${totalParts} 件，当前已装备 ${equippedCount} / ${EQUIPMENT_SLOTS.length} 槽，本难度奖池共 ${poolCount} 件。`;
+  }
+  el.atlasFilters.forEach((button) => {
+    const active = button.dataset.atlasFilter === filter;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
 
   el.atlasBody.innerHTML = '';
+  let renderedCount = 0;
 
   EQUIPMENT_SLOTS.forEach((type) => {
     const parts = PART_POOL.filter((part) => part.type === type);
@@ -491,7 +691,6 @@ function renderAtlas() {
     const heading = document.createElement('h3');
     heading.className = 'atlas-group-title';
     heading.textContent = `${formatPartType(type)}（${parts.length} 件）`;
-    group.appendChild(heading);
 
     const list = document.createElement('div');
     list.className = 'atlas-cards';
@@ -499,23 +698,50 @@ function renderAtlas() {
     sorted.forEach((part) => {
       const rate = getPartShopRate(part);
       const inPool = pool.includes(getPartRarity(part));
+      const ownedCount = ownedCounts[part.templateId] || 0;
+      if (!shouldShowAtlasPart(part, filter, ownedCount, inPool)) {
+        return;
+      }
+      renderedCount += 1;
+      const equipped = gameState.equippedParts[part.type]
+        ? getPartById(gameState.equippedParts[part.type])
+        : null;
+      const isEquipped = equipped ? getPartTemplateId(equipped) === part.templateId : false;
       const card = document.createElement('article');
-      card.className = `atlas-card${inPool ? '' : ' is-out-of-pool'}`;
+      card.className = `atlas-card${inPool ? '' : ' is-out-of-pool'}${ownedCount ? ' is-owned' : ' is-unowned'}`;
       card.innerHTML = `
         <div class="atlas-card-head">
           <h4>${renderPartName(part)}</h4>
           ${renderPartRarity(part)}
         </div>
+        <div class="atlas-meta-list">
+          <p><strong>槽位</strong><span>${formatPartType(part.type)}</span></p>
+          <p><strong>品质</strong><span>${PART_RARITY_LABELS[getPartRarity(part)]}</span></p>
+          <p><strong>属性效果</strong><span>${part.effectText}</span></p>
+          <p><strong>基础出现率</strong><span>${inPool ? formatShopRate(rate) : '0%'}</span></p>
+          <p><strong>当前难度</strong><span>${inPool ? '可刷出' : '不可刷出'}</span></p>
+          <p><strong>拥有状态</strong><span>${getAtlasOwnershipText(ownedCount)}</span></p>
+          <p><strong>装备状态</strong><span>${isEquipped ? '已装备' : '未装备'}</span></p>
+        </div>
         <div class="atlas-rate">
-          <span class="atlas-rate-label">当前难度基础出现率</span>
-          <span class="atlas-rate-value">${inPool ? formatShopRate(rate) : '本难度不出现'}</span>
+          <span class="atlas-rate-label">${ownedCount > 0 ? '收集状态' : '当前状态'}</span>
+          <span class="atlas-rate-value">${ownedCount > 0 ? getAtlasOwnershipText(ownedCount) : `未拥有｜${inPool ? '当前难度可刷出' : '当前难度不可刷出'}`}</span>
         </div>
         ${renderPartChangeList(part.changes)}
       `;
       list.appendChild(card);
     });
 
+    if (!list.childNodes.length) {
+      return;
+    }
+
+    group.appendChild(heading);
     group.appendChild(list);
     el.atlasBody.appendChild(group);
   });
+
+  if (!renderedCount) {
+    el.atlasBody.appendChild(createAtlasEmptyState(filter));
+  }
 }
