@@ -195,6 +195,7 @@ function renderTuning() {
     card.className = 'slot-card';
 
     const select = document.createElement('select');
+    select.className = 'slot-card-select';
     select.dataset.slot = type;
     select.setAttribute('aria-label', `${formatPartType(type)}槽位`);
 
@@ -212,13 +213,16 @@ function renderTuning() {
     });
 
     select.value = equippedPart ? String(equippedPart.id) : '';
-    select.className = equippedPart ? `part-quality-${getPartRarity(equippedPart)}` : '';
+    if (equippedPart) {
+      select.classList.add(`part-quality-${getPartRarity(equippedPart)}`);
+    }
     select.addEventListener('change', () => changeEquipment(type, select.value));
 
     const details = document.createElement('div');
+    details.className = 'slot-card-details';
     details.innerHTML = `
       <h3>${formatPartType(type)}</h3>
-      <p>${equippedPart ? `当前：${renderPartName(equippedPart, true)}` : '当前：未装备'}</p>
+      <p class="slot-card-current">${equippedPart ? `当前：${renderPartName(equippedPart, true)}` : '当前：未装备'}</p>
       ${
         equippedPart
           ? renderPartComparison(equippedPart, equippedPart)
@@ -238,7 +242,7 @@ function renderTuning() {
               return `
                 <li class="part-option-row${equipped ? ' is-current' : ''}">
                   <div class="part-option-heading">
-                    ${renderPartName(part, true)}
+                    ${renderPartOptionLabel(part, equippedPart)}
                     <button
                       type="button"
                       class="part-option-button"

@@ -53,6 +53,11 @@ function renderPartName(part, includeId = false) {
   return `<span class="part-quality part-quality-${rarity}">${label}</span>`;
 }
 
+function renderPartOptionLabel(part, equippedPart = null) {
+  const rarity = getPartRarity(part);
+  return `<span class="part-quality part-quality-${rarity}">${formatPartOption(part, equippedPart)}</span>`;
+}
+
 function getPartStatValue(part, key) {
   return Number((part && part.changes && part.changes[key]) || 0);
 }
