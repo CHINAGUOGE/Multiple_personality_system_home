@@ -209,6 +209,11 @@ function checkAchievementCondition(achievement) {
         gameState.bestReactionTime !== null &&
         gameState.bestReactionTime <= NEURAL_LINK_REACTION_SECONDS
       );
+    case 'sleepyStartReaction':
+      return (
+        gameState.lastReactionTime !== null &&
+        gameState.lastReactionTime >= SLEEPY_START_REACTION_SECONDS
+      );
     case 'lowCashAfterRace':
       return Boolean(stats.hasLowCashAfterRace);
     case 'partsPurchased10':

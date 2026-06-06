@@ -89,6 +89,7 @@ const OPPONENT_CHASE_RAMP_RACES = 14;
 const OPPONENT_CHASE_CAP = 1.05;
 const NIGHTMARE_SLOW_REACTION_SECONDS = 0.6;
 const NEURAL_LINK_REACTION_SECONDS = 0.01;
+const SLEEPY_START_REACTION_SECONDS = 1;
 const NIGHTMARE_GLASS_CANNON_RATING = 3.2;
 const NIGHTMARE_GLASS_CANNON_MAX_STABILITY = 8;
 const NIGHTMARE_STABLE_DOG_MIN_STABILITY = 50;
@@ -411,6 +412,14 @@ const ACHIEVEMENTS = [
     category: '比赛表现',
     check: 'neuralLinkReaction',
     flavor: '这已经不像反应，像车和大脑签了协议。',
+  },
+  {
+    id: 'sleepy_start',
+    name: '睡着了？',
+    description: '单场有效起步反应时间 ≥ 1.000 秒。',
+    category: '比赛表现',
+    check: 'sleepyStartReaction',
+    flavor: '灯都绿这么久了，你刚醒吗？',
   },
   {
     id: 'moonlight_driver',
