@@ -20,15 +20,15 @@ function blurAfterPointerClick(event, node = event.currentTarget) {
 
 function bindEvents() {
   el.registerBtn.addEventListener('click', (event) => {
-    registerRace();
+    if (gameState.phase === 'idle') {
+      registerRace();
+    } else if (isPostRacePhase(gameState.phase)) {
+      nextRace();
+    }
     blurAfterPointerClick(event);
   });
   el.startBtn.addEventListener('click', (event) => {
     pressStart();
-    blurAfterPointerClick(event);
-  });
-  el.nextBtn.addEventListener('click', (event) => {
-    nextRace();
     blurAfterPointerClick(event);
   });
   el.saveBtn.addEventListener('click', (event) => {

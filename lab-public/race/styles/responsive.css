@@ -215,8 +215,7 @@
   .summary-grid,
   .stats-list,
   .card-grid,
-  .fixed-shop-grid,
-  .race-actions {
+  .fixed-shop-grid {
     grid-template-columns: 1fr;
   }
 

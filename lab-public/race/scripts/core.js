@@ -1009,9 +1009,11 @@ function updateButtons() {
   const canPrepareNextRace = isPostRacePhase(phase);
   const gameOver = phase === 'game_over';
 
-  el.registerBtn.disabled = phase !== 'idle';
+  el.registerBtn.disabled = phase !== 'idle' && !canPrepareNextRace;
+  el.registerBtn.textContent = canPrepareNextRace
+    ? '下一场比赛'
+    : `报名比赛（${getEntryFee()} 元）`;
   el.startBtn.disabled = !countdownOrRace || gameState.playerStarted;
-  el.nextBtn.disabled = !canPrepareNextRace;
   if (el.saveBtn) {
     el.saveBtn.disabled = countdownOrRace || gameOver;
   }

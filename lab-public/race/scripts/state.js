@@ -89,7 +89,6 @@ const gameState = {
 const el = {
   registerBtn: document.getElementById('registerBtn'),
   startBtn: document.getElementById('startBtn'),
-  nextBtn: document.getElementById('nextBtn'),
   saveBtn: document.getElementById('saveBtn'),
   loadBtn: document.getElementById('loadBtn'),
   restartBtn: document.getElementById('restartBtn'),
