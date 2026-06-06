@@ -247,7 +247,10 @@ function formatOpponentStrengthCap(config) {
 
 function formatDifficultyMeta(key) {
   const config = DIFFICULTIES[key] || DIFFICULTIES[DEFAULT_DIFFICULTY];
-  return `报名${getDifficultyEntryFee(key)}元 · 奖金×${config.rewardMultiplier} · 强度×${config.opponentMultiplier} · 上限${formatOpponentStrengthCap(config)}`;
+  const floorText = Number.isFinite(config.minOpponentStrength)
+    ? ` · 下限${config.minOpponentStrength.toFixed(2)}`
+    : '';
+  return `报名${getDifficultyEntryFee(key)}元 · 奖金×${config.rewardMultiplier} · 强度×${config.opponentMultiplier}${floorText} · 上限${formatOpponentStrengthCap(config)}`;
 }
 
 // 报名费按当前难度倍率缩放，向上取整到 10 元。

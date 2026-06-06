@@ -28,7 +28,7 @@ function bindEvents() {
     blurAfterPointerClick(event);
   });
   el.startBtn.addEventListener('click', (event) => {
-    pressStart();
+    pressStart({ controlledBy: 'manual' });
     blurAfterPointerClick(event);
   });
   if (el.aiAssistRaceButton) {
@@ -130,7 +130,7 @@ function bindEvents() {
     }
 
     if (['countdown_red', 'countdown_yellow', 'countdown_green', 'racing'].includes(gameState.phase)) {
-      pressStart();
+      pressStart({ controlledBy: 'manual' });
       return;
     }
 

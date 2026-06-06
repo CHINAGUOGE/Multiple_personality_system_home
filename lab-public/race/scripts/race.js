@@ -90,14 +90,7 @@ function getOpponentCarPower(id) {
 }
 
 function rollAiReactionTime() {
-  const ranges = {
-    easy: [0.28, 0.58],
-    normal: [0.22, 0.46],
-    hard: [0.16, 0.36],
-    expert: [0.14, 0.32],
-    nightmare: [0.12, 0.3],
-  };
-  const [min, max] = ranges[getDifficultyKey()] || ranges.normal;
+  const [min, max] = AI_ASSIST_REACTION_RANGE_SECONDS;
   return Number((min + Math.random() * (max - min)).toFixed(3));
 }
 
@@ -141,6 +134,20 @@ function startAiAssistRace() {
   registerRace();
   updateStats();
   return true;
+}
+
+function takeOverAiAssistRace() {
+  if (getCurrentRaceControl() !== 'ai') {
+    return;
+  }
+
+  gameState.raceControl = 'manual';
+  gameState.aiAssist = createDefaultAiAssistState();
+  gameState.aiAssistLocked = false;
+  addLog('已切换为人工操作，本场按手动比赛结算。');
+  updateResultMessage();
+  updateStats();
+  updateButtons();
 }
 
 function onGreenLight() {
@@ -223,6 +230,10 @@ function registerRace() {
 
 function pressStart(options = {}) {
   const controlledBy = options.controlledBy || getCurrentRaceControl();
+
+  if (controlledBy === 'manual') {
+    takeOverAiAssistRace();
+  }
 
   if (['countdown_red', 'countdown_yellow'].includes(gameState.phase)) {
     if (controlledBy === 'ai') {
