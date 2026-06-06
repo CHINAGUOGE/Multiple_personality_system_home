@@ -325,6 +325,31 @@ function formatWinStreakText(currentWinStreak, bestWinStreak) {
   return `当前 ${currentWinStreak} / 最高 ${bestWinStreak}`;
 }
 
+function isAiRace(race) {
+  return Boolean(race && race.controlledBy === 'ai');
+}
+
+function isManualRace(race) {
+  return !isAiRace(race);
+}
+
+function getCurrentRaceControl() {
+  return gameState.raceControl === 'ai' ? 'ai' : 'manual';
+}
+
+function getAiAssistDescription() {
+  return '模拟人类反应自动跑完本场，保留动画；托管比赛不会解锁反应、连胜等操作类成就。';
+}
+
+function resetRaceControlState(options = {}) {
+  gameState.raceControl = 'manual';
+  gameState.aiAssist = createDefaultAiAssistState();
+  gameState.aiAssistLocked = false;
+  if (!options.preserveLastRaceControl) {
+    gameState.lastRaceControl = null;
+  }
+}
+
 function formatRaceRoundText(raceCount) {
   return raceCount > 0 ? `第 ${raceCount} 场比赛` : '尚未参赛';
 }
@@ -725,6 +750,31 @@ function sanitizeAchievementsData(data) {
   };
 }
 
+function sanitizeAiAssistData(data) {
+  const reactionTime = Number(data && data.reactionTime);
+  const normalizedReactionTime =
+    Number.isFinite(reactionTime) && reactionTime >= 0 ? reactionTime : null;
+
+  return {
+    active: Boolean(data && data.active && normalizedReactionTime !== null),
+    reactionTime: normalizedReactionTime,
+  };
+}
+
+function sanitizeManualRankStreakData(data) {
+  const rank = Math.max(1, Math.floor(Number(data && data.rank) || 0));
+  const count = Math.max(0, Math.floor(Number(data && data.count) || 0));
+
+  if (rank > PRIZES.length || count <= 0) {
+    return createDefaultManualRankStreak();
+  }
+
+  return {
+    rank,
+    count,
+  };
+}
+
 function syncProgressStats() {
   if (!gameState.stats) {
     gameState.stats = createDefaultStats();
@@ -773,10 +823,25 @@ function createSaveData() {
     raceCount: gameState.raceCount,
     lastRank: gameState.lastRank,
     bestReactionTime: gameState.bestReactionTime,
+    bestManualReactionTime: gameState.bestManualReactionTime,
     lastReactionTime: gameState.lastReactionTime,
+    lastManualReactionTime: gameState.lastManualReactionTime,
     currentWinStreak: gameState.currentWinStreak,
     bestWinStreak: gameState.bestWinStreak,
     difficulty: getDifficultyKey(),
+    raceControl: getCurrentRaceControl(),
+    lastRaceControl: gameState.lastRaceControl,
+    aiAssist: {
+      active: Boolean(gameState.aiAssist && gameState.aiAssist.active),
+      reactionTime:
+        gameState.aiAssist && Number.isFinite(gameState.aiAssist.reactionTime)
+          ? gameState.aiAssist.reactionTime
+          : null,
+    },
+    manualRankStreak: {
+      rank: gameState.manualRankStreak.rank,
+      count: gameState.manualRankStreak.count,
+    },
     inventory: gameState.inventory.map((part) => ({
       id: part.id,
       templateId: getPartTemplateId(part),
@@ -886,14 +951,35 @@ function sanitizeSaveData(data) {
     bestReactionTime:
       Number.isFinite(Number(data.bestReactionTime)) && Number(data.bestReactionTime) >= 0
         ? Number(data.bestReactionTime)
+        : Number.isFinite(Number(data.bestManualReactionTime)) &&
+            Number(data.bestManualReactionTime) >= 0
+          ? Number(data.bestManualReactionTime)
         : null,
+    bestManualReactionTime:
+      Number.isFinite(Number(data.bestManualReactionTime)) &&
+      Number(data.bestManualReactionTime) >= 0
+        ? Number(data.bestManualReactionTime)
+        : Number.isFinite(Number(data.bestReactionTime)) && Number(data.bestReactionTime) >= 0
+          ? Number(data.bestReactionTime)
+          : null,
     lastReactionTime:
       Number.isFinite(Number(data.lastReactionTime)) && Number(data.lastReactionTime) >= 0
         ? Number(data.lastReactionTime)
         : null,
+    lastManualReactionTime:
+      Number.isFinite(Number(data.lastManualReactionTime)) &&
+      Number(data.lastManualReactionTime) >= 0
+        ? Number(data.lastManualReactionTime)
+        : Number.isFinite(Number(data.lastReactionTime)) && Number(data.lastReactionTime) >= 0
+          ? Number(data.lastReactionTime)
+          : null,
     currentWinStreak: Math.max(0, Math.floor(Number(data.currentWinStreak) || 0)),
     bestWinStreak: Math.max(0, Math.floor(Number(data.bestWinStreak) || 0)),
     difficulty: DIFFICULTIES[data.difficulty] ? data.difficulty : DEFAULT_DIFFICULTY,
+    raceControl: data.raceControl === 'ai' ? 'ai' : 'manual',
+    lastRaceControl: data.lastRaceControl === 'ai' ? 'ai' : null,
+    aiAssist: sanitizeAiAssistData(data.aiAssist),
+    manualRankStreak: sanitizeManualRankStreakData(data.manualRankStreak),
     inventory,
     equippedParts,
     nextPartId,
@@ -906,14 +992,24 @@ function applyPersistentState(data) {
   gameState.cash = data.cash;
   gameState.raceCount = data.raceCount;
   gameState.lastRank = data.lastRank;
-  gameState.bestReactionTime = data.bestReactionTime ?? null;
+  gameState.bestReactionTime =
+    data.bestReactionTime ?? data.bestManualReactionTime ?? null;
+  gameState.bestManualReactionTime =
+    data.bestManualReactionTime ?? data.bestReactionTime ?? null;
   gameState.lastReactionTime = data.lastReactionTime ?? null;
+  gameState.lastManualReactionTime =
+    data.lastManualReactionTime ?? data.lastReactionTime ?? null;
   gameState.currentWinStreak = data.currentWinStreak ?? 0;
   gameState.bestWinStreak = Math.max(
     gameState.currentWinStreak,
     data.bestWinStreak ?? 0
   );
   gameState.difficulty = DIFFICULTIES[data.difficulty] ? data.difficulty : DEFAULT_DIFFICULTY;
+  gameState.raceControl = data.raceControl === 'ai' ? 'ai' : 'manual';
+  gameState.lastRaceControl = data.lastRaceControl === 'ai' ? 'ai' : null;
+  gameState.aiAssist = sanitizeAiAssistData(data.aiAssist);
+  gameState.aiAssistLocked = false;
+  gameState.manualRankStreak = sanitizeManualRankStreakData(data.manualRankStreak);
   gameState.inventory = data.inventory;
   gameState.equippedParts = data.equippedParts;
   gameState.nextPartId = data.nextPartId;
@@ -928,6 +1024,9 @@ function refreshAfterPersistentChange() {
   gameState.reactionTime = null;
   gameState.playerStarted = false;
   gameState.panelReturnPhase = 'idle';
+  gameState.raceControl = 'manual';
+  gameState.aiAssist = createDefaultAiAssistState();
+  gameState.aiAssistLocked = false;
   if (el.restartBtn) {
     el.restartBtn.textContent = '重开并清档';
   }
@@ -1014,6 +1113,13 @@ function updateButtons() {
     ? '下一场比赛'
     : `报名比赛（${getEntryFee()} 元）`;
   el.startBtn.disabled = !countdownOrRace || gameState.playerStarted;
+  if (el.aiAssistRaceButton) {
+    el.aiAssistRaceButton.textContent =
+      window.matchMedia('(max-width: 640px)').matches ? 'AI托管' : 'AI 托管一场';
+    el.aiAssistRaceButton.title = getAiAssistDescription();
+    el.aiAssistRaceButton.disabled =
+      phase !== 'idle' || gameOver || gameState.cash < getEntryFee() || gameState.aiAssistLocked;
+  }
   if (el.saveBtn) {
     el.saveBtn.disabled = countdownOrRace || gameOver;
   }
@@ -1109,6 +1215,17 @@ function updateResultMessage() {
     game_over: '游戏失败：现金不足且无可出售库存，请重开。',
   };
   el.resultMessage.textContent = messages[gameState.phase] || PHASE_LABELS[gameState.phase];
+
+  if (el.resultSubMessage) {
+    const showAiResultHint =
+      (getCurrentRaceControl() === 'ai' && gameState.phase !== 'idle') ||
+      (isPostRacePhase(gameState.phase) && gameState.lastRaceControl === 'ai');
+    el.resultSubMessage.hidden = !showAiResultHint;
+    el.resultSubMessage.textContent =
+      gameState.phase === 'finished'
+        ? '本场由 AI 托管完成，操作类成就不会解锁。'
+        : '本场为 AI 托管，操作类成就不会解锁。';
+  }
 }
 
 function setLights(active) {
@@ -1163,7 +1280,7 @@ function updateStats() {
   }
   if (el.bestReactionText) {
     el.bestReactionText.textContent = formatReactionRecordText(
-      gameState.bestReactionTime,
+      gameState.bestManualReactionTime,
       gameState.lastReactionTime
     );
   }
@@ -1185,6 +1302,12 @@ function updateStats() {
     el.raceReportEmptyText.hidden = hasRaceReport;
     el.raceReportStats.hidden = !hasRaceReport;
   }
+  if (el.raceControlHint) {
+    const showAiRaceHint =
+      (getCurrentRaceControl() === 'ai' && gameState.phase !== 'idle') ||
+      (isPostRacePhase(gameState.phase) && gameState.lastRaceControl === 'ai');
+    el.raceControlHint.hidden = !showAiRaceHint;
+  }
   el.registerBtn.textContent = `报名比赛（${getEntryFee()} 元）`;
   el.opponentPowerText.textContent = getOpponentPower().toFixed(2);
   el.currentVehicleText.textContent = '玩家破车';
@@ -1193,6 +1316,9 @@ function updateStats() {
   }
   if (el.versionNote) {
     el.versionNote.textContent = GAME_VERSION_NOTE;
+  }
+  if (el.statusVersionText) {
+    el.statusVersionText.textContent = GAME_VERSION;
   }
   renderDifficulty();
   if (typeof renderProfile === 'function') {

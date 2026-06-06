@@ -31,6 +31,12 @@ function bindEvents() {
     pressStart();
     blurAfterPointerClick(event);
   });
+  if (el.aiAssistRaceButton) {
+    el.aiAssistRaceButton.addEventListener('click', (event) => {
+      handleAiAssistRaceButtonClick();
+      blurAfterPointerClick(event);
+    });
+  }
   el.saveBtn.addEventListener('click', (event) => {
     saveGame();
     blurAfterPointerClick(event);

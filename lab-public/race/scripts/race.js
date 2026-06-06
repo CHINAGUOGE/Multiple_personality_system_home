@@ -89,6 +89,91 @@ function getOpponentCarPower(id) {
   });
 }
 
+function rollAiReactionTime() {
+  const ranges = {
+    easy: [0.28, 0.58],
+    normal: [0.22, 0.46],
+    hard: [0.16, 0.36],
+    expert: [0.14, 0.32],
+    nightmare: [0.12, 0.3],
+  };
+  const [min, max] = ranges[getDifficultyKey()] || ranges.normal;
+  return Number((min + Math.random() * (max - min)).toFixed(3));
+}
+
+function handleAiAssistRaceButtonClick() {
+  if (gameState.aiAssistLocked) {
+    return;
+  }
+
+  gameState.aiAssistLocked = true;
+  updateButtons();
+
+  try {
+    startAiAssistRace();
+  } finally {
+    setTimeout(() => {
+      gameState.aiAssistLocked = false;
+      updateButtons();
+    }, 500);
+  }
+}
+
+function startAiAssistRace() {
+  if (gameState.phase !== 'idle') {
+    addLog('AI 托管只能在待机状态开始。');
+    return false;
+  }
+
+  if (gameState.cash < getEntryFee()) {
+    addLog('资金不足，AI 托管无法报名。');
+    return false;
+  }
+
+  gameState.raceControl = 'ai';
+  gameState.aiAssist = {
+    active: true,
+    reactionTime: rollAiReactionTime(),
+  };
+
+  addLog('AI 托管已接管本场比赛。');
+  addLog('AI 正在等待绿灯……');
+  registerRace();
+  updateStats();
+  return true;
+}
+
+function onGreenLight() {
+  setPhase('countdown_green');
+  setLights('green');
+  gameState.greenAt = performance.now();
+  addLog('绿灯！电脑车已经起跑，快点“起步 / 踩油门”！');
+  startRaceMotion();
+
+  if (getCurrentRaceControl() !== 'ai' || !gameState.aiAssist.active) {
+    return;
+  }
+
+  const reactionMs = Math.round(gameState.aiAssist.reactionTime * 1000);
+  gameState.countdownTimers.push(
+    setTimeout(() => {
+      if (
+        gameState.playerStarted ||
+        !['countdown_green', 'racing'].includes(gameState.phase) ||
+        getCurrentRaceControl() !== 'ai' ||
+        !gameState.aiAssist.active
+      ) {
+        return;
+      }
+
+      pressStart({
+        controlledBy: 'ai',
+        reactionTime: gameState.aiAssist.reactionTime,
+      });
+    }, reactionMs)
+  );
+}
+
 function registerRace() {
   if (gameState.cash < getEntryFee()) {
     const reachedGameOver = checkGameFailure();
@@ -104,10 +189,14 @@ function registerRace() {
   }
 
   clearRaceTimers();
+  if (getCurrentRaceControl() !== 'ai') {
+    resetRaceControlState();
+  }
   const entryFee = getEntryFee();
   gameState.cash -= entryFee;
   gameState.reactionTime = null;
   gameState.playerStarted = false;
+  gameState.lastRaceControl = null;
   resetCars();
   updateStats();
 
@@ -127,17 +216,18 @@ function registerRace() {
 
   gameState.countdownTimers.push(
     setTimeout(() => {
-      setPhase('countdown_green');
-      setLights('green');
-      gameState.greenAt = performance.now();
-      addLog('绿灯！电脑车已经起跑，快点“起步 / 踩油门”！');
-      startRaceMotion();
+      onGreenLight();
     }, 1850)
   );
 }
 
-function pressStart() {
+function pressStart(options = {}) {
+  const controlledBy = options.controlledBy || getCurrentRaceControl();
+
   if (['countdown_red', 'countdown_yellow'].includes(gameState.phase)) {
+    if (controlledBy === 'ai') {
+      return;
+    }
     handleFalseStart();
     return;
   }
@@ -146,7 +236,7 @@ function pressStart() {
     return;
   }
 
-  startPlayerCar();
+  startPlayerCar(options);
 }
 
 function updateBestReactionRecord(reactionSeconds) {
@@ -155,15 +245,20 @@ function updateBestReactionRecord(reactionSeconds) {
   }
 
   if (
-    gameState.bestReactionTime === null ||
-    reactionSeconds < gameState.bestReactionTime
+    gameState.bestManualReactionTime === null ||
+    reactionSeconds < gameState.bestManualReactionTime
   ) {
+    gameState.bestManualReactionTime = reactionSeconds;
     gameState.bestReactionTime = reactionSeconds;
     addLog(`刷新最快反应记录：${gameState.bestReactionTime.toFixed(3)} 秒！`);
   }
 }
 
-function updateWinStreak(playerRank) {
+function updateWinStreak(playerRank, race) {
+  if (!isManualRace(race)) {
+    return;
+  }
+
   if (playerRank === 1) {
     gameState.currentWinStreak += 1;
     gameState.bestWinStreak = Math.max(
@@ -176,6 +271,21 @@ function updateWinStreak(playerRank) {
   gameState.currentWinStreak = 0;
 }
 
+function updateManualRankStreak(playerRank, race) {
+  if (!isManualRace(race)) {
+    return;
+  }
+
+  const previous = gameState.manualRankStreak || createDefaultManualRankStreak();
+  const nextCount = previous.rank === playerRank ? previous.count + 1 : 1;
+  gameState.manualRankStreak = {
+    rank: playerRank,
+    count: nextCount,
+  };
+  gameState.stats.secondPlaceStreak = playerRank === 2 ? nextCount : 0;
+  gameState.stats.fifthPlaceStreak = playerRank === 5 ? nextCount : 0;
+}
+
 function handleFalseStart() {
   const falseStartPhase = gameState.phase;
   clearRaceTimers();
@@ -183,6 +293,7 @@ function handleFalseStart() {
   gameState.lastReactionTime = null;
   gameState.playerStarted = false;
   gameState.currentWinStreak = 0;
+  gameState.manualRankStreak = createDefaultManualRankStreak();
   gameState.stats.falseStartCount = (gameState.stats.falseStartCount || 0) + 1;
   gameState.stats.falseStartStreak = (gameState.stats.falseStartStreak || 0) + 1;
   gameState.stats.secondPlaceStreak = 0;
@@ -240,10 +351,14 @@ function raceLoop(now) {
   }
 }
 
-function startPlayerCar() {
+function startPlayerCar(options = {}) {
   const playerCar = gameState.cars.find((car) => car.isPlayer);
   const now = performance.now();
-  const reactionSeconds = (now - gameState.greenAt) / 1000;
+  const controlledBy = options.controlledBy || getCurrentRaceControl();
+  const reactionSeconds =
+    controlledBy === 'ai' && Number.isFinite(options.reactionTime)
+      ? options.reactionTime
+      : (now - gameState.greenAt) / 1000;
   const reaction = RaceFormulaUtils.computeReactionOutcome({
     reactionSeconds,
     reactionGrace: getDifficulty().reactionGrace || 0,
@@ -255,19 +370,24 @@ function startPlayerCar() {
   playerCar.started = true;
   playerCar.reactionPenalty = reaction.slowPenalty;
   playerCar.launchBonus = playerCar.power.launch + reaction.reactionBonus;
-  updateBestReactionRecord(reactionSeconds);
-
-  addLog(`你起步反应时间：${reactionSeconds.toFixed(3)} 秒`);
-  if (reactionSeconds < 0.25) {
-    addLog('无违规，起步完美！');
-  } else if (reactionSeconds < 0.55) {
-    addLog('合法起步，反应还行。');
+  if (controlledBy === 'ai') {
+    addLog(`AI 以 ${reactionSeconds.toFixed(3)} 秒反应起步。`);
+    addLog('本场为 AI 托管，操作类成就不会解锁。');
   } else {
-    addLog('起步偏慢，电脑车已经拉开。');
+    gameState.lastManualReactionTime = reactionSeconds;
+    updateBestReactionRecord(reactionSeconds);
+    addLog(`你起步反应时间：${reactionSeconds.toFixed(3)} 秒`);
+    if (reactionSeconds < 0.25) {
+      addLog('无违规，起步完美！');
+    } else if (reactionSeconds < 0.55) {
+      addLog('合法起步，反应还行。');
+    } else {
+      addLog('起步偏慢，电脑车已经拉开。');
+    }
   }
   updateResultMessage();
   updateButtons();
-  if (typeof checkAchievements === 'function') {
+  if (controlledBy === 'manual' && typeof checkAchievements === 'function') {
     checkAchievements({ source: 'validStart' });
   }
 }
@@ -326,27 +446,35 @@ function completeRace() {
   const basePrize = PRIZES[playerRank - 1] || 0;
   const rewardMultiplier = getDifficulty().rewardMultiplier;
   const prize = Math.floor(basePrize * rewardMultiplier);
+  const finishedRace = {
+    controlledBy: getCurrentRaceControl(),
+    reactionTime: gameState.reactionTime,
+    rank: playerRank,
+    prize,
+    rewardMultiplier,
+    difficultyKey: getDifficultyKey(),
+  };
 
   gameState.cash += prize;
   gameState.raceCount += 1;
   gameState.lastRank = `第 ${playerRank} 名`;
-  updateWinStreak(playerRank);
+  gameState.lastRaceControl = finishedRace.controlledBy;
+  updateWinStreak(playerRank, finishedRace);
   gameState.stats.falseStartStreak = 0;
   const secondPlaceStreakBeforeRace = gameState.stats.secondPlaceStreak || 0;
-  if (playerRank === 1 && secondPlaceStreakBeforeRace >= 10) {
+  if (isManualRace(finishedRace) && playerRank === 1 && secondPlaceStreakBeforeRace >= 10) {
     gameState.stats.hasWonAfterSecondPlaceStreak = true;
   }
-  gameState.stats.secondPlaceStreak =
-    playerRank === 2 ? secondPlaceStreakBeforeRace + 1 : 0;
-  gameState.stats.fifthPlaceStreak =
-    playerRank === 5 ? (gameState.stats.fifthPlaceStreak || 0) + 1 : 0;
+  if (isManualRace(finishedRace)) {
+    updateManualRankStreak(playerRank, finishedRace);
+  }
   gameState.stats.totalRaces += 1;
   gameState.stats.hasFinishedLast =
     gameState.stats.hasFinishedLast || playerRank === ranked.length;
   gameState.stats.hasLowCashAfterRace =
     gameState.stats.hasLowCashAfterRace || gameState.cash < 100;
   if (playerRank === 1) {
-    const difficultyKey = getDifficultyKey();
+    const difficultyKey = finishedRace.difficultyKey;
     const equippedTemplateIds = EQUIPMENT_SLOTS.map((type) => getEquippedPart(type))
       .filter(Boolean)
       .map((part) => getPartTemplateId(part));
@@ -357,14 +485,17 @@ function completeRace() {
 
     gameState.stats.totalWins += 1;
     gameState.stats.winsByDifficulty[difficultyKey] += 1;
-    gameState.stats.bestStreakByDifficulty[difficultyKey] = Math.max(
-      gameState.stats.bestStreakByDifficulty[difficultyKey] || 0,
-      gameState.currentWinStreak
-    );
+    if (isManualRace(finishedRace)) {
+      gameState.stats.bestStreakByDifficulty[difficultyKey] = Math.max(
+        gameState.stats.bestStreakByDifficulty[difficultyKey] || 0,
+        gameState.currentWinStreak
+      );
+    }
     if (isNightmareDifficulty(difficultyKey)) {
       if (
-        Number.isFinite(gameState.lastReactionTime) &&
-        gameState.lastReactionTime >= NIGHTMARE_SLOW_REACTION_SECONDS
+        isManualRace(finishedRace) &&
+        Number.isFinite(gameState.lastManualReactionTime) &&
+        gameState.lastManualReactionTime >= NIGHTMARE_SLOW_REACTION_SECONDS
       ) {
         gameState.stats.hasNightmareSlowReactionWin = true;
       }
@@ -397,10 +528,15 @@ function completeRace() {
   addLog(`本场排名：第 ${playerRank} 名`);
   addLog(`难度「${getDifficulty().name}」奖金×${rewardMultiplier}`);
   addLog(`获得奖金 ${prize} 元`);
+  if (isAiRace(finishedRace)) {
+    addLog('AI 托管完成本场比赛。');
+    addLog('本场为 AI 托管，操作类成就不会解锁。');
+  }
   finishPostRace();
   if (typeof checkAchievements === 'function') {
-    checkAchievements({ source: 'raceEnd' });
+    checkAchievements({ source: 'raceEnd', race: finishedRace });
   }
+  resetRaceControlState({ preserveLastRaceControl: true });
   autoSaveGame();
 }
 
@@ -416,6 +552,7 @@ function nextRace() {
   gameState.reactionTime = null;
   gameState.playerStarted = false;
   gameState.panelReturnPhase = 'idle';
+  resetRaceControlState();
   resetCars();
   setLights('none');
   setPhase('idle');

@@ -206,13 +206,13 @@ function checkAchievementCondition(achievement) {
       return stats.falseStartStreak >= 3;
     case 'neuralLinkReaction':
       return (
-        gameState.bestReactionTime !== null &&
-        gameState.bestReactionTime <= NEURAL_LINK_REACTION_SECONDS
+        gameState.bestManualReactionTime !== null &&
+        gameState.bestManualReactionTime <= NEURAL_LINK_REACTION_SECONDS
       );
     case 'sleepyStartReaction':
       return (
-        gameState.lastReactionTime !== null &&
-        gameState.lastReactionTime >= SLEEPY_START_REACTION_SECONDS
+        gameState.lastManualReactionTime !== null &&
+        gameState.lastManualReactionTime >= SLEEPY_START_REACTION_SECONDS
       );
     case 'lowCashAfterRace':
       return Boolean(stats.hasLowCashAfterRace);

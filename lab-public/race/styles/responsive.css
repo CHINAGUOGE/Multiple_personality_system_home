@@ -320,8 +320,16 @@
     font-size: 12px;
   }
 
+  .race-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .race-actions button {
     min-height: 54px;
+  }
+
+  .race-actions .ai-assist-button {
+    grid-column: 1 / -1;
   }
 
   .log-output {
