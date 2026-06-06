@@ -166,6 +166,48 @@ select {
   min-width: 0;
 }
 
+.status-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 92px;
+  gap: 6px;
+  padding: 0 8px 8px;
+}
+
+.status-panel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 24px;
+  padding: 4px 8px;
+  overflow: hidden;
+  color: #1f1f1f;
+  white-space: nowrap;
+  background: #d4d0c8;
+  border: 2px inset #fff;
+}
+
+.status-panel-version {
+  justify-content: center;
+  font-weight: bold;
+}
+
+.status-panel span,
+.status-panel a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-panel a {
+  color: #0a246a;
+  text-decoration: none;
+}
+
+.status-panel a:hover,
+.status-panel a:focus-visible {
+  text-decoration: underline;
+}
+
 .page-header {
   display: flex;
   align-items: stretch;
@@ -1102,6 +1144,17 @@ select {
 
   .page-shell {
     padding: 10px 10px calc(78px + env(safe-area-inset-bottom));
+  }
+
+  .status-bar {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 0 10px calc(10px + 78px + env(safe-area-inset-bottom));
+  }
+
+  .status-panel {
+    min-height: 28px;
+    padding: 6px 8px;
   }
 
   .page-header {
