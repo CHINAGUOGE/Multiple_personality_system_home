@@ -20,8 +20,8 @@ const PART_SELL_RATE = 0.8;
 const FINISH = 100;
 const TICK_MS = 45;
 const STORAGE_KEY = 'mpsteam-race-save-v1';
-const GAME_VERSION = 'v1.6';
-const GAME_VERSION_NOTE = '新增自动加载存档、保存成功提示与重开清档确认。';
+const GAME_VERSION = 'v1.6.1';
+const GAME_VERSION_NOTE = '重构改装页响应式布局，并压缩候选零件属性展示。';
 
 const BASE_PLAYER_STATS = {
   engine: 10,
