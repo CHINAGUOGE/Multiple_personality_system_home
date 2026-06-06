@@ -9,6 +9,9 @@ function saveGame() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(createSaveData()));
     addLog('存档已保存到浏览器。');
+    if (typeof openNoticeModal === 'function') {
+      openNoticeModal('保存成功', '当前进度已保存到本地浏览器。');
+    }
   } catch (error) {
     addLog('存档失败：浏览器拒绝写入 localStorage。');
   }
