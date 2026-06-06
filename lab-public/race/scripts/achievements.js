@@ -176,6 +176,13 @@ function checkAchievementCondition(achievement) {
       return stats.bestStreak >= 50;
     case 'fiveFifthPlaces':
       return stats.fifthPlaceStreak >= 5;
+    case 'tenSecondPlaces':
+      return (
+        stats.secondPlaceStreak >= 10 ||
+        Boolean(stats.hasWonAfterSecondPlaceStreak)
+      );
+    case 'comebackAfterSecondPlaces':
+      return Boolean(stats.hasWonAfterSecondPlaceStreak);
     default:
       return false;
   }

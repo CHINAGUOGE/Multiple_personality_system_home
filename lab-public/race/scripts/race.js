@@ -183,6 +183,7 @@ function handleFalseStart() {
   gameState.lastReactionTime = null;
   gameState.playerStarted = false;
   gameState.currentWinStreak = 0;
+  gameState.stats.secondPlaceStreak = 0;
   gameState.stats.fifthPlaceStreak = 0;
   syncProgressStats();
   gameState.lastRank = '犯规';
@@ -325,6 +326,12 @@ function completeRace() {
   gameState.raceCount += 1;
   gameState.lastRank = `第 ${playerRank} 名`;
   updateWinStreak(playerRank);
+  const secondPlaceStreakBeforeRace = gameState.stats.secondPlaceStreak || 0;
+  if (playerRank === 1 && secondPlaceStreakBeforeRace >= 10) {
+    gameState.stats.hasWonAfterSecondPlaceStreak = true;
+  }
+  gameState.stats.secondPlaceStreak =
+    playerRank === 2 ? secondPlaceStreakBeforeRace + 1 : 0;
   gameState.stats.fifthPlaceStreak =
     playerRank === 5 ? (gameState.stats.fifthPlaceStreak || 0) + 1 : 0;
   gameState.stats.totalRaces += 1;
