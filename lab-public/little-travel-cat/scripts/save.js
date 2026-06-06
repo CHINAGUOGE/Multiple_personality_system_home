@@ -6,6 +6,7 @@ import {
   SAVE_KEY_PREFIX,
   SAVE_VERSION,
   SLOT_COUNT,
+  STARTING_DEW,
 } from './data.js';
 
 const nowValue = () => Date.now();
@@ -42,7 +43,7 @@ export function setActiveSlot(slot) {
 export function createDefaultSave(now = nowValue()) {
   return {
     version: SAVE_VERSION,
-    dew: 0,
+    dew: STARTING_DEW,
     inventory: {
       foods: {},
       tools: {},
