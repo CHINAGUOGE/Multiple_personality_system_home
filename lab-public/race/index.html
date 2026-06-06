@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>赛车小游戏｜MPS Lab 复古赛车经营游戏</title>
+    <title>赛车小游戏 v1.5｜MPS Lab 复古赛车经营游戏</title>
     <meta
       name="description"
       content="MPS Lab 赛车小游戏是一个复古 Windows 风格的网页赛车经营小游戏，支持手机和电脑访问，包含赛道比赛、金币收益、车辆升级与轻量经营玩法。"
@@ -18,7 +18,7 @@
       <main class="app-window" aria-label="横线赛车经营赛">
         <div class="title-bar">
           <span class="title-icon"></span>
-          <span>横线赛车经营赛 v1.4.1</span>
+          <span>横线赛车经营赛 v1.5</span>
           <div class="window-buttons" aria-hidden="true">
             <span>_</span>
             <span>□</span>
@@ -46,8 +46,8 @@
           <button id="tuningTab" type="button" data-page="tuning" aria-controls="tuningPage">
             改装
           </button>
-          <button id="storageTab" type="button" data-page="storage" aria-controls="storagePage">
-            仓库
+          <button id="profileTab" type="button" data-page="profile" aria-controls="profilePage">
+            档案
           </button>
           <button id="atlasTab" type="button" data-page="atlas" aria-controls="atlasPage">
             图鉴
@@ -59,7 +59,7 @@
             <header class="page-header">
               <div>
                 <h1>横线赛车经营赛</h1>
-                <p>v1.4.1</p>
+                <p>v1.5</p>
               </div>
               <div class="header-stat">
                 <span>当前资金</span>
@@ -94,7 +94,12 @@
                   <strong id="difficultyCurrentName">标准</strong>
                   <small id="difficultyCurrentMeta">奖金×1 · 强度×1</small>
                 </div>
-                <button id="difficultyOpenBtn" type="button" aria-haspopup="dialog">
+                <button
+                  id="difficultyOpenBtn"
+                  type="button"
+                  data-action="open-difficulty"
+                  aria-haspopup="dialog"
+                >
                   更改难度
                 </button>
               </div>
@@ -176,7 +181,7 @@
                 <article class="shop-card">
                   <div>
                     <h3>升级车辆</h3>
-                    <p>购买随机零件后会自动进入仓库，空槽会自动装备。</p>
+                    <p>购买随机零件后会收入车队库存，空槽会自动装备。</p>
                     <strong>价格：见零件卡片</strong>
                   </div>
                   <button type="button" disabled>选择下方零件</button>
@@ -255,7 +260,7 @@
 
               <h2>零件槽位</h2>
               <p class="panel-note">
-                每种类型只能装备一个部件。旧部件留在仓库；未装备零件可按原价 8 折出售。
+                每种类型只能装备一个部件。旧部件会保留在库存；未装备零件可按原价 8 折出售。
               </p>
               <div id="garageSlotsBody" class="slot-list"></div>
 
@@ -267,51 +272,106 @@
             </section>
           </section>
 
-          <section id="storagePage" class="app-page" data-page="storage" hidden>
+          <section id="profilePage" class="app-page" data-page="profile" hidden>
             <header class="page-header">
               <div>
-                <h1>仓库</h1>
-                <p>库存与存档管理</p>
+                <h1>档案</h1>
+                <p>成就、统计与系统设置</p>
               </div>
               <div class="header-stat">
                 <span>当前资金</span>
-                <strong id="storageCashStat">1500 元</strong>
+                <strong id="profileCashStat">1500 元</strong>
               </div>
             </header>
 
-            <section class="storage-current">
-              <article class="vehicle-card is-current">
-                <div>
-                  <span class="current-badge">当前车辆</span>
-                  <h2>玩家破车</h2>
-                  <p>基础车辆。当前版本只有这一辆可用车辆。</p>
+            <section class="storage-section">
+              <h2>难度设置</h2>
+              <div class="difficulty-current difficulty-panel-inline">
+                <div class="difficulty-current-info">
+                  <span>当前难度</span>
+                  <strong id="profileDifficultyName">标准</strong>
+                  <small id="profileDifficultyMeta">报名200元 · 奖金×1 · 强度×1</small>
                 </div>
-                <button type="button" disabled>已选中</button>
-              </article>
+                <button type="button" data-action="open-difficulty" aria-haspopup="dialog">
+                  更改难度
+                </button>
+              </div>
+              <p class="difficulty-note">比赛进行中不可更改难度。赛事页原入口仍保留，档案页仅补系统入口。</p>
             </section>
 
             <section class="storage-section">
-              <h2>已拥有零件</h2>
-              <p class="panel-note">仓库只用于查看库存，装备与出售请到「改装」页操作。</p>
-              <div id="storageInventoryBody" class="inventory-list"></div>
-
-              <h2>材料</h2>
-              <p class="panel-note">材料系统尚未开放，后续「制作」玩法会用到。</p>
-              <div id="storageMaterialsBody" class="inventory-list"></div>
+              <h2>重开 / 清档</h2>
+              <p class="panel-note">保存和读取只影响本地浏览器。重开会清除当前进度与本地存档，需再次确认。</p>
+              <div class="system-actions" aria-label="系统操作">
+                <button id="saveBtn" type="button">保存</button>
+                <button id="loadBtn" type="button">读取</button>
+                <button id="restartBtn" type="button">重开并清档</button>
+              </div>
             </section>
 
-            <section class="system-actions" aria-label="系统操作">
-              <button id="saveBtn" type="button">保存</button>
-              <button id="loadBtn" type="button">读取</button>
-              <button id="restartBtn" type="button">重开</button>
+            <section class="storage-section">
+              <h2>统计</h2>
+              <dl class="stats-list profile-stats">
+                <div>
+                  <dt>总比赛数</dt>
+                  <dd id="statsTotalRaces">0</dd>
+                </div>
+                <div>
+                  <dt>总胜场</dt>
+                  <dd id="statsTotalWins">0</dd>
+                </div>
+                <div>
+                  <dt>总失败数</dt>
+                  <dd id="statsTotalLosses">0</dd>
+                </div>
+                <div>
+                  <dt>当前连胜</dt>
+                  <dd id="statsCurrentStreak">0</dd>
+                </div>
+                <div>
+                  <dt>最高连胜</dt>
+                  <dd id="statsBestStreak">0</dd>
+                </div>
+                <div>
+                  <dt>最高资金</dt>
+                  <dd id="statsHighestCash">1500 元</dd>
+                </div>
+                <div>
+                  <dt>各难度胜场</dt>
+                  <dd id="statsDifficultyWins">休闲 0 / 标准 0 / 挑战 0 / 专家 0 / 噩梦 0</dd>
+                </div>
+                <div>
+                  <dt>各难度最高连胜</dt>
+                  <dd id="statsDifficultyBestStreaks">休闲 0 / 标准 0 / 挑战 0 / 专家 0 / 噩梦 0</dd>
+                </div>
+                <div>
+                  <dt>装备收集进度</dt>
+                  <dd id="statsCollectionProgress">已收集 0 / 0 件</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section class="storage-section">
+              <h2>成就</h2>
+              <p id="achievementsCountText" class="panel-note">已完成 0 / 0</p>
+              <div id="achievementsBody" class="achievement-list"></div>
+            </section>
+
+            <section class="storage-section">
+              <h2>版本信息</h2>
+              <div class="version-card">
+                <strong id="versionText">v1.5</strong>
+                <p id="versionNote">新增图鉴整理与车手档案。</p>
+                <small>材料系统尚未开放，本次版本不新增维修、耐久、排行或每日任务。</small>
+              </div>
             </section>
           </section>
 
           <section id="atlasPage" class="app-page" data-page="atlas" hidden>
             <header class="page-header">
               <div>
-                <h1>装备图鉴</h1>
-                <p>零件出现率与效果</p>
+                <h1>图鉴</h1>
+                <p>零件数据、拥有状态与当前奖池</p>
               </div>
               <div class="header-stat">
                 <span>当前资金</span>
@@ -320,7 +380,14 @@
             </header>
 
             <section class="storage-section">
+              <div class="atlas-toolbar" aria-label="图鉴筛选">
+                <button type="button" class="is-active" data-atlas-filter="all">全部</button>
+                <button type="button" data-atlas-filter="owned">已拥有</button>
+                <button type="button" data-atlas-filter="unowned">未拥有</button>
+                <button type="button" data-atlas-filter="pool">当前奖池</button>
+              </div>
               <p id="atlasDifficultyText" class="panel-note">当前难度奖池。</p>
+              <p id="atlasSummaryText" class="panel-note">图鉴加载中。</p>
               <p class="panel-note">
                 图鉴仅展示零件数据与基础出现率。已拥有零件在商店内会降权，与未来比赛掉落是不同系统。
               </p>
@@ -344,11 +411,13 @@
             </a>
           </div>
           <div class="status-panel status-panel-version">
-            <span>v1.4.1</span>
+            <span>v1.5</span>
           </div>
         </footer>
       </main>
     </div>
+
+    <div id="achievementToast" class="achievement-toast" aria-live="polite" aria-atomic="true"></div>
 
     <div id="difficultyModal" class="modal-overlay" hidden>
       <div

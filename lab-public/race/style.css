@@ -217,7 +217,8 @@ select {
 }
 
 #shopPage > .page-header,
-#tuningPage > .page-header {
+#tuningPage > .page-header,
+#profilePage > .page-header {
   position: sticky;
   top: 0;
   z-index: 4;
@@ -586,6 +587,24 @@ select {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+}
+
+.atlas-toolbar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.atlas-toolbar button {
+  min-width: 0;
+}
+
+.atlas-toolbar button.is-active {
+  color: #fff;
+  background: #0a246a;
+  border-color: #7da0d8 #001342 #001342 #7da0d8;
+  box-shadow: inset 1px 1px rgba(255, 255, 255, 0.32);
 }
 
 .shop-card,
@@ -1059,9 +1078,23 @@ select {
   border-radius: 6px;
 }
 
+.atlas-card.is-owned {
+  border-color: #0a246a;
+  box-shadow: inset 0 0 0 1px #b4c8ef;
+}
+
+.atlas-card.is-unowned {
+  color: #4c4c4c;
+  background: #f0f0f0;
+}
+
 .atlas-card.is-out-of-pool {
   background: #f1f1f1;
   border-style: dashed;
+}
+
+.atlas-card-empty {
+  gap: 4px;
 }
 
 .atlas-card-head {
@@ -1097,6 +1130,157 @@ select {
 
 .atlas-rate-value {
   font-weight: bold;
+  overflow-wrap: anywhere;
+}
+
+.atlas-meta-list {
+  display: grid;
+  gap: 5px;
+}
+
+.atlas-meta-list p {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 8px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.atlas-meta-list strong {
+  color: #555;
+}
+
+.achievement-list {
+  display: grid;
+  gap: 8px;
+}
+
+.achievement-card {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px;
+  background: #fff;
+  border: 2px solid #9b9b9b;
+  border-radius: 6px;
+}
+
+.achievement-card.is-complete {
+  border-color: #0a246a;
+  box-shadow: inset 0 0 0 1px #afc5ee;
+}
+
+.achievement-card.is-incomplete {
+  color: #555;
+  background: #efefef;
+}
+
+.achievement-card.is-hidden {
+  background: #e7e7e7;
+}
+
+.achievement-card p,
+.achievement-card small {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.achievement-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.achievement-head strong {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.achievement-head span {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  color: #0a246a;
+  font-size: 12px;
+  font-weight: bold;
+  background: #e7eefc;
+  border: 1px solid #b7c8ea;
+  border-radius: 999px;
+}
+
+.profile-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.profile-stats div:nth-child(7),
+.profile-stats div:nth-child(8) {
+  grid-column: span 2;
+}
+
+.difficulty-panel-inline {
+  padding: 8px;
+  background: #fff;
+  border: 2px inset #fff;
+}
+
+.version-card {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  background: #fff;
+  border: 2px solid #9b9b9b;
+  border-radius: 6px;
+}
+
+.version-card strong,
+.version-card p,
+.version-card small {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.version-card strong {
+  font-size: 18px;
+}
+
+.achievement-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 18px;
+  z-index: 40;
+  display: grid;
+  gap: 3px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 10px 12px;
+  color: #fff;
+  background: rgba(10, 36, 106, 0.96);
+  border: 2px solid #b5c8ee;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.achievement-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.achievement-toast strong,
+.achievement-toast span {
+  line-height: 1.35;
+}
+
+.achievement-toast strong {
+  font-size: 14px;
+}
+
+.achievement-toast span {
+  color: #dfe8fa;
+  font-size: 12px;
 }
 
 @media (max-width: 900px) {
@@ -1108,6 +1292,10 @@ select {
 
   .storage-stats {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .profile-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .slot-list {
@@ -1200,8 +1388,8 @@ select {
   #racePage,
   #shopPage,
   #tuningPage,
-  #storagePage,
-  #atlasPage {
+  #atlasPage,
+  #profilePage {
     padding-top: var(--mobile-page-header-offset);
   }
 
@@ -1222,8 +1410,8 @@ select {
 
   #shopPage > .page-header,
   #tuningPage > .page-header,
-  #storagePage > .page-header,
-  #atlasPage > .page-header {
+  #atlasPage > .page-header,
+  #profilePage > .page-header {
     position: fixed;
     top: var(--mobile-title-bar-height);
     margin: 0;
@@ -1236,15 +1424,15 @@ select {
 
   #shopPage > .page-header .header-stat,
   #tuningPage > .page-header .header-stat,
-  #storagePage > .page-header .header-stat,
-  #atlasPage > .page-header .header-stat {
+  #atlasPage > .page-header .header-stat,
+  #profilePage > .page-header .header-stat {
     padding: 5px 7px;
   }
 
   #shopPage > .page-header .header-stat strong,
   #tuningPage > .page-header .header-stat strong,
-  #storagePage > .page-header .header-stat strong,
-  #atlasPage > .page-header .header-stat strong {
+  #atlasPage > .page-header .header-stat strong,
+  #profilePage > .page-header .header-stat strong {
     font-size: 15px;
   }
 
@@ -1402,8 +1590,29 @@ select {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .atlas-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .atlas-meta-list p {
+    grid-template-columns: 68px minmax(0, 1fr);
+    gap: 6px;
+  }
+
   .atlas-cards {
     grid-template-columns: 1fr;
+  }
+
+  .profile-stats div:nth-child(7),
+  .profile-stats div:nth-child(8) {
+    grid-column: auto;
+  }
+
+  .achievement-toast {
+    right: 10px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    width: min(320px, calc(100vw - 20px));
   }
 }
 

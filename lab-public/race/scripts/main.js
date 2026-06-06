@@ -50,12 +50,12 @@ function bindEvents() {
     });
   });
 
-  if (el.difficultyOpenBtn) {
-    el.difficultyOpenBtn.addEventListener('click', (event) => {
+  el.difficultyOpenButtons.forEach((button) => {
+    button.addEventListener('click', (event) => {
       openDifficultyModal();
       blurAfterPointerClick(event);
     });
-  }
+  });
 
   if (el.difficultyCloseBtn) {
     el.difficultyCloseBtn.addEventListener('click', (event) => {
@@ -109,6 +109,19 @@ function bindEvents() {
       }
     });
   }
+
+  el.atlasFilters.forEach((button) => {
+    button.addEventListener('click', (event) => {
+      const nextFilter = button.dataset.atlasFilter || 'all';
+      if (gameState.atlasFilter === nextFilter) {
+        blurAfterPointerClick(event, button);
+        return;
+      }
+      gameState.atlasFilter = nextFilter;
+      renderAtlas();
+      blurAfterPointerClick(event, button);
+    });
+  });
 }
 
 function init() {
@@ -119,15 +132,17 @@ function init() {
   renderGarage();
   renderDifficulty();
   renderAtlas();
+  renderProfile();
   setPhase('idle');
   setActivePage('race');
   setLights('none');
   updateStats();
+  gameState.ready = true;
+  checkAchievements({ source: 'init', silent: true });
   addLog('横线赛车经营赛启动。');
-  addLog('v1.4.1：已降低商店重复改装件权重，并优化高难度后期追赶曲线。');
+  addLog(`${GAME_VERSION}：${GAME_VERSION_NOTE}`);
   addLog('电脑端可按空格键报名 / 起步 / 下一场。');
   addLog('先报名比赛，等绿灯后点“起步 / 踩油门”。红灯或黄灯点击会抢跑。');
-  gameState.ready = true;
 }
 
 init();

@@ -10,7 +10,7 @@ const PHASE_LABELS = {
   finished: '比赛结束',
   false_start: '抢跑犯规',
   shop: '商店',
-  garage: '仓库',
+  garage: '改装',
   game_over: '游戏失败',
 };
 
@@ -20,6 +20,8 @@ const PART_SELL_RATE = 0.8;
 const FINISH = 100;
 const TICK_MS = 45;
 const STORAGE_KEY = 'mpsteam-race-save-v1';
+const GAME_VERSION = 'v1.5';
+const GAME_VERSION_NOTE = '新增图鉴整理与车手档案。';
 
 const BASE_PLAYER_STATS = {
   engine: 10,
@@ -154,7 +156,199 @@ const RACE_TIERS = [
   { minRaceCount: 12, label: '地下高速赛' },
 ];
 
-const PART_POOL = [
+const PART_TEMPLATE_ID_OVERRIDES = {
+  'Gearbox:雪主任祖传扳手': 'gearbox_xue_wrench',
+  'Stability:小雨小报赞助': 'stability_xiaoyu_sponsor',
+};
+
+function createPartTemplateSeed(part) {
+  return `${part.type}|${part.name}|${part.rarity}|${part.price}|${part.effectText}`;
+}
+
+function createStableToken(value) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function createPartTemplateId(part) {
+  const overrideKey = `${part.type}:${part.name}`;
+  if (PART_TEMPLATE_ID_OVERRIDES[overrideKey]) {
+    return PART_TEMPLATE_ID_OVERRIDES[overrideKey];
+  }
+
+  return `${part.type.toLowerCase()}_${createStableToken(createPartTemplateSeed(part))}`;
+}
+
+const ACHIEVEMENTS = [
+  {
+    id: 'firstRace',
+    name: '初次上路',
+    description: '完成第一场比赛。',
+    category: '入门',
+    check: 'firstRace',
+    flavor: '第一张参赛单终于不是空白。',
+  },
+  {
+    id: 'firstWin',
+    name: '第一桶金',
+    description: '首次赢得一场比赛。',
+    category: '入门',
+    check: 'firstWin',
+    flavor: '奖金到账，车队账本终于不是纯亏损了。',
+  },
+  {
+    id: 'firstPart',
+    name: '改装开始',
+    description: '首次购买零件。',
+    category: '入门',
+    check: 'firstPart',
+    flavor: '车库里第一次传出了拧螺丝的声音。',
+  },
+  {
+    id: 'firstEquip',
+    name: '拧上去了',
+    description: '首次装备零件。',
+    category: '入门',
+    check: 'firstEquip',
+    flavor: '总之先装上，跑起来再说。',
+  },
+  {
+    id: 'fullSlots',
+    name: '装满再说',
+    description: '首次装满全部槽位。',
+    category: '入门',
+    check: 'fullSlots',
+    flavor: '这下每个位置都塞进东西了。',
+  },
+  {
+    id: 'normalWin',
+    name: '标准车手',
+    description: '在标准难度赢得一场比赛。',
+    category: '难度',
+    check: 'normalWin',
+    flavor: '标准难度的门票算是拿稳了。',
+  },
+  {
+    id: 'hardWin',
+    name: '挑战者',
+    description: '在挑战难度赢得一场比赛。',
+    category: '难度',
+    check: 'hardWin',
+    flavor: '开始有人认真看你这台车了。',
+  },
+  {
+    id: 'expertWin',
+    name: '专家入场券',
+    description: '在专家难度赢得一场比赛。',
+    category: '难度',
+    check: 'expertWin',
+    flavor: '再往上，已经不是随便乱跑的局了。',
+  },
+  {
+    id: 'nightmareWin',
+    name: '噩梦执照',
+    description: '在噩梦难度赢得一场比赛。',
+    category: '难度',
+    check: 'nightmareWin',
+    flavor: '雪主任在文件角落签了个名。',
+  },
+  {
+    id: 'nightmareStreak3',
+    name: '噩梦不是梦',
+    description: '在噩梦难度达成 3 连胜。',
+    category: '难度',
+    check: 'nightmareStreak3',
+    flavor: '连噩梦局都开始像固定节目了。',
+  },
+  {
+    id: 'win10',
+    name: '十胜车手',
+    description: '累计赢得 10 场比赛。',
+    category: '经营',
+    check: 'win10',
+    flavor: '奖杯还不多，胜场已经像样了。',
+  },
+  {
+    id: 'race30',
+    name: '再来一局',
+    description: '累计完成 30 场比赛。',
+    category: '经营',
+    check: 'race30',
+    flavor: '今天最后一把这种话，已经没人信了。',
+  },
+  {
+    id: 'cash5000',
+    name: '小有积蓄',
+    description: '资金首次达到 5000。',
+    category: '经营',
+    check: 'cash5000',
+    flavor: '账面终于有点样子了。',
+  },
+  {
+    id: 'cash20000',
+    name: '王都富婆车队',
+    description: '资金首次达到 20000。',
+    category: '经营',
+    check: 'cash20000',
+    flavor: '财务看着余额，语气都稳了不少。',
+  },
+  {
+    id: 'streak3',
+    name: '手感来了',
+    description: '达成 3 连胜。',
+    category: '经营',
+    check: 'streak3',
+    flavor: '这两天上赛道，方向盘都顺手了。',
+  },
+  {
+    id: 'streak5',
+    name: '一路狂飙',
+    description: '达成 5 连胜。',
+    category: '经营',
+    check: 'streak5',
+    flavor: '维修站已经开始默认你会赢。',
+  },
+  {
+    id: 'hpBeliever',
+    name: '大马力信仰',
+    description: '以 hp 主属性倾向超过 55% 的配置赢得一场比赛。',
+    category: '整活',
+    check: 'hpBeliever',
+    flavor: '所有问题，都被试着用马力解决了。',
+  },
+  {
+    id: 'stableDriver',
+    name: '稳字当头',
+    description: '以高稳定配置赢得一场比赛。',
+    category: '整活',
+    check: 'stableDriver',
+    flavor: '方向稳了，心态也跟着稳了。',
+  },
+  {
+    id: 'xueWrenchWin',
+    name: '雪主任认可',
+    description: '装备“雪主任祖传扳手”并赢得一场比赛。',
+    category: '整活',
+    hidden: true,
+    check: 'xueWrenchWin',
+    flavor: '扳手上那层旧漆，好像真的带点玄学。',
+  },
+  {
+    id: 'xiaoyuSponsorWin',
+    name: '小雨小报头条',
+    description: '装备“小雨小报赞助”并赢得一场比赛。',
+    category: '整活',
+    hidden: true,
+    check: 'xiaoyuSponsorWin',
+    flavor: '明天小报标题已经想好了。',
+  },
+];
+
+const RAW_PART_POOL = [
   {
     name: '便宜机油',
     type: 'Engine',
@@ -735,3 +929,13 @@ const PART_POOL = [
     changes: { stability: 32, tire: 6, weight: 34, hp: -4 },
   },
 ];
+
+const PART_POOL = RAW_PART_POOL.map((part) => ({
+  ...part,
+  templateId: part.templateId || createPartTemplateId(part),
+}));
+
+const PART_POOL_BY_TEMPLATE_ID = PART_POOL.reduce((map, part) => {
+  map[part.templateId] = part;
+  return map;
+}, {});

@@ -48,8 +48,11 @@ function loadGame() {
   }
 
   applyPersistentState(saveData);
+  if (typeof checkAchievements === 'function') {
+    checkAchievements({ source: 'loadMigration', silent: true });
+  }
   refreshAfterPersistentChange();
-  addLog('存档已读取，仓库、商店、状态栏和日志已刷新。');
+  addLog('存档已读取，图鉴、档案、商店、状态栏和日志已刷新。');
 }
 
 function resetPersistentState() {
@@ -65,10 +68,13 @@ function resetPersistentState() {
   gameState.reactionTime = null;
   gameState.playerStarted = false;
   gameState.panelReturnPhase = 'idle';
+  gameState.atlasFilter = 'all';
   gameState.restartArmed = false;
   gameState.inventory = [];
   gameState.equippedParts = createEmptyEquippedParts();
   gameState.nextPartId = 1;
+  gameState.stats = createDefaultStats();
+  gameState.achievements = createDefaultAchievementsState();
   recalculatePlayerStats();
 }
 
@@ -80,19 +86,19 @@ function restartGame() {
 
   if (!gameState.restartArmed) {
     gameState.restartArmed = true;
-    el.restartBtn.textContent = '再次点击确认重开';
-    addLog('再次点击“重开”会清除当前进度和本地存档。');
+    el.restartBtn.textContent = '再次点击确认清档';
+    addLog('再次点击“重开并清档”会清除当前进度和本地存档。');
     clearTimeout(gameState.restartArmedTimer);
     gameState.restartArmedTimer = setTimeout(() => {
       gameState.restartArmed = false;
-      el.restartBtn.textContent = '重开';
+      el.restartBtn.textContent = '重开并清档';
     }, 4500);
     return;
   }
 
   clearTimeout(gameState.restartArmedTimer);
   gameState.restartArmed = false;
-  el.restartBtn.textContent = '重开';
+  el.restartBtn.textContent = '重开并清档';
 
   clearRaceTimers();
   try {

@@ -7,6 +7,35 @@ function createEmptyEquippedParts() {
   }, {});
 }
 
+function createDifficultyStatsMap() {
+  return DIFFICULTY_ORDER.reduce((stats, key) => {
+    stats[key] = 0;
+    return stats;
+  }, {});
+}
+
+function createDefaultStats() {
+  return {
+    totalRaces: 0,
+    totalWins: 0,
+    totalLosses: 0,
+    currentStreak: 0,
+    bestStreak: 0,
+    highestCash: 1500,
+    winsByDifficulty: createDifficultyStatsMap(),
+    bestStreakByDifficulty: createDifficultyStatsMap(),
+    hasFilledAllSlots: false,
+    wonWithSpecialParts: [],
+  };
+}
+
+function createDefaultAchievementsState() {
+  return {
+    completed: {},
+    lastUnlocked: [],
+  };
+}
+
 const gameState = {
   phase: 'idle',
   cash: 1500,
@@ -29,6 +58,7 @@ const gameState = {
   shopItems: [],
   panelReturnPhase: 'idle',
   activePage: 'race',
+  atlasFilter: 'all',
   restartArmed: false,
   restartArmedTimer: null,
   inventory: [],
@@ -38,6 +68,10 @@ const gameState = {
   materials: [],
   craftingRecipes: [],
   player: { ...BASE_PLAYER_STATS },
+  stats: createDefaultStats(),
+  achievements: createDefaultAchievementsState(),
+  achievementToastQueue: [],
+  achievementToastTimer: null,
 };
 
 const el = {
@@ -55,17 +89,18 @@ const el = {
   garageSlotsBody: document.getElementById('garageSlotsBody'),
   tuningEquippedBody: document.getElementById('tuningEquippedBody'),
   tuningUnequippedBody: document.getElementById('tuningUnequippedBody'),
-  storageInventoryBody: document.getElementById('storageInventoryBody'),
-  storageMaterialsBody: document.getElementById('storageMaterialsBody'),
   difficultyChoices: document.getElementById('difficultyChoices'),
   difficultyOpenBtn: document.getElementById('difficultyOpenBtn'),
   difficultyCloseBtn: document.getElementById('difficultyCloseBtn'),
+  difficultyOpenButtons: Array.from(document.querySelectorAll('[data-action="open-difficulty"]')),
   difficultyModal: document.getElementById('difficultyModal'),
   difficultyCurrentName: document.getElementById('difficultyCurrentName'),
   difficultyCurrentMeta: document.getElementById('difficultyCurrentMeta'),
   atlasBody: document.getElementById('atlasBody'),
   atlasDifficultyText: document.getElementById('atlasDifficultyText'),
   atlasCashStat: document.getElementById('atlasCashStat'),
+  atlasFilters: Array.from(document.querySelectorAll('[data-atlas-filter]')),
+  atlasSummaryText: document.getElementById('atlasSummaryText'),
   logOutput: document.getElementById('logOutput'),
   redLight: document.getElementById('redLight'),
   yellowLight: document.getElementById('yellowLight'),
@@ -96,5 +131,21 @@ const el = {
   resultMessage: document.getElementById('resultMessage'),
   shopCashStat: document.getElementById('shopCashStat'),
   tuningCashStat: document.getElementById('tuningCashStat'),
-  storageCashStat: document.getElementById('storageCashStat'),
+  profileCashStat: document.getElementById('profileCashStat'),
+  profileDifficultyName: document.getElementById('profileDifficultyName'),
+  profileDifficultyMeta: document.getElementById('profileDifficultyMeta'),
+  achievementsBody: document.getElementById('achievementsBody'),
+  achievementsCountText: document.getElementById('achievementsCountText'),
+  statsTotalRaces: document.getElementById('statsTotalRaces'),
+  statsTotalWins: document.getElementById('statsTotalWins'),
+  statsTotalLosses: document.getElementById('statsTotalLosses'),
+  statsCurrentStreak: document.getElementById('statsCurrentStreak'),
+  statsBestStreak: document.getElementById('statsBestStreak'),
+  statsDifficultyWins: document.getElementById('statsDifficultyWins'),
+  statsDifficultyBestStreaks: document.getElementById('statsDifficultyBestStreaks'),
+  statsHighestCash: document.getElementById('statsHighestCash'),
+  statsCollectionProgress: document.getElementById('statsCollectionProgress'),
+  versionText: document.getElementById('versionText'),
+  versionNote: document.getElementById('versionNote'),
+  achievementToast: document.getElementById('achievementToast'),
 };

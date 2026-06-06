@@ -141,9 +141,9 @@ function registerRace() {
     }
     addLog(`现金不足以支付「${getDifficulty().name}」难度报名费 ${getEntryFee()} 元。`);
     if (gameState.cash >= getMinEntryFee()) {
-      addLog('可降低难度以减少报名费，或进仓库卸下/卖掉零件。');
+      addLog('可降低难度以减少报名费，或进改装页卸下/卖掉零件。');
     } else {
-      addLog('可以进仓库卸下或卖掉零件，仓库回收价为原价 8 折。');
+      addLog('可以进改装页卸下或卖掉零件，未装备零件回收价为原价 8 折。');
     }
     return;
   }
@@ -228,6 +228,7 @@ function handleFalseStart() {
   gameState.lastReactionTime = null;
   gameState.playerStarted = false;
   gameState.currentWinStreak = 0;
+  syncProgressStats();
   gameState.lastRank = '犯规';
   setPhase('false_start');
   setLights('red');
@@ -363,6 +364,32 @@ function completeRace() {
   gameState.raceCount += 1;
   gameState.lastRank = `第 ${playerRank} 名`;
   updateWinStreak(playerRank);
+  gameState.stats.totalRaces += 1;
+  if (playerRank === 1) {
+    const difficultyKey = getDifficultyKey();
+    const equippedTemplateIds = EQUIPMENT_SLOTS.map((type) => getEquippedPart(type))
+      .filter(Boolean)
+      .map((part) => getPartTemplateId(part));
+
+    gameState.stats.totalWins += 1;
+    gameState.stats.winsByDifficulty[difficultyKey] += 1;
+    gameState.stats.bestStreakByDifficulty[difficultyKey] = Math.max(
+      gameState.stats.bestStreakByDifficulty[difficultyKey] || 0,
+      gameState.currentWinStreak
+    );
+
+    ['gearbox_xue_wrench', 'stability_xiaoyu_sponsor'].forEach((templateId) => {
+      if (
+        equippedTemplateIds.includes(templateId) &&
+        !gameState.stats.wonWithSpecialParts.includes(templateId)
+      ) {
+        gameState.stats.wonWithSpecialParts.push(templateId);
+      }
+    });
+  } else {
+    gameState.stats.totalLosses += 1;
+  }
+  syncProgressStats();
   setPhase('finished');
   setLights('none');
 
@@ -371,6 +398,9 @@ function completeRace() {
   addLog(`难度「${getDifficulty().name}」奖金×${rewardMultiplier}`);
   addLog(`获得奖金 ${prize} 元`);
   finishPostRace();
+  if (typeof checkAchievements === 'function') {
+    checkAchievements({ source: 'raceEnd' });
+  }
   autoSaveGame();
 }
 

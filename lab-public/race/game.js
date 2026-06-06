@@ -4,6 +4,7 @@ const RACE_GAME_SCRIPTS = [
   'config.js',
   'state.js',
   'core.js',
+  'achievements.js',
   'race.js',
   'parts.js',
   'storage.js',
