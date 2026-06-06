@@ -324,6 +324,8 @@ function renderHome() {
       ? RETURNED_LINES
       : [pickStable(HOME_LINES, save.traveler.lastActionAt + state.slot)];
 
+  $('#catScene').classList.toggle('is-away', Boolean(isTraveling));
+  $('#catScene').classList.toggle('is-returned', Boolean(!isTraveling && justReturned));
   $('#homeText').innerHTML = copyLines.map((line) => `<span>${escapeHtml(line)}</span>`).join('');
   $('#tripRoute').textContent = isTraveling ? getRouteName(trip.routeId) : '还没出门';
   $('#tripReturnTime').textContent = isTraveling ? formatClock(trip.returnsAt) : '等待行李';

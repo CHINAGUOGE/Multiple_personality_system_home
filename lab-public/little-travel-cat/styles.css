@@ -298,6 +298,11 @@ main {
   border-radius: 42px 42px 24px 24px;
   background: #26313f;
   box-shadow: -22px 18px 0 rgba(38, 49, 63, 0.14);
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .ear {
@@ -340,6 +345,75 @@ main {
   border-left: 0;
   border-bottom: 0;
   border-radius: 0 36px 0 0;
+}
+
+.away-traces {
+  position: absolute;
+  right: 34px;
+  bottom: 34px;
+  display: none;
+  width: 116px;
+  height: 76px;
+}
+
+.luggage-dot,
+.paw-dot {
+  position: absolute;
+  display: block;
+  border-radius: 999px;
+}
+
+.luggage-dot {
+  right: 10px;
+  bottom: 4px;
+  width: 42px;
+  height: 26px;
+  border: 3px solid rgba(38, 49, 63, 0.72);
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.luggage-dot::before {
+  position: absolute;
+  top: -13px;
+  left: 10px;
+  width: 18px;
+  height: 12px;
+  border: 3px solid rgba(38, 49, 63, 0.72);
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+  content: '';
+}
+
+.paw-dot {
+  width: 14px;
+  height: 10px;
+  background: rgba(38, 49, 63, 0.22);
+}
+
+.paw-dot-one {
+  left: 6px;
+  bottom: 12px;
+  transform: rotate(-14deg);
+}
+
+.paw-dot-two {
+  left: 34px;
+  bottom: 28px;
+  transform: rotate(12deg);
+}
+
+.paw-dot-three {
+  left: 64px;
+  bottom: 42px;
+  transform: rotate(-10deg);
+}
+
+.cat-scene.is-away .cat-shape {
+  display: none;
+}
+
+.cat-scene.is-away .away-traces {
+  display: block;
 }
 
 .home-copy {
