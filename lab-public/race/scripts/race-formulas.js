@@ -90,11 +90,15 @@ const RaceFormulaUtils = (() => {
       raceCount < 5 ? (difficulty.earlyRaceAssist || 0) * ((6 - raceCount) / 6) : 0;
     const uncappedStrength = scaledBase + chaseBonus - earlyRaceAssist;
     const maxOpponentStrength = difficulty.maxOpponentStrength;
+    const minOpponentStrength = Number.isFinite(difficulty.minOpponentStrength)
+      ? difficulty.minOpponentStrength
+      : 0.6;
+    const flooredStrength = Math.max(minOpponentStrength, uncappedStrength);
     const finalStrength = Number.isFinite(maxOpponentStrength)
-      ? Math.min(uncappedStrength, maxOpponentStrength)
-      : uncappedStrength;
+      ? Math.min(flooredStrength, maxOpponentStrength)
+      : flooredStrength;
 
-    return Math.max(0.6, finalStrength);
+    return finalStrength;
   }
 
   function computeOpponentCarPower(options) {

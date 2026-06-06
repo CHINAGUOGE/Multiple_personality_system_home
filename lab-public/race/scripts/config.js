@@ -23,6 +23,7 @@ const STORAGE_KEY = 'mpsteam-race-save-v1';
 const GAME_VERSION = 'v1.7';
 const GAME_VERSION_NOTE =
   '新增「AI 托管一场」，会模拟普通玩家反应自动跑完本场，保留完整赛道动画和正常结算。';
+const AI_ASSIST_REACTION_RANGE_SECONDS = [0.12, 0.3];
 
 const BASE_PLAYER_STATS = {
   engine: 10,
@@ -149,6 +150,7 @@ const DIFFICULTIES = {
     entryFeeMultiplier: 1.7,
     chaseRate: 0.24,
     opponentChaseCap: 1.0,
+    minOpponentStrength: 2.15,
     maxOpponentStrength: 4.35,
     opponentChaseStartRace: 7,
     opponentChaseRampRaces: 16,
@@ -161,6 +163,7 @@ const DIFFICULTIES = {
     entryFeeMultiplier: 2.4,
     chaseRate: 0.25,
     opponentChaseCap: 1.0,
+    minOpponentStrength: 2.65,
     maxOpponentStrength: null,
     opponentChaseStartRace: 10,
     opponentChaseRampRaces: 24,
