@@ -235,6 +235,10 @@ function getDifficulty() {
   return DIFFICULTIES[getDifficultyKey()];
 }
 
+function isNightmareDifficulty(key = getDifficultyKey()) {
+  return key === 'nightmare';
+}
+
 // 报名费按当前难度倍率缩放，向上取整到 10 元。
 function getEntryFee() {
   return getDifficultyEntryFee(getDifficultyKey());
@@ -590,6 +594,14 @@ function sanitizeStatsData(data, fallback = {}) {
     currentStreak,
     Math.floor(Number((data && data.bestStreak) ?? fallback.bestStreak) || 0)
   );
+  const falseStartCount = Math.max(
+    0,
+    Math.floor(Number((data && data.falseStartCount) ?? fallback.falseStartCount) || 0)
+  );
+  const falseStartStreak = Math.max(
+    0,
+    Math.floor(Number((data && data.falseStartStreak) ?? fallback.falseStartStreak) || 0)
+  );
   const secondPlaceStreak = Math.max(
     0,
     Math.floor(
@@ -599,6 +611,12 @@ function sanitizeStatsData(data, fallback = {}) {
   const fifthPlaceStreak = Math.max(
     0,
     Math.floor(Number((data && data.fifthPlaceStreak) ?? fallback.fifthPlaceStreak) || 0)
+  );
+  const partsPurchasedCount = Math.max(
+    0,
+    Math.floor(
+      Number((data && data.partsPurchasedCount) ?? fallback.partsPurchasedCount) || 0
+    )
   );
   const highestCash = Math.max(
     0,
@@ -639,13 +657,29 @@ function sanitizeStatsData(data, fallback = {}) {
     totalLosses: Math.min(totalRaces, totalLosses),
     currentStreak,
     bestStreak,
+    falseStartCount,
+    falseStartStreak,
     secondPlaceStreak,
     fifthPlaceStreak,
+    partsPurchasedCount,
     highestCash,
     winsByDifficulty,
     bestStreakByDifficulty,
     hasFilledAllSlots: Boolean(
       (data && data.hasFilledAllSlots) ?? fallback.hasFilledAllSlots
+    ),
+    hasLowCashAfterRace: Boolean(
+      (data && data.hasLowCashAfterRace) ?? fallback.hasLowCashAfterRace
+    ),
+    hasFinishedLast: Boolean((data && data.hasFinishedLast) ?? fallback.hasFinishedLast),
+    hasNightmareSlowReactionWin: Boolean(
+      (data && data.hasNightmareSlowReactionWin) ?? fallback.hasNightmareSlowReactionWin
+    ),
+    hasNightmareGlassCannonWin: Boolean(
+      (data && data.hasNightmareGlassCannonWin) ?? fallback.hasNightmareGlassCannonWin
+    ),
+    hasNightmareStableWin: Boolean(
+      (data && data.hasNightmareStableWin) ?? fallback.hasNightmareStableWin
     ),
     hasWonAfterSecondPlaceStreak: Boolean(
       (data && data.hasWonAfterSecondPlaceStreak) ??
@@ -809,12 +843,20 @@ function sanitizeSaveData(data) {
     totalLosses: Math.max(0, totalRaces - estimateMigratedTotalWins(data, totalRaces)),
     currentStreak: Math.max(0, Math.floor(Number(data.currentWinStreak) || 0)),
     bestStreak: Math.max(0, Math.floor(Number(data.bestWinStreak) || 0)),
+    falseStartCount: 0,
+    falseStartStreak: 0,
     secondPlaceStreak: 0,
     fifthPlaceStreak: 0,
+    partsPurchasedCount: inventory.length,
     highestCash: Math.max(1500, Math.floor(Number(data.cash) || 0)),
     winsByDifficulty: createDifficultyStatsMap(),
     bestStreakByDifficulty: createDifficultyStatsMap(),
     hasFilledAllSlots: EQUIPMENT_SLOTS.every((type) => Boolean(equippedParts[type])),
+    hasLowCashAfterRace: false,
+    hasFinishedLast: false,
+    hasNightmareSlowReactionWin: false,
+    hasNightmareGlassCannonWin: false,
+    hasNightmareStableWin: false,
     hasWonAfterSecondPlaceStreak: false,
     wonWithBuildAchievements: [],
     wonWithSpecialParts: [],
