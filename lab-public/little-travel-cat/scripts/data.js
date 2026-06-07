@@ -1,3 +1,4 @@
+// 小旅猫的静态配置：存档 key、节奏数值、商店数据、路线和收集品文案。
 export const SAVE_VERSION = 1;
 export const SLOT_COUNT = 3;
 export const ACTIVE_SLOT_KEY = 'littleTravelCatActiveSlot:v1';
@@ -15,6 +16,7 @@ export const PROD_HOUR_MS = 60 * 60 * 1000;
 export const HOUR_MS = DEV_TIME_SCALE ? DEV_HOUR_MS : PROD_HOUR_MS;
 export const SOUVENIR_CHANCE = 0.45;
 
+// 食物决定旅行时长范围；工具主要影响路线和特殊结果权重。
 export const FOODS = [
   {
     id: 'dried_fish_pack',
@@ -75,6 +77,7 @@ export const TOOLS = [
   },
 ];
 
+// 路线 baseHours 会参与 chooseRoute 的权重计算，不是固定旅行时长。
 export const ROUTES = [
   {
     id: 'near_rooftop',
@@ -162,6 +165,7 @@ export const SPECIAL_POSTCARD_DESCRIPTIONS = [
 
 export const WEATHERS = ['晴', '微风', '阴', '小雨', '薄雾', '雪后'];
 
+// 收集品 rarity 只影响抽取权重和展示样式，不参与存档结构变化。
 export const SOUVENIRS = [
   {
     id: 'pretty_feather',

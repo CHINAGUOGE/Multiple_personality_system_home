@@ -1,5 +1,10 @@
 'use strict';
 
+/*
+ * 核心工具和渲染更新模块。
+ * 这里连接配置、状态、持久化清洗和页面刷新，是其它业务模块的公共依赖。
+ */
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -219,6 +224,7 @@ function formatPartOption(part, equippedPart = null) {
   )}）`;
 }
 
+// 比赛层级只用于展示，不影响难度公式；实际强度由 RaceFormulaUtils 计算。
 function getRaceTier() {
   return (
     RACE_TIERS.slice()
@@ -634,6 +640,7 @@ function estimateMigratedTotalWins(data, totalRaces) {
   return Math.min(totalRaces, streakFloor);
 }
 
+// 旧存档字段可能缺失或含有历史格式，所有统计值都在这里归一化。
 function sanitizeStatsData(data, fallback = {}) {
   const totalRaces = Math.max(
     0,
@@ -862,6 +869,7 @@ function checkGameFailure() {
   return true;
 }
 
+// 存档只输出可恢复的长期进度，排除进行中的动画、计时器和弹窗状态。
 function createSaveData() {
   syncProgressStats();
   const bestManualReactionTime = normalizeManualReactionTime(gameState.bestManualReactionTime);
@@ -927,6 +935,7 @@ function createSaveData() {
   };
 }
 
+// 读档防御层：丢弃非法零件、修正装备槽、迁移旧字段并保护异常反应纪录。
 function sanitizeSaveData(data) {
   if (!data || typeof data !== 'object') {
     return null;
@@ -1105,6 +1114,7 @@ function applyPersistentState(data) {
   syncProgressStats();
 }
 
+// 读档、清档或外部状态变动后统一刷新页面，避免各模块各自漏更新。
 function refreshAfterPersistentChange() {
   clearRaceTimers();
   gameState.reactionTime = null;
@@ -1149,6 +1159,7 @@ function canManageTuning() {
   );
 }
 
+// phase 是 UI 按钮、灯号、快捷键和比赛锁定逻辑的共同状态源。
 function setPhase(phase) {
   gameState.phase = phase;
   el.phaseText.textContent = PHASE_LABELS[phase];

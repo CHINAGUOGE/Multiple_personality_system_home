@@ -1,5 +1,10 @@
 'use strict';
 
+/*
+ * 比赛流程模块。
+ * 负责报名、灯号倒计时、起步判定、车辆逐帧推进和赛后结算。
+ */
+
 function renderLanes() {
   el.lanes.innerHTML = '';
   gameState.cars.forEach((car, index) => {
@@ -89,6 +94,7 @@ function getOpponentCarPower(id) {
   });
 }
 
+// AI 托管只模拟本场起步时机，不改玩家的手动反应纪录和操作类成就。
 function rollAiReactionTime() {
   const [min, max] = AI_ASSIST_REACTION_RANGE_SECONDS;
   return Number((min + Math.random() * (max - min)).toFixed(3));
@@ -181,6 +187,7 @@ function onGreenLight() {
   );
 }
 
+// 报名后进入红黄绿灯倒计时；玩家在绿灯前点击会进入抢跑分支。
 function registerRace() {
   if (gameState.cash < getEntryFee()) {
     const reachedGameOver = checkGameFailure();
@@ -228,6 +235,7 @@ function registerRace() {
   );
 }
 
+// 玩家/AI 起步统一走这里，便于结算时区分 manual 和 ai 控制来源。
 function pressStart(options = {}) {
   const controlledBy = options.controlledBy || getCurrentRaceControl();
 
@@ -370,6 +378,7 @@ function startRaceMotion() {
   gameState.raceTimer = requestAnimationFrame(raceLoop);
 }
 
+// 使用 requestAnimationFrame 承载动画，内部通过 TICK_MS 固定步长推进数值。
 function raceLoop(now) {
   if (!gameState.raceTimer || gameState.phase !== 'racing') {
     return;
@@ -477,6 +486,7 @@ function tickRace() {
   }
 }
 
+// 结算集中处理排名、奖金、连胜、特殊成就标记和失败检测。
 function completeRace() {
   clearRaceTimers();
 

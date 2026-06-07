@@ -21,6 +21,12 @@ import {
 } from './save.js';
 import { createTrip, getRouteName, settleTrip } from './trip.js';
 
+/*
+ * 小旅猫页面入口。
+ * 负责保存当前槽位状态、绑定交互、定时结算离线进度并渲染所有面板。
+ */
+
+// 只保存页面会话状态；可持久化数据放在 state.save 并交给 save.js 归一化。
 const state = {
   slot: 1,
   save: null,
@@ -47,6 +53,7 @@ const systemThemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
 document.addEventListener('DOMContentLoaded', init);
 
+// 初始化后每秒同步一次，确保旅行到点和庭院资源不用刷新也能结算。
 function init() {
   initTheme();
   state.slot = getActiveSlot();
@@ -76,6 +83,7 @@ function init() {
   });
 }
 
+// 所有事件都绑定在固定容器上，动态渲染的卡片通过 data-* 进行事件委托。
 function bindEvents() {
   $('#themeToggleBtn').addEventListener('click', cycleTheme);
 
@@ -188,6 +196,7 @@ function cycleTheme() {
   renderThemeButton(nextTheme);
 }
 
+// 同步当前存档的可变时间状态：离线资源和已完成旅行会在这里落盘。
 function syncCurrentSave() {
   const generated = updateGardenByOfflineTime(state.save);
   const result = settleTrip(state.save);
@@ -206,6 +215,7 @@ function autoSave(label = '已自动保存') {
   renderSaveStatus();
 }
 
+// 切换槽位前先保存当前槽，避免未结算的旅行或露珠进度丢失。
 function switchSlot(nextSlot) {
   if (nextSlot === state.slot) {
     return;
@@ -296,6 +306,7 @@ function toggleTool(input) {
   renderLuggage();
 }
 
+// 开始旅行只消费食物；工具作为携带条件和结果权重，不在这里扣库存。
 function startTrip() {
   syncCurrentSave();
 
@@ -356,6 +367,7 @@ function resetCurrentSlot() {
   showToast('存档已重置。');
 }
 
+// 总渲染入口；各 render* 函数只负责 DOM，不直接写 localStorage。
 function render() {
   renderHeader();
   renderHome();

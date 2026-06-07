@@ -1,3 +1,4 @@
+/* 主题变量：浅色主题默认值，深色主题在下方 html[data-theme='dark'] 覆盖。 */
 :root {
   color-scheme: light;
   --bg: #f5f8fb;
@@ -63,6 +64,7 @@
   --radius: 8px;
 }
 
+/* 深色主题只覆盖变量，组件样式继续复用同一套结构。 */
 html[data-theme='dark'] {
   color-scheme: dark;
   --bg: #141820;
@@ -133,6 +135,7 @@ html[data-theme='dark'] {
   box-sizing: border-box;
 }
 
+/* 全局基础样式和页面外壳。 */
 html {
   min-height: 100%;
   color: var(--ink);
@@ -182,6 +185,7 @@ a {
   padding: 22px 0 42px;
 }
 
+/* 顶部状态栏、存档条和通用面板的玻璃质感基底。 */
 .topbar,
 .save-strip,
 .home-panel,
@@ -385,6 +389,7 @@ main {
   margin-top: 18px;
 }
 
+/* 首页场景：通过 CSS 图形表现窗边状态，JS 只切换 is-away。 */
 .home-panel {
   display: grid;
   grid-template-columns: minmax(180px, 240px) minmax(0, 1fr) minmax(240px, 280px);
@@ -624,6 +629,7 @@ main {
   padding: 11px 14px;
 }
 
+/* 主内容两列：庭院/行李在左，商店和收藏可跨列铺开。 */
 .content-grid {
   display: grid;
   grid-template-columns: minmax(260px, 0.72fr) minmax(360px, 1.28fr);
@@ -658,6 +664,7 @@ main {
   font-size: 22px;
 }
 
+/* 庭院动效：JS 通过 class 和 CSS 变量控制露珠位置、落点和满额状态。 */
 .dewfall-scene {
   position: relative;
   height: 132px;
@@ -791,6 +798,7 @@ main {
     radial-gradient(circle at 74% 50%, rgba(141, 227, 255, 0.78) 0 4px, transparent 5px);
 }
 
+/* 交互按钮统一高度和 hover 动效，后续卡片按钮复用这里的基线。 */
 .primary-action,
 .ghost-action,
 .item-card button {
@@ -831,6 +839,7 @@ main {
   gap: 20px;
 }
 
+/* 商店、行李选择和收藏卡片的通用网格。 */
 .shop-group h3,
 .luggage-section h3 {
   color: var(--heading);
@@ -956,6 +965,7 @@ main {
   opacity: 0.58;
 }
 
+/* 收藏页分段控件和列表。 */
 .segmented-control {
   width: fit-content;
   gap: 4px;
@@ -1047,6 +1057,7 @@ main {
   padding: 0 14px;
 }
 
+/* 平板布局：把首页和内容区收为单列，卡片保留两列。 */
 @media (max-width: 980px) {
   .home-panel,
   .content-grid {
@@ -1063,6 +1074,7 @@ main {
   }
 }
 
+/* 手机布局：减小外边距并把卡片、按钮和分段控件改为单列。 */
 @media (max-width: 720px) {
   .app-shell {
     width: min(100% - 20px, 1180px);
@@ -1146,6 +1158,7 @@ main {
   }
 }
 
+/* 用户偏好减少动态时，关闭庭院露珠过渡。 */
 @media (prefers-reduced-motion: reduce) {
   .falling-dew,
   .dew-landing {

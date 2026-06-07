@@ -1,5 +1,11 @@
 'use strict';
 
+/*
+ * 赛车游戏的静态配置中心。
+ * 这里维护文案、经济数值、难度、成就和零件池，运行时状态放在 state.js。
+ */
+
+// 阶段名只用于状态栏和日志展示，不直接驱动比赛流程。
 const PHASE_LABELS = {
   idle: '待机',
   registered: '已报名',
@@ -102,6 +108,7 @@ const PART_RARITY_MIGRATIONS = {
   uncommon: 'rare',
 };
 
+// 难度配置会同时影响报名费、奖金、电脑追赶速度和商店奖池范围。
 const DIFFICULTIES = {
   easy: {
     name: '休闲',
@@ -196,6 +203,7 @@ const PART_TEMPLATE_ID_OVERRIDES = {
   'Stability:小雨小报赞助': 'stability_xiaoyu_sponsor',
 };
 
+// templateId 需要跨版本稳定，用于旧存档把“同款零件”重新映射到当前零件池。
 function createPartTemplateSeed(part) {
   return `${part.type}|${part.name}|${part.rarity}|${part.price}|${part.effectText}`;
 }
@@ -218,6 +226,7 @@ function createPartTemplateId(part) {
   return `${part.type.toLowerCase()}_${createStableToken(createPartTemplateSeed(part))}`;
 }
 
+// 成就条件只保存 check key，实际判定集中在 achievements.js。
 const ACHIEVEMENTS = [
   {
     id: 'firstRace',
@@ -541,6 +550,7 @@ const ACHIEVEMENTS = [
   },
 ];
 
+// 原始零件池只描述基础属性；下方 PART_POOL 会补充稳定 templateId。
 const RAW_PART_POOL = [
   {
     name: '便宜机油',
@@ -1147,6 +1157,7 @@ const RAW_PART_POOL = [
   },
 ];
 
+// 运行时统一使用带 templateId 的零件池，避免存档直接依赖数组位置。
 const PART_POOL = RAW_PART_POOL.map((part) => ({
   ...part,
   templateId: part.templateId || createPartTemplateId(part),

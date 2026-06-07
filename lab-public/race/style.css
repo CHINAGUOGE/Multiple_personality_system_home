@@ -1,3 +1,4 @@
+/* 统一样式入口：按基础框架、组件、补充 UI、响应式的顺序导入。 */
 @import url('./styles/base.css');
 @import url('./styles/components.css');
 @import url('./styles/ui.css');

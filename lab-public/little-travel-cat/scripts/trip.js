@@ -11,6 +11,11 @@ import {
   WEATHERS,
 } from './data.js';
 
+/*
+ * 旅行模块负责创建旅程、到点结算和生成收集结果。
+ * 结果使用 trip.resultSeed 生成，避免重复结算时出现不同奖励。
+ */
+
 export function createTrip(
   foodId,
   toolIds,
@@ -42,6 +47,7 @@ export function createTrip(
   };
 }
 
+// 结算时先检查是否已生成过同 tripId 的明信片，避免刷新页面后重复领奖。
 export function settleTrip(save, now = Date.now()) {
   const trip = save.traveler.trip;
 
@@ -89,6 +95,7 @@ export function getRouteName(routeId) {
   return ROUTES.find((route) => route.id === routeId)?.name || '不知道哪里';
 }
 
+// 路线权重由食物时长和工具共同决定，长时长更容易走到基础耗时更高的路线。
 function chooseRoute(durationHours, toolIds, randomSource) {
   const weightedRoutes = ROUTES.map((route) => {
     const distanceFit = 1 / (0.35 + Math.abs(route.baseHours - durationHours));
@@ -228,6 +235,7 @@ function rarityWeight(rarity) {
   return 6;
 }
 
+// 使用轻量可复现随机数，保证同一个 resultSeed 对应同一批结算内容。
 function seededRandom(seed) {
   let state = seed || 1;
 

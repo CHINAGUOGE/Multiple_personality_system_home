@@ -1,5 +1,10 @@
 'use strict';
 
+/*
+ * 商店、库存、改装和图鉴模块。
+ * 这里会改 gameState.inventory/equippedParts/shopItems，并在必要时触发属性重算和自动保存。
+ */
+
 const tuningLayoutMedia =
   typeof window !== 'undefined' && typeof window.matchMedia === 'function'
     ? window.matchMedia('(max-width: 900px)')
@@ -107,6 +112,7 @@ function pickWeightedParts(pool, count, options = {}) {
   return picked;
 }
 
+// 刷新商店会重新抽取当前难度奖池，并记录到存档，保证刷新后页面状态一致。
 function refreshShop() {
   const pool = getCurrentLootPool();
   const available = PART_POOL.filter((part) => pool.includes(getPartRarity(part)));
@@ -207,6 +213,7 @@ function renderGarage() {
   renderTuning();
 }
 
+// 改装页桌面端是“左槽位右详情”，移动端是手风琴展开；这里同步两种布局状态。
 function isTuningMobileLayout() {
   return tuningLayoutMedia ? tuningLayoutMedia.matches : window.innerWidth <= 900;
 }

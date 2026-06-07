@@ -1,5 +1,6 @@
 'use strict';
 
+// 兼容旧页面入口：这里按依赖顺序加载拆分后的业务脚本。
 const RACE_GAME_SCRIPTS = [
   'config.js',
   'race-formulas.js',
@@ -19,6 +20,7 @@ const raceGameScriptBaseUrl = new URL(
   raceGameEntryScript ? raceGameEntryScript.src : window.location.href
 );
 
+// 使用 Promise 串行加载，确保后续脚本能访问前面脚本挂到全局的常量和函数。
 function loadRaceGameScript(src) {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');

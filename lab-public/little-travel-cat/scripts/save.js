@@ -9,6 +9,11 @@ import {
   STARTING_DEW,
 } from './data.js';
 
+/*
+ * 存档模块负责槽位、默认数据、读写和旧数据归一化。
+ * 对外返回的 save 都会经过 normalizeSave，页面逻辑不需要再判断字段缺失。
+ */
+
 const nowValue = () => Date.now();
 
 const isRecord = (value) => value && typeof value === 'object' && !Array.isArray(value);
@@ -40,6 +45,7 @@ export function setActiveSlot(slot) {
   return nextSlot;
 }
 
+// 默认存档结构是新增字段的唯一入口，后续版本加字段时优先在这里补齐。
 export function createDefaultSave(now = nowValue()) {
   return {
     version: SAVE_VERSION,
@@ -73,6 +79,7 @@ export function createDefaultSave(now = nowValue()) {
   };
 }
 
+// 归一化兼容损坏、缺字段或旧版本存档；非法值会回退到安全默认值。
 export function normalizeSave(input, now = nowValue()) {
   const fallback = createDefaultSave(now);
   const save = isRecord(input) ? input : fallback;
@@ -145,6 +152,7 @@ export function resetSave(slot = getActiveSlot()) {
   return nextSave;
 }
 
+// 离线资源按整分钟结算，达到上限后重置计时点，避免恢复时一次性溢出。
 export function updateGardenByOfflineTime(save, now = nowValue()) {
   const garden = save.garden;
   const elapsed = Math.max(0, now - garden.lastGeneratedAt);
@@ -206,6 +214,7 @@ export function getSlotSummaries() {
   });
 }
 
+// 下方 normalize* 函数只处理单个字段类型，方便未来存档版本迁移时复用。
 function normalizeCount(value) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;

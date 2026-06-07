@@ -1,3 +1,5 @@
+/* 基础层：全局复位、复古窗口框架、主页面布局和赛道基础样式。 */
+
 * {
   box-sizing: border-box;
 }
@@ -72,6 +74,7 @@ select {
   display: none !important;
 }
 
+/* 复古 Windows 外壳：标题栏、菜单、页签和状态栏。 */
 .desktop {
   padding: 14px;
 }
@@ -211,11 +214,33 @@ select {
   text-decoration: none;
 }
 
+.status-panel .status-link-tag {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  min-width: 0;
+  min-height: 20px;
+  padding: 2px 6px;
+  color: #0a246a;
+  font-weight: bold;
+  line-height: 1.2;
+  white-space: nowrap;
+  background: #eef2fa;
+  border: 1px solid #9fb9e8;
+  border-radius: 4px;
+}
+
 .status-panel a:hover,
 .status-panel a:focus-visible {
   text-decoration: underline;
 }
 
+.status-panel .status-link-tag:hover,
+.status-panel .status-link-tag:focus-visible {
+  background: #dce8ff;
+}
+
+/* 页面头、资金摘要和通用分组框。 */
 .page-header {
   display: flex;
   align-items: stretch;
@@ -325,6 +350,7 @@ select {
   border: 2px groove #fff;
 }
 
+/* 赛道区域：起跑灯、车道、车辆和赛后战报。 */
 .race-box {
   padding-top: 28px;
 }
@@ -549,6 +575,7 @@ select {
   color: #555;
 }
 
+/* 主比赛操作和结果提示区。 */
 .race-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -579,6 +606,7 @@ select {
   font-weight: normal;
 }
 
+/* 统计列表和日志输出。 */
 .stats-list {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

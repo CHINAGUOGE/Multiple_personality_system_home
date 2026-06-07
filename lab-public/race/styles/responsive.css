@@ -1,3 +1,6 @@
+/* 响应式覆盖层：只覆盖布局密度、固定栏和移动端可滚动区域。 */
+
+/* 平板宽度：减少多列面板，保持卡片仍能并排扫描。 */
 @media (max-width: 900px) {
   .summary-grid,
   .stats-list,
@@ -26,6 +29,7 @@
   }
 }
 
+/* 手机宽度：改为全屏应用壳，标题栏和页签固定，内容区独立滚动。 */
 @media (max-width: 767px) {
   :root {
     --mobile-title-bar-height: 34px;

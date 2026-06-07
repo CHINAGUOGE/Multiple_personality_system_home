@@ -1,5 +1,10 @@
 'use strict';
 
+/*
+ * 成就系统负责“判定、解锁、提示、档案页渲染”。
+ * 比赛结算和商店操作只更新统计字段，再调用 checkAchievements。
+ */
+
 function hasCompletedAchievement(id) {
   return Boolean(gameState.achievements.completed[id]);
 }
@@ -37,6 +42,7 @@ function summarizePlayerStatProfile(sourceStats = gameState.player) {
   };
 }
 
+// 当前车辆构筑会被压缩为主属性，用于判定偏科型获胜成就。
 function getWinningAchievementTagsFromCurrentBuild() {
   const profile = summarizePlayerStatProfile();
   const unlockedTags = [];
@@ -152,6 +158,7 @@ function unlockAchievementById(id, options = {}) {
   return unlocked;
 }
 
+// 成就条件集中映射，避免把具体判定散落在比赛、商店和渲染代码里。
 function checkAchievementCondition(achievement) {
   const stats = gameState.stats;
 
@@ -271,6 +278,7 @@ function checkAchievements(options = {}) {
   return unlocked;
 }
 
+// 档案页渲染只展示成就状态，不在这里触发新的解锁逻辑。
 function renderAchievements() {
   if (!el.achievementsBody) {
     return;

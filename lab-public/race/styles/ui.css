@@ -1,3 +1,5 @@
+/* 补充 UI 层：难度弹窗、图鉴、成就、版本卡和成就 toast。 */
+
 /* ===== v1.4 难度选择 ===== */
 .difficulty-box {
   padding-top: 28px;
@@ -276,6 +278,7 @@
   color: #555;
 }
 
+/* 档案页成就卡片，隐藏成就在未完成前只显示占位内容。 */
 .achievement-list {
   display: grid;
   gap: 8px;
@@ -388,6 +391,7 @@
   border-radius: 999px;
 }
 
+/* 成就 toast 固定在视口底部，避免挤压主布局。 */
 .achievement-toast {
   position: fixed;
   right: 16px;

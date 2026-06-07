@@ -1,5 +1,6 @@
 'use strict';
 
+// 快捷键入口需要避开表单、按钮焦点和弹窗，防止空格键误触比赛操作。
 function shouldIgnoreRaceShortcut(event) {
   const target = event.target;
   const tagName = target && target.tagName ? target.tagName.toLowerCase() : '';
@@ -12,12 +13,14 @@ function shouldIgnoreRaceShortcut(event) {
   );
 }
 
+// 鼠标点击后移走按钮焦点，降低电脑端连续按空格时触发上一次按钮的概率。
 function blurAfterPointerClick(event, node = event.currentTarget) {
   if (event.detail > 0 && node && typeof node.blur === 'function') {
     node.blur();
   }
 }
 
+// 事件绑定集中在入口文件，业务处理继续分散在 race/parts/storage/core 等模块。
 function bindEvents() {
   el.registerBtn.addEventListener('click', (event) => {
     if (gameState.phase === 'idle') {
@@ -164,6 +167,7 @@ function bindEvents() {
   });
 }
 
+// 初始化顺序：绑定事件、渲染静态面板、尝试自动读档，最后开放成就检查和操作。
 function init() {
   bindEvents();
   el.registerBtn.textContent = `报名比赛（${getEntryFee()} 元）`;

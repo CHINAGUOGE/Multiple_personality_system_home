@@ -1,5 +1,9 @@
 'use strict';
 
+/*
+ * 比赛数值公式模块。
+ * 这些函数只做纯计算，不直接读写 gameState，方便在比赛和测试脚本中复用。
+ */
 const RaceFormulaUtils = (() => {
   const OPPONENT_PERSONALITY_BY_ID = {
     2: 0.02,
@@ -34,6 +38,7 @@ const RaceFormulaUtils = (() => {
     };
   }
 
+  // 玩家评分用于电脑追赶和部分成就判定，不等同于赛道上的逐帧速度。
   function computePlayerRating(stats) {
     return (
       stats.hp * 0.0026 +
@@ -45,6 +50,7 @@ const RaceFormulaUtils = (() => {
     );
   }
 
+  // 电脑强度随场次成长，并在中后期按玩家评分追赶，避免长期碾压。
   function computeOpponentStrength(options) {
     const {
       raceCount,
@@ -136,6 +142,7 @@ const RaceFormulaUtils = (() => {
     };
   }
 
+  // 反应时间会先扣除难度宽限，再转换为起步奖励或慢起步惩罚。
   function computeReactionOutcome(options) {
     const reactionSeconds = Number(options.reactionSeconds) || 0;
     const reactionGrace = Number(options.reactionGrace) || 0;

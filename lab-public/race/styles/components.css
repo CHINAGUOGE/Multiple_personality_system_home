@@ -1,3 +1,6 @@
+/* 组件层：商店卡片、零件属性标签、改装槽位和固定操作栏。 */
+
+/* 图鉴筛选工具栏。 */
 .atlas-toolbar {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -16,6 +19,7 @@
   box-shadow: inset 1px 1px rgba(255, 255, 255, 0.32);
 }
 
+/* 商店、车辆、库存和槽位卡片共用的基础外观。 */
 .shop-card,
 .vehicle-card,
 .inventory-card,
@@ -93,6 +97,7 @@
   gap: 5px;
 }
 
+/* 零件属性变化展示：增益、代价和中性效果分组。 */
 .part-compare {
   display: grid;
   gap: 4px;
@@ -156,6 +161,7 @@
   background: #f4f4f4;
 }
 
+/* 稀有度颜色变量集中定义，卡片边框和文字标签复用同一组变量。 */
 .part-rarity-frame {
   --part-accent: #303030;
   --part-accent-bg: #f4f4f4;
@@ -331,6 +337,7 @@
   font-size: 12px;
 }
 
+/* 改装页布局：桌面端槽位总览 + 详情，移动端由 JS 切换为展开式列表。 */
 .tuning-layout {
   display: grid;
   gap: 10px;
@@ -544,6 +551,7 @@
   font-size: 12px;
 }
 
+/* 底部存档/读档/重开操作栏，保持在改装页滚动区域底部可见。 */
 .system-actions {
   position: sticky;
   bottom: 0;

@@ -1,5 +1,10 @@
 'use strict';
 
+/*
+ * 存档读写边界。
+ * 只在这里直接接触 localStorage，读到的数据必须先经过 core.js 的 sanitizeSaveData。
+ */
+
 function clearStorageWriteBlock() {
   gameState.storageWriteBlockedReason = '';
 }
@@ -8,6 +13,7 @@ function blockStorageWrites(reason) {
   gameState.storageWriteBlockedReason = reason || '存档读取失败。';
 }
 
+// 返回结构化状态，调用方根据 missing/invalid/access_error 决定是否阻止自动覆盖旧存档。
 function readStoredGameData() {
   let rawData = null;
   try {
@@ -56,6 +62,7 @@ function applyLoadedGameState(saveData) {
   refreshAfterPersistentChange();
 }
 
+// 手动保存禁止发生在比赛锁定阶段，避免半场状态被写入存档。
 function saveGame() {
   if (isRaceLockedPhase(gameState.phase)) {
     addLog('比赛进行中不能保存，请等本场结束。');
@@ -74,6 +81,7 @@ function saveGame() {
   }
 }
 
+// 读取失败时会阻塞后续自动保存，避免坏存档被无提示覆盖。
 function loadGame() {
   if (isRaceLockedPhase(gameState.phase)) {
     addLog('比赛进行中不能读取，请等本场结束。');
@@ -117,6 +125,7 @@ function autoLoadGameOnInit() {
   return result;
 }
 
+// 清档会保留已解锁成就，这样玩家重开时仍能看到历史挑战记录。
 function resetPersistentState(options = {}) {
   const achievements = options.preserveAchievements
     ? sanitizeAchievementsData(gameState.achievements)

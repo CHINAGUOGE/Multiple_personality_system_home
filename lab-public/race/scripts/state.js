@@ -1,5 +1,6 @@
 'use strict';
 
+// 创建函数集中放在这里，保证新游戏、清档和读档迁移都能拿到同一套默认结构。
 function createEmptyEquippedParts() {
   return EQUIPMENT_SLOTS.reduce((slots, type) => {
     slots[type] = null;
@@ -69,6 +70,7 @@ function createDefaultManualDifficultyWinStreak() {
   };
 }
 
+// 单页游戏的唯一运行时状态；可持久化字段会由 core.js/createSaveData 统一筛选。
 const gameState = {
   phase: 'idle',
   cash: 1500,
@@ -116,6 +118,7 @@ const gameState = {
   storageWriteBlockedReason: '',
 };
 
+// DOM 引用集中缓存，后续模块通过 el 访问页面节点，避免重复 querySelector。
 const el = {
   registerBtn: document.getElementById('registerBtn'),
   startBtn: document.getElementById('startBtn'),
