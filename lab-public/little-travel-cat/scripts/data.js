@@ -6,6 +6,7 @@ export const SAVE_KEY_PREFIX = 'littleTravelCatSave:v1:slot:';
 export const THEME_KEY = 'littleTravelCatTheme:v1';
 
 export const RESOURCE_INTERVAL_MS = 60 * 1000;
+export const DEV_RESOURCE_INTERVAL_MS = 5 * 1000;
 export const RESOURCE_CAP = 20;
 export const STARTING_DEW = 25;
 

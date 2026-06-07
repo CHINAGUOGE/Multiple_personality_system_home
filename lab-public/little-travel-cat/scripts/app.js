@@ -1,4 +1,5 @@
 import {
+  DEV_RESOURCE_INTERVAL_MS,
   DEV_HOUR_MS,
   FOODS,
   HOME_LINES,
@@ -44,6 +45,8 @@ const $ = (selector) => document.querySelector(selector);
 const queryParams = new URLSearchParams(window.location.search);
 const isDevMode = () => queryParams.has('dev');
 const getTripHourMs = () => (isDevMode() ? DEV_HOUR_MS : PROD_HOUR_MS);
+const getResourceIntervalMs = () =>
+  isDevMode() ? DEV_RESOURCE_INTERVAL_MS : RESOURCE_INTERVAL_MS;
 const THEME_SEQUENCE = ['system', 'light', 'dark'];
 const THEME_LABELS = {
   system: '主题：跟随系统',
@@ -212,7 +215,11 @@ function cycleTheme() {
 
 // 同步当前存档的可变时间状态：离线资源和已完成旅行会在这里落盘。
 function syncCurrentSave() {
-  const generated = updateGardenByOfflineTime(state.save);
+  const generated = updateGardenByOfflineTime(
+    state.save,
+    Date.now(),
+    getResourceIntervalMs()
+  );
   const finishingTrip = state.save.traveler.trip
     ? {
         id: state.save.traveler.trip.id,
@@ -453,8 +460,8 @@ function renderHeader() {
   $('#dewBalance').textContent = `${state.save.dew} 露珠`;
   $('#statusBadge').textContent = state.save.traveler.status === 'traveling' ? '旅行中' : '在家';
   $('#paceNote').textContent = isDevMode()
-    ? '测试节奏：1 小时 = 1 分钟'
-    : '真实节奏：旅行按真实时间';
+    ? '测试节奏：旅行 1 小时 = 1 分钟 · 露珠 5 秒/个'
+    : '真实节奏：旅行按真实时间 · 露珠 1 分钟/个';
 
   const summaries = getSlotSummaries();
   $('#slotButtons').innerHTML = summaries
@@ -521,9 +528,10 @@ function renderHome() {
 
 function renderGarden() {
   const pending = state.save.garden.pending;
+  const resourceIntervalMs = getResourceIntervalMs();
   const elapsed = Math.max(0, Date.now() - state.save.garden.lastGeneratedAt);
-  const nextMs = pending >= RESOURCE_CAP ? 0 : Math.max(0, RESOURCE_INTERVAL_MS - elapsed);
-  const dropProgress = pending >= RESOURCE_CAP ? 1 : clamp(elapsed / RESOURCE_INTERVAL_MS, 0, 1);
+  const nextMs = pending >= RESOURCE_CAP ? 0 : Math.max(0, resourceIntervalMs - elapsed);
+  const dropProgress = pending >= RESOURCE_CAP ? 1 : clamp(elapsed / resourceIntervalMs, 0, 1);
   const gardenPanel = $('.garden-panel');
   const dewTop = 12 + dropProgress * 76;
   const landingScale = 0.56 + dropProgress * 0.44;

@@ -152,11 +152,19 @@ export function resetSave(slot = getActiveSlot()) {
   return nextSave;
 }
 
-// 离线资源按整分钟结算，达到上限后重置计时点，避免恢复时一次性溢出。
-export function updateGardenByOfflineTime(save, now = nowValue()) {
+// 离线资源按当前节奏结算，达到上限后重置计时点，避免恢复时一次性溢出。
+export function updateGardenByOfflineTime(
+  save,
+  now = nowValue(),
+  resourceIntervalMs = RESOURCE_INTERVAL_MS
+) {
   const garden = save.garden;
+  const intervalMs =
+    Number.isFinite(resourceIntervalMs) && resourceIntervalMs > 0
+      ? resourceIntervalMs
+      : RESOURCE_INTERVAL_MS;
   const elapsed = Math.max(0, now - garden.lastGeneratedAt);
-  const generated = Math.floor(elapsed / RESOURCE_INTERVAL_MS);
+  const generated = Math.floor(elapsed / intervalMs);
 
   if (generated <= 0 || garden.pending >= RESOURCE_CAP) {
     if (garden.pending >= RESOURCE_CAP) {
@@ -170,7 +178,7 @@ export function updateGardenByOfflineTime(save, now = nowValue()) {
   garden.lastGeneratedAt =
     garden.pending >= RESOURCE_CAP
       ? now
-      : garden.lastGeneratedAt + generated * RESOURCE_INTERVAL_MS;
+      : garden.lastGeneratedAt + generated * intervalMs;
 
   return garden.pending - before;
 }
