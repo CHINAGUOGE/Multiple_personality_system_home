@@ -5,10 +5,33 @@
  * 构建完成后的清理和验证任务
  */
 
-import { readdir, stat } from 'fs/promises';
+import { cp, readFile, readdir, rm, stat } from 'fs/promises';
 import { join } from 'path';
 
 const DIST_DIR = 'dist';
+const WRANGLER_CONFIG = 'wrangler.toml';
+
+async function getWranglerPagesBuildOutputDir() {
+  try {
+    const config = await readFile(WRANGLER_CONFIG, 'utf8');
+    const match = config.match(/^\s*pages_build_output_dir\s*=\s*"([^"]+)"/m);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+async function syncPagesOutputDirectory() {
+  const pagesOutputDir = await getWranglerPagesBuildOutputDir();
+
+  if (!pagesOutputDir || pagesOutputDir === DIST_DIR) {
+    return;
+  }
+
+  await rm(pagesOutputDir, { recursive: true, force: true });
+  await cp(DIST_DIR, pagesOutputDir, { recursive: true });
+  console.log(`✅ Synced ${DIST_DIR}/ to ${pagesOutputDir}/ for Cloudflare Pages upload`);
+}
 
 async function getDirectorySize(dir) {
   let size = 0;
@@ -40,6 +63,8 @@ async function main() {
     if (size > 10 * 1024 * 1024) {
       console.warn('⚠️  Build output is larger than 10MB. Consider optimization.');
     }
+
+    await syncPagesOutputDirectory();
 
     console.log('\n✨ Post-build checks completed!\n');
   } catch (error) {
