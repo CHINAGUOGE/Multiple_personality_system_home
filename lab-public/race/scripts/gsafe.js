@@ -25,7 +25,7 @@ const GSafe = (() => {
   const COOKIE_KEY = _s([103, 115, 97, 102, 101, 95, 115, 97, 102, 101, 116, 121]); // gsafe_safety
   const FP_KEY = _s([103, 115, 102, 112]); // gsfp
   const REC_KEY = _s([103, 115, 97, 102, 101, 95, 114, 101, 99]); // gsafe_rec
-  const VER = '2.0.0';
+  const VER = '2.0.1';
   const DB_NAME = 'gsafe_evidence';
   const DB_STORE = 'events';
 
@@ -420,21 +420,59 @@ const GSafe = (() => {
   }
 
   /* ═══ 安全期 UI ═══ */
+  function formatTime(ts) {
+    try { return new Date(ts).toLocaleTimeString('zh-CN', { hour12: false }); }
+    catch (_) { return '--:--:--'; }
+  }
+
   function showSafetyOverlay(reason, minutes, code, deducted, isResume) {
     if (document.getElementById('gsafe-overlay')) return;
-    const remaining = safetyActive ? Math.ceil((safetyUntil - Date.now()) / 60000) : minutes;
+    const now = Date.now();
+    const remaining = safetyActive ? Math.ceil((safetyUntil - now) / 60000) : minutes;
+    const startTime = formatTime(now);
+    const endTime = formatTime(safetyActive ? safetyUntil : now + minutes * 60000);
+
+    // 违规原因中文映射
+    const reasonMap = {
+      FN_OVERRIDE: '关键函数被替换',
+      MATH_RANDOM_HOOK: 'Math.random 被篡改',
+      PERFORMANCE_NOW_HOOK: 'performance.now 被篡改',
+      DATE_NOW_HOOK: 'Date.now 被篡改',
+      CASH_ANOMALY: '资金异常变动',
+      CASH_FARMING: '疑似刷钱行为',
+      RACE_COUNT_ANOMALY: '比赛场次异常',
+      STATS_MISMATCH: '统计数据不匹配',
+      STATS_ROLLBACK: '统计数据回滚',
+      STAT_CEILING_BREACH: '车辆属性超出上限',
+      STAT_CLAMP_BREACH: '车辆属性突破边界',
+      ACHIEVEMENT_INJECTION: '成就异常解锁',
+      ACHIEVEMENT_FARMING: '疑似刷成就',
+      REACTION_INHUMAN: '反应时间异常 (<8ms)',
+      REACTION_ULTRA_FAST: '反应时间持续异常 (8-10ms×10)',
+      AUTO_START_DETECTED: '疑似自动发车脚本',
+      EVAL_USAGE: '检测到代码注入',
+      INVENTORY_ANOMALY: '库存异常变动',
+      PHASE_INVALID: '游戏状态非法',
+      PHASE_SKIP: '游戏状态跳转异常',
+      SCRIPT_REMOVED: '安全脚本被移除',
+    };
+    const reasonText = reasonMap[reason] || reason || '未知';
 
     const css = document.createElement('style');
     css.id = 'gsafe-css';
     css.textContent =
       '#gsafe-overlay{position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;font-family:"Segoe UI","Microsoft YaHei",sans-serif}' +
-      '#gsafe-card{background:#fff;border:2px solid #808080;box-shadow:4px 4px 0 #000;max-width:420px;width:90%}' +
+      '#gsafe-card{background:#fff;border:2px solid #808080;box-shadow:4px 4px 0 #000;max-width:440px;width:90%}' +
       '#gsafe-titlebar{background:#e65100;color:#fff;padding:5px 8px;font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center}' +
-      '#gsafe-body{padding:20px 16px;text-align:center}' +
+      '#gsafe-body{padding:16px;text-align:center}' +
       '#gsafe-body p{margin:0 0 8px;font-size:13px;color:#333;line-height:1.6}' +
       '#gsafe-body .gs-code{display:inline-block;margin:6px 0;padding:5px 14px;background:#fff3e0;border:1px solid #ffcc80;border-radius:4px;font-family:monospace;font-size:12px;color:#e65100;letter-spacing:1px;user-select:all}' +
-      '#gsafe-body .gs-info{font-size:11px;color:#999;margin-top:4px;line-height:1.6}' +
+      '#gsafe-body .gs-info{font-size:11px;color:#777;margin-top:3px;line-height:1.5}' +
       '#gsafe-body .gs-time{font-size:18px;font-weight:700;color:#e65100;margin:8px 0}' +
+      '#gsafe-body .gs-timeline{margin:10px 0;padding:8px 12px;background:#f5f5f5;border-radius:6px;text-align:left}' +
+      '#gsafe-body .gs-timeline div{font-size:12px;color:#555;line-height:1.8}' +
+      '#gsafe-body .gs-timeline span{font-weight:600;color:#333}' +
+      '#gsafe-body .gs-reason-tag{display:inline-block;margin:6px 0;padding:3px 10px;background:#ffebee;border:1px solid #ef9a9a;border-radius:12px;font-size:12px;color:#c62828}' +
       '#gsafe-actions{padding:8px 16px 16px;text-align:center;display:flex;gap:8px;justify-content:center}' +
       '#gsafe-actions button{background:#d4d0c8;border:2px outset #fff;padding:4px 18px;font-size:12px;cursor:pointer;font-family:inherit}' +
       '#gsafe-actions button:active{border-style:inset}';
@@ -447,11 +485,15 @@ const GSafe = (() => {
         '<div id="gsafe-titlebar"><span>GSafe v' + VER + ' - 安全期通知</span><span>&#10006;</span></div>' +
         '<div id="gsafe-body">' +
           '<p>' + (isResume ? '你仍在安全期内，如有问题请申诉。' : '检测到异常操作，已进入安全期。') + '</p>' +
+          '<div class="gs-reason-tag">' + reasonText + '</div>' +
           '<div class="gs-time">' + remaining + ' 分钟</div>' +
           '<div class="gs-code">' + (code || 'N/A') + '</div>' +
+          '<div class="gs-timeline">' +
+            '<div>开始时间：<span>' + startTime + '</span></div>' +
+            '<div>结束时间：<span>' + endTime + '</span></div>' +
+          '</div>' +
           '<div class="gs-info">安全期内成绩不计入 · 资金获取暂停</div>' +
           (deducted > 0 ? '<div class="gs-info">已扣除 ' + deducted + ' 元</div>' : '') +
-          '<div class="gs-info" style="margin-top:6px">原因：' + (reason || '未知') + '</div>' +
         '</div>' +
         '<div id="gsafe-actions">' +
           '<button id="gsafe-ok">确定</button>' +
@@ -734,9 +776,12 @@ const GSafe = (() => {
     }
   }
 
-  /* ═══ 3. 反应时间校验（v2.0 阈值） ═══ */
+  /* ═══ 3. 反应时间校验 ═══ */
+  // 0.020s~0.010s：不触发
+  // 0.010s~0.008s：累计 10 次触发
+  // <0.008s：直接触发
   let prevReactionCheck = { time: null, control: null };
-  let suspiciousReactionCount = 0;
+  let ultraFastCount = 0; // 0.008~0.010 累计
 
   function checkReaction() {
     if (typeof gameState === 'undefined') return;
@@ -748,20 +793,18 @@ const GSafe = (() => {
     }
     prevReactionCheck = { time: t, control: c };
 
-    if (t < 0.030) {
-      // <30ms：高度异常，直接触发
-      flag('REACTION_INHUMAN', 'reaction=' + t.toFixed(3) + 's (<30ms)', 'soft');
-      suspiciousReactionCount++;
-    } else if (t < 0.080) {
-      // 30~80ms：可疑，累计
-      suspiciousReactionCount++;
-      if (suspiciousReactionCount >= 3) {
-        flag('REACTION_CONSISTENTLY_SUSPICIOUS', suspiciousReactionCount + ' sub-80ms reactions', 'soft');
-        suspiciousReactionCount = 0;
+    if (t < 0.008) {
+      // <8ms：直接触发
+      flag('REACTION_INHUMAN', 'reaction=' + t.toFixed(3) + 's (<8ms)', 'soft');
+    } else if (t < 0.010) {
+      // 8~10ms：累计 10 次触发
+      ultraFastCount++;
+      if (ultraFastCount >= 10) {
+        flag('REACTION_ULTRA_FAST', ultraFastCount + ' reactions 8-10ms', 'soft');
+        ultraFastCount = 0;
       }
-    } else {
-      suspiciousReactionCount = Math.max(0, suspiciousReactionCount - 1);
     }
+    // 10~20ms：不触发，不累计
   }
 
   /* ═══ 4. 脚本自保护 ═══ */
