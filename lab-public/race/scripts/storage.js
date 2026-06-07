@@ -188,6 +188,10 @@ function resetPersistentState(options = {}) {
 function performRestartGame() {
   clearRaceTimers();
   clearStorageWriteBlock();
+  // GSafe 重置安全期
+  if (typeof gsafeResetSession === 'function') {
+    try { gsafeResetSession(); } catch (_) {}
+  }
   resetPersistentState({ preserveAchievements: true });
   let saveFailed = false;
   try {

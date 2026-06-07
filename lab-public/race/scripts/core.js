@@ -1037,7 +1037,7 @@ function createSaveData() {
   const lastManualReactionTime = normalizeManualReactionTime(gameState.lastManualReactionTime);
   const lastReactionControl =
     lastReactionTime === null ? null : gameState.lastReactionControl === 'ai' ? 'ai' : 'manual';
-  return {
+  const result = {
     cash: gameState.cash,
     raceCount: gameState.raceCount,
     lastRank: gameState.lastRank,
@@ -1098,7 +1098,10 @@ function createSaveData() {
     },
   };
 
-  // GSafe 存档校验和：防篡改
+  // GSafe 存档校验和：防篡改 + 版本追踪
+  if (typeof GAME_VERSION !== 'undefined') {
+    result._saveVersion = GAME_VERSION;
+  }
   if (typeof gsafeChecksum === 'function') {
     try {
       result._gsafeChecksum = gsafeChecksum(result);

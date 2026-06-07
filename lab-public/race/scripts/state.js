@@ -167,6 +167,7 @@ const el = {
   saveBtn: document.getElementById('saveBtn'),
   loadBtn: document.getElementById('loadBtn'),
   restartBtn: document.getElementById('restartBtn'),
+  downloadDataBtn: document.getElementById('downloadDataBtn'),
   clearLocalDataBtn: document.getElementById('clearLocalDataBtn'),
   raceAudioToggleBtn: document.querySelector('[data-race-audio-toggle]'),
   telemetryToggleBtn: document.getElementById('telemetryToggleBtn'),

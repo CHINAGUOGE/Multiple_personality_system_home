@@ -61,6 +61,12 @@ function bindEvents() {
       blurAfterPointerClick(event);
     });
   }
+  if (el.downloadDataBtn) {
+    el.downloadDataBtn.addEventListener('click', (event) => {
+      if (typeof gsafeDownloadData === 'function') gsafeDownloadData();
+      blurAfterPointerClick(event);
+    });
+  }
   if (el.telemetryToggleBtn) {
     el.telemetryToggleBtn.addEventListener('click', (event) => {
       toggleTelemetryEnabled();

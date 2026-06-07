@@ -1,19 +1,21 @@
 'use strict';
 
 /*
- * GSafe 反作弊系统 v1.2.0
+ * GSafe 反作弊系统 v2.0.0
  *
  * Powered by Guoge
  * GitHub  : https://github.com/CHINAGUOGE
  * 主页    : https://me.51320721.xyz
  *
- * v1.2.0 变更：
- *   - 移除封禁机制，改为安全期（惩罚性暂停）
- *   - softCount >= 5  → 安全期 30 分钟
- *   - softCount >= 10 → 安全期 180 分钟
- *   - 硬标记直接进入安全期，时长按严重程度 60-600 分钟
- *   - 安全期内：成绩/日志/排行/成就不上传，游玩记录不计入，扣款 500-3000，暂停资金获取
- *   - 违规记录持久化到 cookie 和存档
+ * v2.0.0 变更：
+ *   - 初犯制度：首次进入安全期仅 5 分钟
+ *   - 反应检测：<30ms 高度异常、30~80ms 可疑、连续 3 次 <80ms 触发
+ *   - 成就系统：增加累计判定次数阈值，避免误封
+ *   - 存档版本校验：版本升级造成的存档问题不处罚
+ *   - gsafeResetSession()：重开/刷新时重置安全期
+ *   - IndexedDB evidence 存储
+ *   - 下载本地数据 API
+ *   - 违规记录持久化到存档和 cookie
  */
 
 const GSafe = (() => {
@@ -23,7 +25,9 @@ const GSafe = (() => {
   const COOKIE_KEY = _s([103, 115, 97, 102, 101, 95, 115, 97, 102, 101, 116, 121]); // gsafe_safety
   const FP_KEY = _s([103, 115, 102, 112]); // gsfp
   const REC_KEY = _s([103, 115, 97, 102, 101, 95, 114, 101, 99]); // gsafe_rec
-  const VER = '1.2.0';
+  const VER = '2.0.0';
+  const DB_NAME = 'gsafe_evidence';
+  const DB_STORE = 'events';
 
   /* ═══ FNV-1a 32 位哈希 ═══ */
   function fnv1a(str) {
@@ -61,16 +65,17 @@ const GSafe = (() => {
   let safetyUntil = 0;
   let safetyCode = '';
   let softCount = 0;
-  const violations = []; // 所有违规记录（持久化）
+  let isFirstOffense = true; // 初犯标记
+  const violations = [];
 
   /* ═══ 证据收集 ═══ */
   const evidence = [];
 
   function flag(code, detail, severity) {
-    // severity: 'hard_high'=600min, 'hard'=120min, 'hard_low'=60min, 'soft'=累计
     const entry = { flag: code, ts: Date.now(), detail: detail || '', severity: severity || 'soft' };
     evidence.push(entry);
     violations.push(entry);
+    writeEvidenceToDB(entry);
     console.warn(TAG + ' ' + code + ': ' + (detail || ''));
 
     if (severity === 'hard_high') {
@@ -88,7 +93,6 @@ const GSafe = (() => {
       }
     }
 
-    // 持久化违规记录
     saveViolationRecords();
   }
 
@@ -100,11 +104,17 @@ const GSafe = (() => {
   }
 
   /* ═══ 进入安全期 ═══ */
-  function enterSafety(reason, minutes) {
-    minutes = Math.max(10, Math.min(600, minutes));
-    const now = Date.now();
+  function enterSafety(reason, baseMinutes) {
+    // 初犯制度：首次仅 5 分钟
+    let minutes;
+    if (isFirstOffense) {
+      minutes = 5;
+      isFirstOffense = false;
+    } else {
+      minutes = Math.max(10, Math.min(600, baseMinutes));
+    }
 
-    // 如果已在安全期内，延长而非重置（取更晚的到期时间）
+    const now = Date.now();
     const newUntil = now + minutes * 60 * 1000;
     if (safetyActive && safetyUntil >= newUntil) return;
 
@@ -123,10 +133,9 @@ const GSafe = (() => {
       try { if (typeof autoSaveGame === 'function') autoSaveGame(); } catch (_) {}
     }
 
-    // 写入 cookie
     const fp = getFingerprint();
     const payload = JSON.stringify({
-      v: 2,
+      v: 3,
       ts: now,
       until: safetyUntil,
       minutes: minutes,
@@ -134,21 +143,20 @@ const GSafe = (() => {
       code: safetyCode,
       deducted: deducted,
       softCount: softCount,
+      isFirstOffense: !isFirstOffense, // 已经翻转过了
       fp: fp,
     });
     setCookie(COOKIE_KEY, payload, 31536000);
     try { sessionStorage.setItem(FP_KEY, fp); } catch (_) {}
 
-    // 通知游戏进入安全期状态
     if (typeof gameState !== 'undefined' && gameState) {
       gameState._gsafeSafety = true;
       gameState._gsafeSafetyUntil = safetyUntil;
     }
 
     showSafetyOverlay(reason, minutes, safetyCode, deducted);
-    console.error(TAG + ' Safety period: ' + minutes + 'min | Code: ' + safetyCode + ' | Deducted: ' + deducted);
+    console.error(TAG + ' Safety: ' + minutes + 'min | Code: ' + safetyCode + ' | -' + deducted);
 
-    // 暂停资金获取：拦截 gameState.cash 的 setter
     patchCashLock();
   }
 
@@ -161,8 +169,6 @@ const GSafe = (() => {
     cashLocked = true;
     lockedCashValue = gameState.cash;
 
-    // 用 Proxy 不可行（gameState 是 const 对象），改用定时器强制锁死
-    // 安全期内每 500ms 检查一次现金，不允许增长
     const lockInterval = setInterval(() => {
       if (!safetyActive || Date.now() > safetyUntil) {
         cashLocked = false;
@@ -172,14 +178,13 @@ const GSafe = (() => {
       if (gameState.cash > lockedCashValue) {
         gameState.cash = lockedCashValue;
       }
-      // 允许消费（购买），更新锁定值为当前值的较低者
       if (gameState.cash < lockedCashValue) {
         lockedCashValue = gameState.cash;
       }
     }, 500);
   }
 
-  /* ═══ 安全期状态查询（供游戏其他模块调用） ═══ */
+  /* ═══ 安全期查询 API ═══ */
   globalThis.gsafeInSafety = function () {
     if (!safetyActive) return false;
     if (Date.now() > safetyUntil) {
@@ -201,6 +206,120 @@ const GSafe = (() => {
       code: safetyCode,
       softCount: softCount,
     };
+  };
+
+  /* ═══ 重开/刷新时重置安全期 ═══ */
+  globalThis.gsafeResetSession = function () {
+    safetyActive = false;
+    safetyUntil = 0;
+    safetyCode = '';
+    cashLocked = false;
+    isFirstOffense = true;
+    // 清除安全期 cookie（保留违规记录 cookie）
+    setCookie(COOKIE_KEY, '', 0);
+    if (typeof gameState !== 'undefined' && gameState) {
+      gameState._gsafeSafety = false;
+      gameState._gsafeSafetyUntil = 0;
+    }
+    // 移除遮罩
+    const overlay = document.getElementById('gsafe-overlay');
+    if (overlay) overlay.remove();
+    const css = document.getElementById('gsafe-css');
+    if (css) css.remove();
+    console.log(TAG + ' Session reset.');
+  };
+
+  /* ═══ IndexedDB evidence 写入 ═══ */
+  let dbInstance = null;
+
+  function openEvidenceDB() {
+    return new Promise((resolve, reject) => {
+      if (dbInstance) { resolve(dbInstance); return; }
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = function (e) {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(DB_STORE)) {
+          db.createObjectStore(DB_STORE, { keyPath: 'id', autoIncrement: true });
+        }
+      };
+      req.onsuccess = function (e) {
+        dbInstance = e.target.result;
+        resolve(dbInstance);
+      };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+
+  function writeEvidenceToDB(entry) {
+    openEvidenceDB().then((db) => {
+      try {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).add(Object.assign({}, entry, { id: undefined }));
+      } catch (_) {}
+    }).catch(() => {});
+  }
+
+  function readAllEvidence() {
+    return new Promise((resolve, reject) => {
+      openEvidenceDB().then((db) => {
+        const tx = db.transaction(DB_STORE, 'readonly');
+        const req = tx.objectStore(DB_STORE).getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      }).catch(() => resolve([]));
+    });
+  }
+
+  /* ═══ 下载本地数据 API ═══ */
+  globalThis.gsafeExportData = async function () {
+    const dbEvidence = await readAllEvidence();
+    const data = {
+      exportedAt: new Date().toISOString(),
+      gsafeVersion: VER,
+      localStorage: {},
+      currentSave: null,
+      safetyState: {
+        active: safetyActive,
+        until: safetyUntil,
+        code: safetyCode,
+        softCount: softCount,
+        isFirstOffense: isFirstOffense,
+      },
+      violations: violations,
+      evidence: dbEvidence,
+    };
+
+    // 读取 localStorage
+    try {
+      const keys = [STORAGE_KEY, 'mpsteam-race-local-logs-v1', 'raceAudioEnabled'];
+      keys.forEach((k) => {
+        const v = localStorage.getItem(k);
+        if (v !== null) data.localStorage[k] = v;
+      });
+    } catch (_) {}
+
+    // 当前存档
+    try {
+      if (typeof createSaveData === 'function') {
+        data.currentSave = createSaveData();
+      }
+    } catch (_) {}
+
+    return data;
+  };
+
+  globalThis.gsafeDownloadData = async function () {
+    const data = await globalThis.gsafeExportData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'gsafe-data-' + Date.now() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    console.log(TAG + ' Data exported.');
   };
 
   /* ═══ 浏览器指纹 ═══ */
@@ -240,11 +359,11 @@ const GSafe = (() => {
         v: 1,
         ts: Date.now(),
         softCount: softCount,
+        isFirstOffense: isFirstOffense,
         violations: violations.slice(-50),
       });
       setCookie(REC_KEY, data, 31536000);
     } catch (_) {}
-    // 同步到 gameState 以便随存档保存
     if (typeof gameState !== 'undefined' && gameState) {
       gameState._gsafeViolations = violations.slice(-50);
       gameState._gsafeSoftCount = softCount;
@@ -259,10 +378,10 @@ const GSafe = (() => {
         if (data && Array.isArray(data.violations)) {
           data.violations.forEach((v) => violations.push(v));
           softCount = data.softCount || 0;
+          if (typeof data.isFirstOffense === 'boolean') isFirstOffense = data.isFirstOffense;
         }
       }
     } catch (_) {}
-    // 也从 gameState 恢复
     if (typeof gameState !== 'undefined' && gameState && Array.isArray(gameState._gsafeViolations)) {
       gameState._gsafeViolations.forEach((v) => {
         if (!violations.find((x) => x.ts === v.ts && x.flag === v.flag)) {
@@ -286,6 +405,7 @@ const GSafe = (() => {
           safetyUntil = data.until;
           safetyCode = data.code || genSafetyCode(data.reason || '');
           softCount = data.softCount || 0;
+          if (typeof data.isFirstOffense === 'boolean') isFirstOffense = data.isFirstOffense;
           if (typeof gameState !== 'undefined' && gameState) {
             gameState._gsafeSafety = true;
             gameState._gsafeSafetyUntil = safetyUntil;
@@ -299,10 +419,9 @@ const GSafe = (() => {
     return false;
   }
 
-  /* ═══ 安全期提示 UI ═══ */
+  /* ═══ 安全期 UI ═══ */
   function showSafetyOverlay(reason, minutes, code, deducted, isResume) {
     if (document.getElementById('gsafe-overlay')) return;
-
     const remaining = safetyActive ? Math.ceil((safetyUntil - Date.now()) / 60000) : minutes;
 
     const css = document.createElement('style');
@@ -316,8 +435,8 @@ const GSafe = (() => {
       '#gsafe-body .gs-code{display:inline-block;margin:6px 0;padding:5px 14px;background:#fff3e0;border:1px solid #ffcc80;border-radius:4px;font-family:monospace;font-size:12px;color:#e65100;letter-spacing:1px;user-select:all}' +
       '#gsafe-body .gs-info{font-size:11px;color:#999;margin-top:4px;line-height:1.6}' +
       '#gsafe-body .gs-time{font-size:18px;font-weight:700;color:#e65100;margin:8px 0}' +
-      '#gsafe-actions{padding:8px 16px 16px;text-align:center}' +
-      '#gsafe-actions button{background:#d4d0c8;border:2px outset #fff;padding:4px 28px;font-size:12px;cursor:pointer;font-family:inherit}' +
+      '#gsafe-actions{padding:8px 16px 16px;text-align:center;display:flex;gap:8px;justify-content:center}' +
+      '#gsafe-actions button{background:#d4d0c8;border:2px outset #fff;padding:4px 18px;font-size:12px;cursor:pointer;font-family:inherit}' +
       '#gsafe-actions button:active{border-style:inset}';
     document.head.appendChild(css);
 
@@ -332,15 +451,21 @@ const GSafe = (() => {
           '<div class="gs-code">' + (code || 'N/A') + '</div>' +
           '<div class="gs-info">安全期内成绩不计入 · 资金获取暂停</div>' +
           (deducted > 0 ? '<div class="gs-info">已扣除 ' + deducted + ' 元</div>' : '') +
-          '<div class="gs-info" style="margin-top:6px">违规原因：' + (reason || '未知') + '</div>' +
+          '<div class="gs-info" style="margin-top:6px">原因：' + (reason || '未知') + '</div>' +
         '</div>' +
-        '<div id="gsafe-actions"><button id="gsafe-ok">确定</button></div>' +
+        '<div id="gsafe-actions">' +
+          '<button id="gsafe-ok">确定</button>' +
+          '<button id="gsafe-dl">下载数据</button>' +
+        '</div>' +
       '</div>';
     document.body.appendChild(overlay);
 
     document.getElementById('gsafe-ok').addEventListener('click', function () {
       overlay.remove();
       css.remove();
+    });
+    document.getElementById('gsafe-dl').addEventListener('click', function () {
+      if (typeof globalThis.gsafeDownloadData === 'function') globalThis.gsafeDownloadData();
     });
   }
 
@@ -428,7 +553,7 @@ const GSafe = (() => {
   /* ═══ 2. 状态快照差分 ═══ */
   let prevSnap = null;
   let cashHistory = [];
-  let achvHistory = [];
+  let achvCheckCount = 0; // 成就累计判定次数
 
   let statCeilings = {};
   function computeCeilings() {
@@ -490,6 +615,31 @@ const GSafe = (() => {
     }
   }
 
+  /* ═══ 存档版本校验 ═══ */
+  let lastSaveVersion = null;
+
+  function checkSaveVersion() {
+    if (typeof gameState === 'undefined' || !gameState) return;
+    try {
+      const raw = localStorage.getItem(typeof STORAGE_KEY !== 'undefined' ? STORAGE_KEY : 'mpsteam-race-save-v1');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      const savedVer = data && data._saveVersion;
+      const currentVer = typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : null;
+      if (!currentVer) return;
+
+      if (savedVer && savedVer !== currentVer) {
+        // 版本升级：不处罚，记录
+        console.log(TAG + ' Save version changed: ' + savedVer + ' -> ' + currentVer + ' (no penalty)');
+        lastSaveVersion = currentVer;
+      } else if (!savedVer && lastSaveVersion === null) {
+        // 旧存档无版本号：首次加载不处罚
+        lastSaveVersion = currentVer;
+      }
+      // 版本一致或无版本号：正常
+    } catch (_) {}
+  }
+
   function diffSnap(cur) {
     if (!prevSnap || !cur) return;
     const p = prevSnap;
@@ -538,19 +688,18 @@ const GSafe = (() => {
     if (cur.stability > 80) flag('STAT_CLAMP_BREACH', 'stability=' + cur.stability + ' > 80', 'hard');
     if (cur.weight < 760) flag('STAT_CLAMP_BREACH', 'weight=' + cur.weight + ' < 760', 'hard');
 
-    // ─── 刷成就 ───
+    // ─── 成就检测（累计判定，避免误封） ───
+    achvCheckCount++;
     const achvDelta = cur.achvCount - p.achvCount;
-    if (achvDelta > 2) {
-      flag('ACHIEVEMENT_INJECTION', achvDelta + ' achievements at once', 'soft');
-    }
-    achvHistory.push(achvDelta);
-    if (achvHistory.length > 5) achvHistory.shift();
-    if (achvHistory.length >= 3) {
-      const total = achvHistory.reduce((a, b) => a + Math.max(0, b), 0);
-      if (total >= 5) {
-        flag('ACHIEVEMENT_FARMING', total + ' achievements in ' + achvHistory.length + ' checks', 'soft');
-        achvHistory = [];
+    if (achvDelta > 3) {
+      // 只有累计判定次数 >= 3 才触发，避免正常游玩误判
+      if (achvCheckCount >= 3) {
+        flag('ACHIEVEMENT_INJECTION', achvDelta + ' achievements at once (check #' + achvCheckCount + ')', 'soft');
+        achvCheckCount = 0;
       }
+    } else if (achvDelta > 0) {
+      // 正常范围内的成就解锁，重置累计
+      achvCheckCount = Math.max(0, achvCheckCount - 1);
     }
 
     // ─── 库存异常 ───
@@ -585,7 +734,7 @@ const GSafe = (() => {
     }
   }
 
-  /* ═══ 3. 反应时间校验 ═══ */
+  /* ═══ 3. 反应时间校验（v2.0 阈值） ═══ */
   let prevReactionCheck = { time: null, control: null };
   let suspiciousReactionCount = 0;
 
@@ -598,13 +747,16 @@ const GSafe = (() => {
       return;
     }
     prevReactionCheck = { time: t, control: c };
-    if (t < 0.050) {
-      flag('REACTION_INHUMAN', 'reaction=' + t.toFixed(3) + 's', 'soft');
+
+    if (t < 0.030) {
+      // <30ms：高度异常，直接触发
+      flag('REACTION_INHUMAN', 'reaction=' + t.toFixed(3) + 's (<30ms)', 'soft');
       suspiciousReactionCount++;
-    } else if (t < 0.100) {
+    } else if (t < 0.080) {
+      // 30~80ms：可疑，累计
       suspiciousReactionCount++;
       if (suspiciousReactionCount >= 3) {
-        flag('REACTION_CONSISTENTLY_SUSPICIOUS', suspiciousReactionCount + ' sub-0.1s reactions', 'soft');
+        flag('REACTION_CONSISTENTLY_SUSPICIOUS', suspiciousReactionCount + ' sub-80ms reactions', 'soft');
         suspiciousReactionCount = 0;
       }
     } else {
@@ -672,20 +824,12 @@ const GSafe = (() => {
 
   /* ═══ 安全期内成绩无效化 ═══ */
   function patchRaceCompletion() {
-    // 在 completeRace 后检查安全期，如果在安全期内则撤销奖励
     if (typeof window.completeRace !== 'function') return;
     const orig = window.completeRace;
     window.completeRace = function () {
       const wasInSafety = gsafeInSafety();
       orig.call(this);
       if (wasInSafety && typeof gameState !== 'undefined' && gameState) {
-        // 撤销最近一场的奖金
-        const lastPrize = (gameState.stats || {})._lastPrize || 0;
-        if (lastPrize > 0) {
-          gameState.cash -= lastPrize;
-          console.log(TAG + ' Safety period: race reward ' + lastPrize + ' revoked');
-        }
-        // 撤销连胜
         gameState.currentWinStreak = 0;
       }
     };
@@ -705,7 +849,6 @@ const GSafe = (() => {
     setTimeout(loopFnCheck, jitter(3000));
 
     function loopSnap() {
-      // 安全期到期检查
       if (safetyActive && Date.now() > safetyUntil) {
         safetyActive = false;
         if (typeof gameState !== 'undefined' && gameState) {
@@ -715,6 +858,7 @@ const GSafe = (() => {
         console.log(TAG + ' Safety period expired.');
       }
 
+      checkSaveVersion();
       const cur = takeSnap();
       diffSnap(cur);
       prevSnap = cur;
@@ -728,9 +872,10 @@ const GSafe = (() => {
   /* ═══ 初始化 ═══ */
   function init() {
     loadViolationRecords();
+    openEvidenceDB().catch(() => {});
 
     if (checkExistingSafety()) {
-      console.log(TAG + ' Resumed safety period. Remaining: ' + Math.ceil((safetyUntil - Date.now()) / 60000) + 'min');
+      console.log(TAG + ' Resumed safety. Remaining: ' + Math.ceil((safetyUntil - Date.now()) / 60000) + 'min');
     }
 
     initSelfProtect();
@@ -738,6 +883,7 @@ const GSafe = (() => {
     initFnChecks();
     initConsoleDetection();
     patchRaceCompletion();
+    checkSaveVersion();
     prevSnap = takeSnap();
     startMonitoring();
 
@@ -749,6 +895,9 @@ const GSafe = (() => {
     init: init,
     inSafety: globalThis.gsafeInSafety,
     getSafetyInfo: globalThis.gsafeGetSafetyInfo,
+    resetSession: globalThis.gsafeResetSession,
+    exportData: globalThis.gsafeExportData,
+    downloadData: globalThis.gsafeDownloadData,
     getViolations: function () { return violations.slice(); },
     version: VER,
   };
