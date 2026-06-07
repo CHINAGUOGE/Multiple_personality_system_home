@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
     />
-    <title>赛车小游戏 v1.8｜MPS Lab 复古赛车经营游戏</title>
+    <title>赛车小游戏 v1.8.1｜MPS Lab 复古赛车经营游戏</title>
     <meta
       name="description"
       content="MPS Lab 赛车小游戏是一个复古 Windows 风格的网页赛车经营小游戏，支持手机和电脑访问，包含赛道比赛、金币收益、车辆升级与轻量经营玩法。"
@@ -21,7 +21,7 @@
       <main class="app-window" aria-label="横线赛车经营赛">
         <div class="title-bar">
           <span class="title-icon"></span>
-          <span>横线赛车经营赛 v1.8</span>
+          <span>横线赛车经营赛 v1.8.1</span>
           <div class="window-buttons" aria-hidden="true">
             <span>_</span>
             <span>□</span>
@@ -73,7 +73,7 @@
             <section class="summary-grid" aria-label="赛事摘要">
               <div class="summary-item">
                 <span>当前车辆</span>
-                <strong id="currentVehicleText">玩家破车</strong>
+                <strong id="currentVehicleText">玩家小车</strong>
               </div>
               <div class="summary-item">
                 <span>比赛状态</span>
@@ -253,7 +253,7 @@
               <article class="vehicle-card is-current">
                 <div>
                   <span class="current-badge">当前车辆</span>
-                  <h2>玩家破车</h2>
+                  <h2>玩家小车</h2>
                   <p>基础车辆。当前版本只有这一辆可用车辆。</p>
                 </div>
                 <button type="button" disabled>已选中</button>
@@ -346,6 +346,7 @@
                 <button id="saveBtn" type="button">保存</button>
                 <button id="loadBtn" type="button">读取</button>
                 <button id="restartBtn" type="button">重开并清档</button>
+                <button type="button" data-race-audio-toggle aria-pressed="true">音效：开</button>
               </div>
             </section>
 
@@ -407,15 +408,13 @@
               <h2>版本信息</h2>
               <div class="version-card">
                 <div class="version-card-head">
-                  <strong id="versionText">v1.8</strong>
+                  <strong id="versionText">v1.8.1</strong>
                   <span class="version-qq">QQ群 727419840</span>
                 </div>
                 <p id="versionNote">
-                  休闲 / 标准体验补丁：降低电脑后期压迫，加入失败软保底、练习赛恢复和配装提示。
+                  灯号与音效补丁：黄灯到绿灯随机等待，并加入可关闭的轻量 beep。
                 </p>
-                <small
-                  >商店改为比赛结束后刷新；切换难度不会免费刷新。</small
-                >
+                <small>商店改为比赛结束后刷新；切换难度不会免费刷新。</small>
               </div>
             </section>
           </section>
@@ -466,7 +465,7 @@
             </a>
           </div>
           <div class="status-panel status-panel-version">
-            <span id="statusVersionText">v1.8</span>
+            <span id="statusVersionText">v1.8.1</span>
           </div>
         </footer>
       </main>

@@ -5,6 +5,189 @@
  * 负责报名、灯号倒计时、起步判定、车辆逐帧推进和赛后结算。
  */
 
+const RED_LIGHT_DURATION_MS = 900;
+const GREEN_LIGHT_DELAY_MIN_MS = 450;
+const GREEN_LIGHT_DELAY_MAX_MS = 1600;
+const RACE_AUDIO_STORAGE_KEY = 'raceAudioEnabled';
+const OPPONENT_REACTION_RANGES = {
+  easy: { min: 0.45, max: 0.9 },
+  normal: { min: 0.34, max: 0.72 },
+  hard: { min: 0.24, max: 0.52 },
+  expert: { min: 0.16, max: 0.26 },
+  nightmare: { min: 0.08, max: 0.14 },
+};
+
+let raceAudioContext = null;
+let raceAudioEnabled = readRaceAudioEnabled();
+
+function rollGreenLightDelayMs() {
+  return Math.round(randomBetween(GREEN_LIGHT_DELAY_MIN_MS, GREEN_LIGHT_DELAY_MAX_MS));
+}
+
+function rollOpponentReactionTime(difficulty) {
+  const range = OPPONENT_REACTION_RANGES[difficulty] || OPPONENT_REACTION_RANGES.normal;
+  const value = range.min + Math.random() * (range.max - range.min);
+  return Number(value.toFixed(3));
+}
+
+function getCurrentOpponentReactionTime() {
+  const reactionTime = Number(gameState.opponentReactionTime);
+  return Number.isFinite(reactionTime) && reactionTime >= 0 ? reactionTime : null;
+}
+
+function formatReactionAdvantage(playerReaction, opponentReaction) {
+  const delta = Number((opponentReaction - playerReaction).toFixed(3));
+  const absDelta = Math.abs(delta).toFixed(3);
+
+  if (Math.abs(delta) < 0.015) {
+    return '起步优势：几乎同时起步';
+  }
+
+  if (delta > 0) {
+    return `起步优势：你快了 ${absDelta} 秒`;
+  }
+
+  return `起步优势：电脑快了 ${absDelta} 秒`;
+}
+
+function readRaceAudioEnabled() {
+  try {
+    return localStorage.getItem(RACE_AUDIO_STORAGE_KEY) !== 'false';
+  } catch (error) {
+    return true;
+  }
+}
+
+function writeRaceAudioEnabled(enabled) {
+  try {
+    localStorage.setItem(RACE_AUDIO_STORAGE_KEY, enabled ? 'true' : 'false');
+  } catch (error) {
+    // Ignore storage failures; the toggle still works for the current page session.
+  }
+}
+
+function getRaceAudioContext() {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) {
+    return null;
+  }
+
+  if (!raceAudioContext) {
+    raceAudioContext = new AudioContext();
+  }
+
+  if (raceAudioContext.state === 'suspended') {
+    raceAudioContext.resume().catch(() => {});
+  }
+
+  return raceAudioContext;
+}
+
+function ensureRaceAudioReady() {
+  if (!raceAudioEnabled) {
+    return;
+  }
+
+  getRaceAudioContext();
+}
+
+function playRaceBeep(frequency = 880, duration = 0.08, type = 'square', volume = 0.035) {
+  if (!raceAudioEnabled) {
+    return;
+  }
+
+  const ctx = getRaceAudioContext();
+  if (!ctx) {
+    return;
+  }
+
+  const oscillator = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const startAt = ctx.currentTime;
+  const stopAt = startAt + duration + 0.02;
+
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, startAt);
+
+  gain.gain.setValueAtTime(0.0001, startAt);
+  gain.gain.exponentialRampToValueAtTime(volume, startAt + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+
+  oscillator.connect(gain);
+  gain.connect(ctx.destination);
+  oscillator.addEventListener('ended', () => {
+    oscillator.disconnect();
+    gain.disconnect();
+  });
+
+  oscillator.start(startAt);
+  oscillator.stop(stopAt);
+}
+
+function playLightBeep(light) {
+  if (light === 'red') {
+    playRaceBeep(440, 0.055, 'square', 0.028);
+    return;
+  }
+
+  if (light === 'yellow') {
+    playRaceBeep(660, 0.055, 'square', 0.03);
+    return;
+  }
+
+  if (light === 'green') {
+    playRaceBeep(980, 0.075, 'square', 0.04);
+  }
+}
+
+function playFalseStartSound() {
+  playRaceBeep(150, 0.14, 'sawtooth', 0.045);
+}
+
+function playRaceWinSound() {
+  playRaceBeep(740, 0.055, 'square', 0.03);
+  window.setTimeout(() => playRaceBeep(980, 0.08, 'square', 0.035), 70);
+}
+
+function playRaceLoseSound() {
+  playRaceBeep(360, 0.07, 'triangle', 0.03);
+  window.setTimeout(() => playRaceBeep(240, 0.1, 'triangle', 0.03), 80);
+}
+
+function setRaceAudioEnabled(enabled) {
+  raceAudioEnabled = Boolean(enabled);
+  writeRaceAudioEnabled(raceAudioEnabled);
+}
+
+function updateRaceAudioToggleText() {
+  const button = el.raceAudioToggleBtn || document.querySelector('[data-race-audio-toggle]');
+  if (!button) {
+    return;
+  }
+
+  button.textContent = raceAudioEnabled ? '音效：开' : '音效：关';
+  button.setAttribute('aria-pressed', raceAudioEnabled ? 'true' : 'false');
+}
+
+function toggleRaceAudioEnabled() {
+  setRaceAudioEnabled(!raceAudioEnabled);
+  updateRaceAudioToggleText();
+
+  if (raceAudioEnabled) {
+    playRaceBeep(880, 0.06, 'square', 0.035);
+  }
+}
+
+function initRaceAudioToggle() {
+  const button = el.raceAudioToggleBtn || document.querySelector('[data-race-audio-toggle]');
+  if (!button) {
+    return;
+  }
+
+  updateRaceAudioToggleText();
+  button.addEventListener('click', toggleRaceAudioEnabled);
+}
+
 function renderLanes() {
   el.lanes.innerHTML = '';
   gameState.cars.forEach((car, index) => {
@@ -42,7 +225,7 @@ function updateCarPositions() {
 
 function resetCars() {
   gameState.cars = [
-    createCar(1, '玩家破车', '#d00000', true),
+    createCar(1, '玩家小车', '#d00000', true),
     createCar(2, '电脑蓝车', '#0060c8', false),
     createCar(3, '电脑黄车', '#d8b000', false),
     createCar(4, '电脑绿车', '#008c28', false),
@@ -213,8 +396,9 @@ function takeOverAiAssistRace() {
 function onGreenLight() {
   setPhase('countdown_green');
   setLights('green');
+  playLightBeep('green');
   gameState.greenAt = performance.now();
-  addLog('绿灯！电脑车已经起跑，快点“起步 / 踩油门”！');
+  addLog('绿灯！电脑车也在响应起步，快点“起步 / 踩油门”！');
   startRaceMotion();
 
   if (getCurrentRaceControl() !== 'ai' || !gameState.aiAssist.active) {
@@ -283,6 +467,7 @@ function registerRace(options = {}) {
   gameState.activeRaceType = raceType;
   gameState.cash -= entryFee;
   gameState.reactionTime = null;
+  gameState.opponentReactionTime = rollOpponentReactionTime(getDifficultyKey());
   gameState.playerStarted = false;
   gameState.lastRaceControl = null;
   gameState.lastRaceType = null;
@@ -297,23 +482,27 @@ function registerRace(options = {}) {
       addLog('系统悄悄放宽了这一场的对手强度。');
     }
   }
-  addLog('等待绿灯……红灯或黄灯点击“起步 / 踩油门”会抢跑。');
+  addLog('等待绿灯……红灯或黄灯点击“起步 / 踩油门”会抢跑，绿灯时机每场随机。');
 
   setPhase('countdown_red');
   setLights('red');
+  playLightBeep('red');
+
+  const greenLightDelayMs = RED_LIGHT_DURATION_MS + rollGreenLightDelayMs();
 
   gameState.countdownTimers.push(
     setTimeout(() => {
       setPhase('countdown_yellow');
       setLights('yellow');
+      playLightBeep('yellow');
       addLog('黄灯……还不能踩，黄灯点击也算抢跑。');
-    }, 900)
+    }, RED_LIGHT_DURATION_MS)
   );
 
   gameState.countdownTimers.push(
     setTimeout(() => {
       onGreenLight();
-    }, 1850)
+    }, greenLightDelayMs)
   );
 }
 
@@ -363,10 +552,7 @@ function updateWinStreak(playerRank, race) {
 
   if (playerRank === 1) {
     gameState.currentWinStreak += 1;
-    gameState.bestWinStreak = Math.max(
-      gameState.bestWinStreak,
-      gameState.currentWinStreak
-    );
+    gameState.bestWinStreak = Math.max(gameState.bestWinStreak, gameState.currentWinStreak);
     return;
   }
 
@@ -384,10 +570,8 @@ function updateManualDifficultyWinStreak(playerRank, race) {
   }
 
   const difficultyKey = race.difficultyKey;
-  const previous =
-    gameState.manualDifficultyWinStreak || createDefaultManualDifficultyWinStreak();
-  const nextCount =
-    previous.difficultyKey === difficultyKey ? previous.count + 1 : 1;
+  const previous = gameState.manualDifficultyWinStreak || createDefaultManualDifficultyWinStreak();
+  const nextCount = previous.difficultyKey === difficultyKey ? previous.count + 1 : 1;
 
   gameState.manualDifficultyWinStreak = {
     difficultyKey,
@@ -414,11 +598,27 @@ function updateManualRankStreak(playerRank, race) {
   gameState.stats.fifthPlaceStreak = playerRank === 5 ? nextCount : 0;
 }
 
+function addReactionReport(race) {
+  const playerReaction = Number(race.reactionTime);
+  const opponentReaction = Number(race.opponentReactionTime);
+
+  if (!Number.isFinite(playerReaction) || !Number.isFinite(opponentReaction)) {
+    return;
+  }
+
+  const controlSuffix = isAiRace(race) ? '（AI托管）' : '';
+  addLog(`你的反应：${playerReaction.toFixed(3)} 秒${controlSuffix}`);
+  addLog(`电脑反应：${opponentReaction.toFixed(3)} 秒`);
+  addLog(formatReactionAdvantage(playerReaction, opponentReaction));
+}
+
 function handleFalseStart() {
   const falseStartPhase = gameState.phase;
   const practiceRace = isPracticeRace();
   clearRaceTimers();
+  playFalseStartSound();
   gameState.reactionTime = null;
+  gameState.opponentReactionTime = null;
   gameState.lastReactionTime = null;
   gameState.lastReactionControl = null;
   gameState.playerStarted = false;
@@ -454,15 +654,39 @@ function startRaceMotion() {
   gameState.raceStartedAt = performance.now();
   gameState.lastRaceTickAt = gameState.raceStartedAt;
   gameState.raceAccumulator = 0;
+
+  setPhase('racing');
+  scheduleOpponentStart();
+  gameState.raceTimer = requestAnimationFrame(raceLoop);
+}
+
+function startOpponentCars() {
   gameState.cars.forEach((car) => {
-    if (!car.isPlayer) {
+    if (!car.isPlayer && !car.started) {
       car.started = true;
       car.launchBonus = car.power.launch;
     }
   });
+}
 
-  setPhase('racing');
-  gameState.raceTimer = requestAnimationFrame(raceLoop);
+function scheduleOpponentStart() {
+  const opponentReactionTime = getCurrentOpponentReactionTime();
+  const reactionMs = Math.max(0, Math.round((opponentReactionTime || 0) * 1000));
+
+  if (reactionMs === 0) {
+    startOpponentCars();
+    return;
+  }
+
+  gameState.countdownTimers.push(
+    setTimeout(() => {
+      if (!gameState.raceTimer || gameState.phase !== 'racing') {
+        return;
+      }
+
+      startOpponentCars();
+    }, reactionMs)
+  );
 }
 
 // 使用 requestAnimationFrame 承载动画，内部通过 TICK_MS 固定步长推进数值。
@@ -588,13 +812,16 @@ function completeRace() {
   const practiceRace = isPracticeRace();
   const basePrize = PRIZES[playerRank - 1] || 0;
   const rewardMultiplier = practiceRace ? 1 : getDifficulty().rewardMultiplier;
-  let prize = practiceRace ? getPracticePrize(playerRank) : Math.floor(basePrize * rewardMultiplier);
+  let prize = practiceRace
+    ? getPracticePrize(playerRank)
+    : Math.floor(basePrize * rewardMultiplier);
   if (!practiceRace && getDifficultyKey() === 'easy' && playerRank === 5) {
     prize = Math.max(prize, Math.floor(getEntryFee() * 0.7));
   }
   const finishedRace = {
     controlledBy: getCurrentRaceControl(),
     reactionTime: gameState.reactionTime,
+    opponentReactionTime: getCurrentOpponentReactionTime(),
     rank: playerRank,
     prize,
     rewardMultiplier,
@@ -606,6 +833,11 @@ function completeRace() {
   gameState.lastRank = practiceRace ? `练习第 ${playerRank} 名` : `第 ${playerRank} 名`;
   gameState.lastRaceControl = finishedRace.controlledBy;
   gameState.lastRaceType = finishedRace.raceType;
+  if (playerRank === 1) {
+    playRaceWinSound();
+  } else {
+    playRaceLoseSound();
+  }
 
   if (practiceRace) {
     gameState.stats.practiceRaces = (gameState.stats.practiceRaces || 0) + 1;
@@ -676,6 +908,7 @@ function completeRace() {
 
   addLog('比赛结束！');
   addLog(`本场排名：${gameState.lastRank}`);
+  addReactionReport(finishedRace);
   if (practiceRace) {
     addLog('练习赛奖金按最低报名费的小比例结算。');
     addLog('练习赛不会刷新商店。');
@@ -711,6 +944,7 @@ function finishPostRace(options = {}) {
 function nextRace() {
   clearRaceTimers();
   gameState.reactionTime = null;
+  gameState.opponentReactionTime = null;
   gameState.playerStarted = false;
   gameState.panelReturnPhase = 'idle';
   gameState.activeRaceType = 'standard';
