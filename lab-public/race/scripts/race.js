@@ -797,6 +797,29 @@ function tickRace() {
   }
 }
 
+function normalizeTelemetrySeconds(value) {
+  return Number.isFinite(value) ? Number(value.toFixed(3)) : null;
+}
+
+function trackRaceFinish(finishedRace) {
+  if (typeof trackRaceEvent !== 'function') {
+    return;
+  }
+
+  trackRaceEvent('lab_race_finish', {
+    difficulty: finishedRace.difficultyKey,
+    rank: finishedRace.rank,
+    reactionTime: normalizeTelemetrySeconds(finishedRace.reactionTime),
+    opponentReactionTime: normalizeTelemetrySeconds(finishedRace.opponentReactionTime),
+    raceCount: gameState.raceCount,
+    isPractice: finishedRace.raceType === 'practice',
+    isAiAssist: isAiRace(finishedRace),
+    money: gameState.cash,
+    winStreak: gameState.currentWinStreak,
+    version: GAME_VERSION,
+  });
+}
+
 // 结算集中处理排名、奖金、连胜、特殊成就标记和失败检测。
 function completeRace() {
   clearRaceTimers();
@@ -921,6 +944,7 @@ function completeRace() {
     addLog('本场为 AI 托管，操作类成就不会解锁。');
   }
   finishPostRace({ refreshShopAfterRace: !practiceRace });
+  trackRaceFinish(finishedRace);
   if (practiceRace && gameState.cash >= getMinEntryFee()) {
     showPracticeRecoveryNotice();
   }
