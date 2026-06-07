@@ -30,7 +30,7 @@ const TICK_MS = 45;
 const STORAGE_KEY = 'mpsteam-race-save-v1';
 const GAME_VERSION = 'v1.8.1';
 const GAME_VERSION_NOTE = '灯号与音效补丁：黄灯到绿灯随机等待，并加入可关闭的轻量 beep。';
-const AI_ASSIST_REACTION_RANGE_SECONDS = [0.12, 0.3];
+const AI_ASSIST_REACTION_RANGE_SECONDS = [0.22, 0.4];
 const MIN_MANUAL_REACTION_SECONDS = 0.001;
 const LOSS_STREAK_RELIEF = {
   easy: {

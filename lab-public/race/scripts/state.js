@@ -89,6 +89,7 @@ const gameState = {
   ready: false,
   greenAt: 0,
   reactionTime: null,
+  opponentReactionTime: null,
   playerStarted: false,
   raceControl: 'manual',
   lastRaceControl: null,
