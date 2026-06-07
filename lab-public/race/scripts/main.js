@@ -23,6 +23,7 @@ function blurAfterPointerClick(event, node = event.currentTarget) {
 // 事件绑定集中在入口文件，业务处理继续分散在 race/parts/storage/core 等模块。
 function bindEvents() {
   el.registerBtn.addEventListener('click', (event) => {
+    ensureRaceAudioReady();
     if (gameState.phase === 'idle') {
       registerRace();
     } else if (isPostRacePhase(gameState.phase)) {
@@ -31,11 +32,13 @@ function bindEvents() {
     blurAfterPointerClick(event);
   });
   el.startBtn.addEventListener('click', (event) => {
+    ensureRaceAudioReady();
     pressStart({ controlledBy: 'manual' });
     blurAfterPointerClick(event);
   });
   if (el.aiAssistRaceButton) {
     el.aiAssistRaceButton.addEventListener('click', (event) => {
+      ensureRaceAudioReady();
       handleAiAssistRaceButtonClick();
       blurAfterPointerClick(event);
     });
@@ -126,13 +129,16 @@ function bindEvents() {
     }
 
     event.preventDefault();
+    ensureRaceAudioReady();
 
     if (gameState.phase === 'idle') {
       registerRace();
       return;
     }
 
-    if (['countdown_red', 'countdown_yellow', 'countdown_green', 'racing'].includes(gameState.phase)) {
+    if (
+      ['countdown_red', 'countdown_yellow', 'countdown_green', 'racing'].includes(gameState.phase)
+    ) {
       pressStart({ controlledBy: 'manual' });
       return;
     }
@@ -170,6 +176,7 @@ function bindEvents() {
 // 初始化顺序：绑定事件、渲染静态面板、尝试自动读档，最后开放成就检查和操作。
 function init() {
   bindEvents();
+  initRaceAudioToggle();
   el.registerBtn.textContent = `报名比赛（${getEntryFee()} 元）`;
   resetCars();
   refreshShop();
@@ -198,6 +205,7 @@ function init() {
   }
   addLog('电脑端可按空格键报名 / 起步 / 下一场。');
   addLog('先报名比赛，等绿灯后点“起步 / 踩油门”。红灯或黄灯点击会抢跑。');
+  addLog('已加入轻量 beep 音效，可在档案页关闭。');
 }
 
 init();
