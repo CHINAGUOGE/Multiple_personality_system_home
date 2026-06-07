@@ -130,6 +130,7 @@ const el = {
   saveBtn: document.getElementById('saveBtn'),
   loadBtn: document.getElementById('loadBtn'),
   restartBtn: document.getElementById('restartBtn'),
+  raceAudioToggleBtn: document.querySelector('[data-race-audio-toggle]'),
   tabs: Array.from(document.querySelectorAll('.page-tabs button')),
   pages: Array.from(document.querySelectorAll('.app-page')),
   lanes: document.getElementById('lanes'),

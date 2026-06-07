@@ -28,9 +28,8 @@ const PART_SELL_RATE = 0.8;
 const FINISH = 100;
 const TICK_MS = 45;
 const STORAGE_KEY = 'mpsteam-race-save-v1';
-const GAME_VERSION = 'v1.8';
-const GAME_VERSION_NOTE =
-  '休闲 / 标准体验补丁：降低电脑后期压迫，加入失败软保底、练习赛恢复和配装提示。';
+const GAME_VERSION = 'v1.8.1';
+const GAME_VERSION_NOTE = '灯号与音效补丁：黄灯到绿灯随机等待，并加入可关闭的轻量 beep。';
 const AI_ASSIST_REACTION_RANGE_SECONDS = [0.12, 0.3];
 const MIN_MANUAL_REACTION_SECONDS = 0.001;
 const LOSS_STREAK_RELIEF = {
