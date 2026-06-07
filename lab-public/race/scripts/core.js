@@ -618,9 +618,7 @@ function getPartTemplate(part) {
         candidate.price === part.price &&
         getPartRarity(candidate) === getPartRarity(part)
     ) ||
-    PART_POOL.find(
-      (candidate) => candidate.type === part.type && candidate.name === part.name
-    ) ||
+    PART_POOL.find((candidate) => candidate.type === part.type && candidate.name === part.name) ||
     null
   );
 }
@@ -718,9 +716,7 @@ function sanitizeStatsData(data, fallback = {}) {
   );
   const secondPlaceStreak = Math.max(
     0,
-    Math.floor(
-      Number((data && data.secondPlaceStreak) ?? fallback.secondPlaceStreak) || 0
-    )
+    Math.floor(Number((data && data.secondPlaceStreak) ?? fallback.secondPlaceStreak) || 0)
   );
   const fifthPlaceStreak = Math.max(
     0,
@@ -732,9 +728,7 @@ function sanitizeStatsData(data, fallback = {}) {
   );
   const partsPurchasedCount = Math.max(
     0,
-    Math.floor(
-      Number((data && data.partsPurchasedCount) ?? fallback.partsPurchasedCount) || 0
-    )
+    Math.floor(Number((data && data.partsPurchasedCount) ?? fallback.partsPurchasedCount) || 0)
   );
   const highestCash = Math.max(
     0,
@@ -747,17 +741,12 @@ function sanitizeStatsData(data, fallback = {}) {
     (data && data.bestStreakByDifficulty) || fallback.bestStreakByDifficulty
   );
   DIFFICULTY_ORDER.forEach((key) => {
-    bestStreakByDifficulty[key] = Math.min(
-      bestStreakByDifficulty[key],
-      winsByDifficulty[key]
-    );
+    bestStreakByDifficulty[key] = Math.min(bestStreakByDifficulty[key], winsByDifficulty[key]);
   });
   const wonWithBuildAchievements = Array.isArray(data && data.wonWithBuildAchievements)
     ? Array.from(
         new Set(
-          data.wonWithBuildAchievements
-            .map((value) => String(value || '').trim())
-            .filter(Boolean)
+          data.wonWithBuildAchievements.map((value) => String(value || '').trim()).filter(Boolean)
         )
       )
     : Array.isArray(fallback.wonWithBuildAchievements)
@@ -765,11 +754,7 @@ function sanitizeStatsData(data, fallback = {}) {
       : [];
   const wonWithSpecialParts = Array.isArray(data && data.wonWithSpecialParts)
     ? Array.from(
-        new Set(
-          data.wonWithSpecialParts
-            .map((value) => String(value || '').trim())
-            .filter(Boolean)
-        )
+        new Set(data.wonWithSpecialParts.map((value) => String(value || '').trim()).filter(Boolean))
       )
     : Array.isArray(fallback.wonWithSpecialParts)
       ? Array.from(new Set(fallback.wonWithSpecialParts))
@@ -790,9 +775,7 @@ function sanitizeStatsData(data, fallback = {}) {
     highestCash,
     winsByDifficulty,
     bestStreakByDifficulty,
-    hasFilledAllSlots: Boolean(
-      (data && data.hasFilledAllSlots) ?? fallback.hasFilledAllSlots
-    ),
+    hasFilledAllSlots: Boolean((data && data.hasFilledAllSlots) ?? fallback.hasFilledAllSlots),
     hasLowCashAfterRace: Boolean(
       (data && data.hasLowCashAfterRace) ?? fallback.hasLowCashAfterRace
     ),
@@ -807,8 +790,7 @@ function sanitizeStatsData(data, fallback = {}) {
       (data && data.hasNightmareStableWin) ?? fallback.hasNightmareStableWin
     ),
     hasWonAfterSecondPlaceStreak: Boolean(
-      (data && data.hasWonAfterSecondPlaceStreak) ??
-        fallback.hasWonAfterSecondPlaceStreak
+      (data && data.hasWonAfterSecondPlaceStreak) ?? fallback.hasWonAfterSecondPlaceStreak
     ),
     wonWithBuildAchievements,
     wonWithSpecialParts,
@@ -865,8 +847,7 @@ function sanitizeManualRankStreakData(data) {
 }
 
 function sanitizeManualDifficultyWinStreakData(data) {
-  const difficultyKey =
-    data && DIFFICULTIES[data.difficultyKey] ? data.difficultyKey : null;
+  const difficultyKey = data && DIFFICULTIES[data.difficultyKey] ? data.difficultyKey : null;
   const count = Math.max(0, Math.floor(Number(data && data.count) || 0));
 
   if (!difficultyKey || count <= 0) {
@@ -887,8 +868,7 @@ function syncProgressStats() {
   gameState.stats.currentStreak = gameState.currentWinStreak;
   gameState.stats.bestStreak = Math.max(gameState.stats.bestStreak, gameState.bestWinStreak);
   gameState.stats.highestCash = Math.max(gameState.stats.highestCash, gameState.cash);
-  gameState.stats.hasFilledAllSlots =
-    gameState.stats.hasFilledAllSlots || isAllSlotsFilled();
+  gameState.stats.hasFilledAllSlots = gameState.stats.hasFilledAllSlots || isAllSlotsFilled();
 }
 
 function isVehicleStripped() {
@@ -1083,8 +1063,7 @@ function sanitizeSaveData(data) {
   const lastManualReactionTime =
     savedLastManualReactionTime ??
     (rawLastReactionControl === 'ai' ? null : normalizeManualReactionTime(data.lastReactionTime));
-  const lastReactionControl =
-    lastReactionTime === null ? null : rawLastReactionControl || 'manual';
+  const lastReactionControl = lastReactionTime === null ? null : rawLastReactionControl || 'manual';
   const achievements = sanitizeAchievementsData(data.achievements);
   const hasZeroBestReactionRecord = [data.bestManualReactionTime, data.bestReactionTime].some(
     (value) => Number(value) === 0
@@ -1143,19 +1122,14 @@ function applyPersistentState(data) {
   gameState.cash = data.cash;
   gameState.raceCount = data.raceCount;
   gameState.lastRank = data.lastRank;
-  gameState.bestReactionTime =
-    data.bestReactionTime ?? data.bestManualReactionTime ?? null;
-  gameState.bestManualReactionTime =
-    data.bestManualReactionTime ?? data.bestReactionTime ?? null;
+  gameState.bestReactionTime = data.bestReactionTime ?? data.bestManualReactionTime ?? null;
+  gameState.bestManualReactionTime = data.bestManualReactionTime ?? data.bestReactionTime ?? null;
   gameState.lastReactionTime = data.lastReactionTime ?? null;
   gameState.lastManualReactionTime = data.lastManualReactionTime ?? null;
   gameState.lastReactionControl = data.lastReactionControl || null;
   gameState.currentWinStreak = data.currentWinStreak ?? 0;
   gameState.currentLoseStreak = data.currentLoseStreak ?? 0;
-  gameState.bestWinStreak = Math.max(
-    gameState.currentWinStreak,
-    data.bestWinStreak ?? 0
-  );
+  gameState.bestWinStreak = Math.max(gameState.currentWinStreak, data.bestWinStreak ?? 0);
   gameState.difficulty = DIFFICULTIES[data.difficulty] ? data.difficulty : DEFAULT_DIFFICULTY;
   gameState.raceControl = data.raceControl === 'ai' ? 'ai' : 'manual';
   gameState.lastRaceControl =
@@ -1281,8 +1255,9 @@ function updateButtons() {
   }
   el.startBtn.disabled = !countdownOrRace || gameState.playerStarted;
   if (el.aiAssistRaceButton) {
-    el.aiAssistRaceButton.textContent =
-      window.matchMedia('(max-width: 640px)').matches ? 'AI托管' : 'AI 托管一场';
+    el.aiAssistRaceButton.textContent = window.matchMedia('(max-width: 640px)').matches
+      ? 'AI托管'
+      : 'AI 托管一场';
     el.aiAssistRaceButton.title = getAiAssistDescription();
     el.aiAssistRaceButton.disabled =
       phase !== 'idle' || gameOver || gameState.cash < getEntryFee() || gameState.aiAssistLocked;
@@ -1478,14 +1453,13 @@ function updateStats() {
     el.raceBestWinStreakStat.textContent = gameState.bestWinStreak;
   }
   if (el.raceReportEmptyText && el.raceReportStats) {
-    const hasRaceReport =
-      gameState.lastRank !== '-' || gameState.lastReactionTime !== null;
+    const hasRaceReport = gameState.lastRank !== '-' || gameState.lastReactionTime !== null;
     el.raceReportEmptyText.hidden = hasRaceReport;
     el.raceReportStats.hidden = !hasRaceReport;
   }
   el.registerBtn.textContent = `报名比赛（${getEntryFee()} 元）`;
   el.opponentPowerText.textContent = getOpponentPower().toFixed(2);
-  el.currentVehicleText.textContent = '玩家破车';
+  el.currentVehicleText.textContent = '玩家小车';
   if (el.versionText) {
     el.versionText.textContent = GAME_VERSION;
   }
@@ -1551,7 +1525,11 @@ function renderDifficulty() {
 
 // 安全自动保存：失败只写日志，不阻塞游戏；比赛锁定阶段或初始化未完成时跳过。
 function autoSaveGame() {
-  if (!gameState.ready || isRaceLockedPhase(gameState.phase) || gameState.storageWriteBlockedReason) {
+  if (
+    !gameState.ready ||
+    isRaceLockedPhase(gameState.phase) ||
+    gameState.storageWriteBlockedReason
+  ) {
     return;
   }
   try {
