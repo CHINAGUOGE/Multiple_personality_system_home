@@ -363,10 +363,7 @@ function updateWinStreak(playerRank, race) {
 
   if (playerRank === 1) {
     gameState.currentWinStreak += 1;
-    gameState.bestWinStreak = Math.max(
-      gameState.bestWinStreak,
-      gameState.currentWinStreak
-    );
+    gameState.bestWinStreak = Math.max(gameState.bestWinStreak, gameState.currentWinStreak);
     return;
   }
 
@@ -384,10 +381,8 @@ function updateManualDifficultyWinStreak(playerRank, race) {
   }
 
   const difficultyKey = race.difficultyKey;
-  const previous =
-    gameState.manualDifficultyWinStreak || createDefaultManualDifficultyWinStreak();
-  const nextCount =
-    previous.difficultyKey === difficultyKey ? previous.count + 1 : 1;
+  const previous = gameState.manualDifficultyWinStreak || createDefaultManualDifficultyWinStreak();
+  const nextCount = previous.difficultyKey === difficultyKey ? previous.count + 1 : 1;
 
   gameState.manualDifficultyWinStreak = {
     difficultyKey,
@@ -573,6 +568,29 @@ function tickRace() {
   }
 }
 
+function normalizeTelemetrySeconds(value) {
+  return Number.isFinite(value) ? Number(value.toFixed(3)) : null;
+}
+
+function trackRaceFinish(finishedRace) {
+  if (typeof trackRaceEvent !== 'function') {
+    return;
+  }
+
+  trackRaceEvent('lab_race_finish', {
+    difficulty: finishedRace.difficultyKey,
+    rank: finishedRace.rank,
+    reactionTime: normalizeTelemetrySeconds(finishedRace.reactionTime),
+    opponentReactionTime: normalizeTelemetrySeconds(finishedRace.opponentReactionTime),
+    raceCount: gameState.raceCount,
+    isPractice: finishedRace.raceType === 'practice',
+    isAiAssist: isAiRace(finishedRace),
+    money: gameState.cash,
+    winStreak: gameState.currentWinStreak,
+    version: GAME_VERSION,
+  });
+}
+
 // 结算集中处理排名、奖金、连胜、特殊成就标记和失败检测。
 function completeRace() {
   clearRaceTimers();
@@ -588,7 +606,9 @@ function completeRace() {
   const practiceRace = isPracticeRace();
   const basePrize = PRIZES[playerRank - 1] || 0;
   const rewardMultiplier = practiceRace ? 1 : getDifficulty().rewardMultiplier;
-  let prize = practiceRace ? getPracticePrize(playerRank) : Math.floor(basePrize * rewardMultiplier);
+  let prize = practiceRace
+    ? getPracticePrize(playerRank)
+    : Math.floor(basePrize * rewardMultiplier);
   if (!practiceRace && getDifficultyKey() === 'easy' && playerRank === 5) {
     prize = Math.max(prize, Math.floor(getEntryFee() * 0.7));
   }
@@ -688,6 +708,7 @@ function completeRace() {
     addLog('本场为 AI 托管，操作类成就不会解锁。');
   }
   finishPostRace({ refreshShopAfterRace: !practiceRace });
+  trackRaceFinish(finishedRace);
   if (practiceRace && gameState.cash >= getMinEntryFee()) {
     showPracticeRecoveryNotice();
   }

@@ -4,6 +4,7 @@
 const RACE_GAME_SCRIPTS = [
   'config.js',
   'race-formulas.js',
+  'telemetry.js',
   'state.js',
   'core.js',
   'achievements.js',
