@@ -130,6 +130,10 @@ function resetPersistentState(options = {}) {
   const achievements = options.preserveAchievements
     ? sanitizeAchievementsData(gameState.achievements)
     : createDefaultAchievementsState();
+  const settings =
+    options.preserveSettings === false
+      ? createDefaultSettings()
+      : sanitizeSettingsData(gameState.settings);
 
   gameState.cash = 1500;
   gameState.raceCount = 0;
@@ -159,30 +163,36 @@ function resetPersistentState(options = {}) {
   gameState.shopItems = [];
   gameState.inventory = [];
   gameState.equippedParts = createEmptyEquippedParts();
+  gameState.mythicUpgrades = {};
   gameState.nextPartId = 1;
   gameState.stats = createDefaultStats();
   gameState.achievements = achievements;
+  gameState.settings = settings;
   recalculatePlayerStats();
 }
 
 function performRestartGame() {
   clearRaceTimers();
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch (error) {
-    addLog('本地存档清除失败，但当前进度会重置。');
-  }
-
   clearStorageWriteBlock();
   resetPersistentState({ preserveAchievements: true });
+  let saveFailed = false;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(createSaveData()));
+  } catch (error) {
+    saveFailed = true;
+  }
+
   el.logOutput.textContent = '';
   refreshAfterPersistentChange();
-  addLog('游戏已重开，已解锁成就会保留。');
+  if (saveFailed) {
+    addLog('本地存档写入失败，但当前进度已重置。');
+  }
+  addLog('游戏已重开，已解锁成就和设置会保留。');
   addLog('先报名比赛，等绿灯后点“起步 / 踩油门”。');
 }
 
 function confirmRestartGame() {
-  const message = '确定要删除当前存档并重新开始吗？此操作无法撤销。';
+  const message = '确定要重置当前游戏进度并重新开始吗？已解锁成就、音效设置和信息收集设置会保留。';
 
   if (typeof openNoticeModal === 'function') {
     openNoticeModal('确认清档', message, {
@@ -206,6 +216,64 @@ function restartGame() {
   }
 
   confirmRestartGame();
+}
+
+function getRaceLocalStorageKeys() {
+  return [
+    STORAGE_KEY,
+    RACE_AUDIO_STORAGE_KEY,
+    RACE_SESSION_STORAGE_KEY,
+    RACE_LOCAL_LOG_STORAGE_KEY,
+    ...RACE_LEGACY_STORAGE_KEYS,
+  ];
+}
+
+function clearAllRaceLocalData() {
+  getRaceLocalStorageKeys().forEach((key) => {
+    localStorage.removeItem(key);
+  });
+}
+
+function performClearAllRaceLocalData() {
+  clearRaceTimers();
+  clearStorageWriteBlock();
+
+  try {
+    clearAllRaceLocalData();
+  } catch (error) {
+    addLog('清理本地数据失败：浏览器拒绝访问 localStorage。');
+    return;
+  }
+
+  window.location.reload();
+}
+
+function confirmClearAllRaceLocalData() {
+  const message =
+    '确认清理本地数据吗？\n\n这会删除本浏览器内的所有 Race 数据，包括：\n\n- 当前存档\n- 已拥有零件\n- 已装备零件\n- 神话强化等级\n- 成就\n- 图鉴 / 收藏记录\n- 音效设置\n- 信息收集设置\n\n此操作不可恢复。';
+
+  if (typeof openNoticeModal === 'function') {
+    openNoticeModal('确认清理本地数据', message, {
+      showCancel: true,
+      cancelText: '取消',
+      confirmText: '确认清理',
+      onConfirm: performClearAllRaceLocalData,
+    });
+    return;
+  }
+
+  if (window.confirm(message)) {
+    performClearAllRaceLocalData();
+  }
+}
+
+function clearLocalData() {
+  if (isRaceLockedPhase(gameState.phase)) {
+    addLog('比赛进行中不能清理本地数据，请等本场结束。');
+    return;
+  }
+
+  confirmClearAllRaceLocalData();
 }
 
 function clearRaceTimers() {

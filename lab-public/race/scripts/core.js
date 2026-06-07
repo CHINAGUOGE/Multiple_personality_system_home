@@ -80,7 +80,8 @@ function getPartRarityFrameClass(part) {
 
 function renderPartName(part, includeId = false) {
   const rarity = getPartRarity(part);
-  const label = includeId ? `#${part.id} ${part.name}` : part.name;
+  const name = formatPartNameWithUpgrade(part);
+  const label = includeId ? `#${part.id} ${name}` : name;
   return `<span class="part-quality part-quality-${rarity}">${label}</span>`;
 }
 
@@ -89,8 +90,84 @@ function renderPartOptionLabel(part, equippedPart = null) {
   return `<span class="part-quality part-quality-${rarity}">${formatPartOption(part, equippedPart)}</span>`;
 }
 
+function isMythicPart(part) {
+  return Boolean(part && getPartRarity(part) === 'mythic');
+}
+
+function normalizeMythicUpgradeLevel(level) {
+  return clamp(Math.floor(Number(level) || 0), 0, MYTHIC_UPGRADE_MAX_LEVEL);
+}
+
+function getMythicUpgradeLevel(partId) {
+  if (!gameState.mythicUpgrades || typeof gameState.mythicUpgrades !== 'object') {
+    return 0;
+  }
+
+  return normalizeMythicUpgradeLevel(gameState.mythicUpgrades[String(partId)]);
+}
+
+function getPartMythicUpgradeLevel(part) {
+  return isMythicPart(part) && part && part.id ? getMythicUpgradeLevel(part.id) : 0;
+}
+
+function formatPartNameWithUpgrade(part) {
+  if (!part) {
+    return '';
+  }
+
+  const level = getPartMythicUpgradeLevel(part);
+  return level > 0 ? `${part.name} +${level}` : part.name;
+}
+
+function getMythicUpgradeCost(part, level) {
+  const currentLevel = normalizeMythicUpgradeLevel(level);
+  const baseCost = Math.max(1800, Math.round((Number(part && part.price) || 0) * 0.4));
+  return Math.round(baseCost * (1 + currentLevel * 0.45));
+}
+
+function getMythicUpgradeSuccessRate(level) {
+  const currentLevel = normalizeMythicUpgradeLevel(level);
+  return MYTHIC_UPGRADE_SUCCESS_RATES[currentLevel] ?? 0.25;
+}
+
+function formatMythicUpgradeSuccessRate(level) {
+  return `${Math.round(getMythicUpgradeSuccessRate(level) * 100)}%`;
+}
+
+function applyMythicUpgradeBonus(part, upgradeLevel) {
+  const level = normalizeMythicUpgradeLevel(upgradeLevel);
+  if (!part || !isMythicPart(part) || level <= 0) {
+    return part;
+  }
+
+  const multiplier = 1 + level * MYTHIC_UPGRADE_BONUS_PER_LEVEL;
+  const upgraded = {
+    ...part,
+    changes: { ...(part.changes || {}) },
+  };
+
+  MYTHIC_UPGRADE_STAT_KEYS.forEach((key) => {
+    const value = Number(upgraded.changes[key]);
+    if (Number.isFinite(value) && value > 0) {
+      upgraded.changes[key] = Math.round(value * multiplier);
+    }
+  });
+
+  return upgraded;
+}
+
+function getEffectivePart(part) {
+  return applyMythicUpgradeBonus(part, getPartMythicUpgradeLevel(part));
+}
+
+function getEffectivePartChanges(part) {
+  const effectivePart = getEffectivePart(part);
+  return effectivePart && effectivePart.changes ? effectivePart.changes : {};
+}
+
 function getPartStatValue(part, key) {
-  return Number((part && part.changes && part.changes[key]) || 0);
+  const changes = getEffectivePartChanges(part);
+  return Number((changes && changes[key]) || 0);
 }
 
 function getPartComparisonChanges(part, equippedPart) {
@@ -574,8 +651,9 @@ function recalculatePlayerStats() {
       return;
     }
 
-    Object.keys(part.changes).forEach((key) => {
-      totals[key] += part.changes[key];
+    const changes = getEffectivePartChanges(part);
+    Object.keys(changes).forEach((key) => {
+      totals[key] += changes[key];
     });
   });
 
@@ -647,6 +725,20 @@ function getOwnedPartCounts() {
 
 function isAllSlotsFilled() {
   return EQUIPMENT_SLOTS.every((type) => Boolean(gameState.equippedParts[type]));
+}
+
+function hasAnyMythicUpgradeAtLeast(level) {
+  const targetLevel = normalizeMythicUpgradeLevel(level);
+  return gameState.inventory.some(
+    (part) => isMythicPart(part) && getMythicUpgradeLevel(part.id) >= targetLevel
+  );
+}
+
+function isAllEquippedMythicUpgradeMaxed() {
+  return EQUIPMENT_SLOTS.every((type) => {
+    const part = getEquippedPart(type);
+    return isMythicPart(part) && getMythicUpgradeLevel(part.id) >= MYTHIC_UPGRADE_MAX_LEVEL;
+  });
 }
 
 function formatDateTime(value) {
@@ -860,6 +952,38 @@ function sanitizeManualDifficultyWinStreakData(data) {
   };
 }
 
+function sanitizeMythicUpgradesData(data, inventory = null) {
+  const raw = data && typeof data === 'object' ? data : {};
+  const inventoryById = Array.isArray(inventory)
+    ? inventory.reduce((map, part) => {
+        map[String(part.id)] = part;
+        return map;
+      }, {})
+    : null;
+  const sanitized = {};
+
+  Object.entries(raw).forEach(([partId, rawLevel]) => {
+    const numericPartId = Number(partId);
+    if (!Number.isInteger(numericPartId) || numericPartId <= 0) {
+      return;
+    }
+
+    if (inventoryById) {
+      const part = inventoryById[String(numericPartId)];
+      if (!part || !isMythicPart(part)) {
+        return;
+      }
+    }
+
+    const level = normalizeMythicUpgradeLevel(rawLevel);
+    if (level > 0) {
+      sanitized[String(numericPartId)] = level;
+    }
+  });
+
+  return sanitized;
+}
+
 function syncProgressStats() {
   if (!gameState.stats) {
     gameState.stats = createDefaultStats();
@@ -958,6 +1082,8 @@ function createSaveData() {
       changes: { ...part.changes },
     })),
     equippedParts: { ...gameState.equippedParts },
+    mythicUpgrades: sanitizeMythicUpgradesData(gameState.mythicUpgrades, gameState.inventory),
+    settings: sanitizeSettingsData(gameState.settings),
     nextPartId: gameState.nextPartId,
     stats: {
       ...gameState.stats,
@@ -1021,6 +1147,8 @@ function sanitizeSaveData(data) {
     const part = inventory.find((item) => item.id === partId && item.type === type);
     equippedParts[type] = part ? part.id : null;
   });
+  const mythicUpgrades = sanitizeMythicUpgradesData(data.mythicUpgrades, inventory);
+  const settings = sanitizeSettingsData(data.settings, data);
 
   const maxPartId = inventory.reduce((maxId, part) => Math.max(maxId, part.id), 0);
   const nextPartId = Math.max(Number(data.nextPartId) || 1, maxPartId + 1);
@@ -1112,6 +1240,8 @@ function sanitizeSaveData(data) {
     manualDifficultyWinStreak,
     inventory,
     equippedParts,
+    mythicUpgrades,
+    settings,
     nextPartId,
     stats,
     achievements,
@@ -1146,11 +1276,17 @@ function applyPersistentState(data) {
   );
   gameState.inventory = data.inventory;
   gameState.equippedParts = data.equippedParts;
+  gameState.mythicUpgrades = sanitizeMythicUpgradesData(data.mythicUpgrades, data.inventory);
+  gameState.settings = sanitizeSettingsData(data.settings);
   gameState.nextPartId = data.nextPartId;
   gameState.stats = sanitizeStatsData(data.stats, data.stats);
   gameState.achievements = sanitizeAchievementsData(data.achievements);
   recalculatePlayerStats();
   syncProgressStats();
+  updateSettingsControls();
+  if (typeof syncRaceAudioFromSettings === 'function') {
+    syncRaceAudioFromSettings();
+  }
 }
 
 // 读档、清档或外部状态变动后统一刷新页面，避免各模块各自漏更新。
@@ -1166,6 +1302,7 @@ function refreshAfterPersistentChange() {
   if (el.restartBtn) {
     el.restartBtn.textContent = '重开并清档';
   }
+  updateSettingsControls();
   resetCars();
   refreshShop('load-or-reset');
   renderGarage();
@@ -1233,6 +1370,55 @@ function setActivePage(page) {
   updateButtons();
 }
 
+function getGameSettings() {
+  gameState.settings = sanitizeSettingsData(gameState.settings);
+  return gameState.settings;
+}
+
+function persistLegacyRaceAudioSetting(enabled) {
+  try {
+    localStorage.setItem(RACE_AUDIO_STORAGE_KEY, enabled ? 'true' : 'false');
+  } catch (error) {
+    // Ignore storage failures; the unified save still carries the current setting.
+  }
+}
+
+function updateSettingsControls() {
+  const settings = getGameSettings();
+
+  if (el.raceAudioToggleBtn) {
+    el.raceAudioToggleBtn.textContent = settings.soundEnabled ? '开启' : '关闭';
+    el.raceAudioToggleBtn.setAttribute('aria-pressed', settings.soundEnabled ? 'true' : 'false');
+  }
+
+  if (el.telemetryToggleBtn) {
+    el.telemetryToggleBtn.textContent = settings.telemetryEnabled ? '开启' : '关闭';
+    el.telemetryToggleBtn.setAttribute(
+      'aria-pressed',
+      settings.telemetryEnabled ? 'true' : 'false'
+    );
+  }
+}
+
+function setGameSettings(patch = {}) {
+  const current = getGameSettings();
+  gameState.settings = sanitizeSettingsData({ ...current, ...patch });
+  persistLegacyRaceAudioSetting(gameState.settings.soundEnabled);
+
+  if (typeof syncRaceAudioFromSettings === 'function') {
+    syncRaceAudioFromSettings();
+  }
+
+  updateSettingsControls();
+  autoSaveGame();
+}
+
+function toggleTelemetryEnabled() {
+  const nextEnabled = !getGameSettings().telemetryEnabled;
+  setGameSettings({ telemetryEnabled: nextEnabled });
+  addLog(`接受信息收集已${nextEnabled ? '开启' : '关闭'}。`);
+}
+
 function addLog(message) {
   const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
   el.logOutput.textContent += `[${time}] ${message}\n`;
@@ -1271,6 +1457,9 @@ function updateButtons() {
   if (el.restartBtn) {
     el.restartBtn.disabled = countdownOrRace;
   }
+  if (el.clearLocalDataBtn) {
+    el.clearLocalDataBtn.disabled = countdownOrRace;
+  }
 
   Array.from(el.shopBody.querySelectorAll('button')).forEach((button) => {
     const index = Number(button.dataset.index);
@@ -1279,7 +1468,8 @@ function updateButtons() {
     const alreadyOwned = part && (part.bought || hasOwnedPart(part));
     const notEnoughCash = part && gameState.cash < part.price;
     const adviceLabel =
-      part && typeof getPartAdviceLabel === 'function' ? getPartAdviceLabel(part) : '属性提示';
+      part && typeof getPartAdviceLabel === 'function' ? getPartAdviceLabel(part) : '';
+    const adviceText = adviceLabel || '查看属性变化';
 
     button.disabled = !canUseShop() || !part || alreadyOwned || notEnoughCash;
 
@@ -1288,15 +1478,15 @@ function updateButtons() {
       reasonNode.textContent = '原因：已经拥有';
     } else if (notEnoughCash) {
       button.textContent = '现金不足';
-      reasonNode.textContent = `${adviceLabel} · 还差 ${part.price - gameState.cash} 元`;
+      reasonNode.textContent = `${adviceText} · 还差 ${part.price - gameState.cash} 元`;
     } else if (!canUseShop()) {
       button.textContent = countdownOrRace ? '比赛中' : '不可购买';
       reasonNode.textContent = countdownOrRace
-        ? `${adviceLabel} · 比赛中不能购买`
-        : `${adviceLabel} · 当前状态不可购买`;
+        ? `${adviceText} · 比赛中不能购买`
+        : `${adviceText} · 当前状态不可购买`;
     } else {
       button.textContent = '购买';
-      reasonNode.textContent = adviceLabel;
+      reasonNode.textContent = adviceText;
     }
   });
 
@@ -1326,11 +1516,15 @@ function updateButtons() {
   inventoryButtons.forEach((button) => {
     const part = getPartById(Number(button.dataset.partId));
     const equipped = part && gameState.equippedParts[part.type] === part.id;
+    const mythicUpgradeMaxed =
+      part && getMythicUpgradeLevel(part.id) >= MYTHIC_UPGRADE_MAX_LEVEL;
     button.disabled =
       !canManageTuning() ||
       !part ||
       (button.dataset.action === 'sell' && equipped) ||
-      (button.dataset.action === 'unequip' && !equipped);
+      (button.dataset.action === 'unequip' && !equipped) ||
+      (button.dataset.action === 'upgrade-mythic' &&
+        (!equipped || !isMythicPart(part) || mythicUpgradeMaxed));
   });
 
   if (el.difficultyChoices) {
@@ -1469,6 +1663,7 @@ function updateStats() {
   if (el.statusVersionText) {
     el.statusVersionText.textContent = GAME_VERSION;
   }
+  updateSettingsControls();
   if (typeof renderBuildAdvice === 'function') {
     renderBuildAdvice();
   }

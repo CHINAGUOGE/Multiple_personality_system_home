@@ -28,8 +28,16 @@ const PART_SELL_RATE = 0.8;
 const FINISH = 100;
 const TICK_MS = 45;
 const STORAGE_KEY = 'mpsteam-race-save-v1';
-const GAME_VERSION = 'v1.8.1';
-const GAME_VERSION_NOTE = '灯号与音效补丁：黄灯到绿灯随机等待，并加入可关闭的轻量 beep。';
+const RACE_AUDIO_STORAGE_KEY = 'raceAudioEnabled';
+const RACE_LOCAL_LOG_STORAGE_KEY = 'mpsteam-race-local-logs-v1';
+const RACE_LEGACY_STORAGE_KEYS = ['raceSave', 'raceSettings', 'raceAchievements', 'raceLocalLogs'];
+const DEFAULT_SETTINGS = Object.freeze({
+  soundEnabled: true,
+  telemetryEnabled: true,
+});
+const GAME_VERSION = 'v2.0';
+const GAME_VERSION_NOTE =
+  '神话装备强化系统与设置更新：可强化神话装备，并新增信息收集与本地数据清理开关。';
 const AI_ASSIST_REACTION_RANGE_SECONDS = [0.22, 0.4];
 const MIN_MANUAL_REACTION_SECONDS = 0.001;
 const LOSS_STREAK_RELIEF = {
@@ -104,6 +112,21 @@ const PART_RARITY_WEIGHTS = {
 };
 
 const SHOP_OWNED_PART_WEIGHT = 0.2;
+const MYTHIC_UPGRADE_MAX_LEVEL = 10;
+const MYTHIC_UPGRADE_BONUS_PER_LEVEL = 0.025;
+const MYTHIC_UPGRADE_STAT_KEYS = ['hp', 'engine', 'tire', 'gearbox', 'stability'];
+const MYTHIC_UPGRADE_SUCCESS_RATES = {
+  0: 1,
+  1: 0.95,
+  2: 0.9,
+  3: 0.82,
+  4: 0.74,
+  5: 0.65,
+  6: 0.55,
+  7: 0.45,
+  8: 0.35,
+  9: 0.25,
+};
 const OPPONENT_CHASE_START_RACE = 6;
 const OPPONENT_CHASE_RAMP_RACES = 14;
 const OPPONENT_CHASE_CAP = 1.05;
@@ -278,6 +301,30 @@ const ACHIEVEMENTS = [
     category: '入门',
     check: 'fullSlots',
     flavor: '这下每个位置都塞进东西了。',
+  },
+  {
+    id: 'mythic_upgrade_first',
+    name: '神话开刃',
+    description: '第一次成功强化神话装备。',
+    category: '神话强化',
+    check: 'firstMythicUpgrade',
+    flavor: '神话件第一次留下了强化刻痕。',
+  },
+  {
+    id: 'mythic_upgrade_ten',
+    name: '十阶神装',
+    description: '将任意一件神话装备强化到 +10。',
+    category: '神话强化',
+    check: 'anyMythicUpgradeMaxed',
+    flavor: '这件神话装备已经被打磨到顶。',
+  },
+  {
+    id: 'mythic_upgrade_resonance',
+    name: '全神话共鸣',
+    description: '全身神话装备全部强化到 +10。',
+    category: '神话强化',
+    check: 'allEquippedMythicUpgradeMaxed',
+    flavor: '当前车体的每个槽位都开始发热。',
   },
   {
     id: 'normalWin',

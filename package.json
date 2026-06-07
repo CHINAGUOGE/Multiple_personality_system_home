@@ -10,6 +10,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "build:lab": "astro build --config astro.config.lab.mjs && node scripts/inject-lab-analytics.mjs",
+    "check:race-types": "tsc -p lab-public/race/tsconfig.json",
     "preview": "astro preview",
     "lint": "eslint . && prettier -c . && markdownlint **/*.md && stylelint \"src/**/*.css\"",
     "lint:fix": "eslint . --fix && prettier -w . && markdownlint -f **/*.md && stylelint \"src/**/*.css\" --fix",

@@ -55,6 +55,18 @@ function bindEvents() {
     restartGame();
     blurAfterPointerClick(event);
   });
+  if (el.clearLocalDataBtn) {
+    el.clearLocalDataBtn.addEventListener('click', (event) => {
+      clearLocalData();
+      blurAfterPointerClick(event);
+    });
+  }
+  if (el.telemetryToggleBtn) {
+    el.telemetryToggleBtn.addEventListener('click', (event) => {
+      toggleTelemetryEnabled();
+      blurAfterPointerClick(event);
+    });
+  }
   el.tabs.forEach((tab) => {
     tab.addEventListener('click', (event) => {
       setActivePage(tab.dataset.page);
@@ -177,6 +189,7 @@ function bindEvents() {
 function init() {
   bindEvents();
   initRaceAudioToggle();
+  updateSettingsControls();
   el.registerBtn.textContent = `报名比赛（${getEntryFee()} 元）`;
   resetCars();
   refreshShop();

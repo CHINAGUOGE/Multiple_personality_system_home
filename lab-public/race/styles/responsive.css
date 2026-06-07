@@ -347,6 +347,20 @@
     grid-template-columns: 1fr;
   }
 
+  .inventory-actions {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: stretch;
+    min-width: 0;
+  }
+
+  .inventory-actions button {
+    min-width: 0;
+    width: 100%;
+    white-space: normal;
+  }
+
   .slot-summary-card,
   .slot-detail-panel {
     padding: 9px;
@@ -360,8 +374,29 @@
     width: 100%;
   }
 
+  .slot-detail-panel.is-mobile .slot-detail-header {
+    grid-template-columns: minmax(0, 1fr) max-content;
+  }
+
+  .slot-detail-panel.is-mobile .slot-detail-unequip {
+    width: auto;
+  }
+
   .system-actions {
     position: static;
+    grid-template-columns: 1fr;
+  }
+
+  .setting-item {
+    grid-template-columns: 1fr;
+  }
+
+  .setting-item button,
+  .danger-actions {
+    width: 100%;
+  }
+
+  .danger-actions {
     grid-template-columns: 1fr;
   }
 
@@ -384,7 +419,7 @@
   }
 
   .profile-stats div:nth-child(7),
-  .profile-stats div:nth-child(8) {
+  .profile-stats div:nth-child(9) {
     grid-column: auto;
   }
 

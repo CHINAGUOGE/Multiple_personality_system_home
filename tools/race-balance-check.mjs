@@ -359,6 +359,7 @@ function createProfileCandidate(raceData, difficultyKey, profileKey) {
     throw new Error(`未定义的 build profile：${profileKey}`);
   }
 
+  // TODO: balance checker should optionally account for mythic upgrade bonus.
   const totals = { ...raceData.BASE_PLAYER_STATS };
   const options = profile.partKeys.map((partKey) => {
     const part = findPartByKey(raceData, partKey);

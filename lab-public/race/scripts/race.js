@@ -8,7 +8,6 @@
 const RED_LIGHT_DURATION_MS = 900;
 const GREEN_LIGHT_DELAY_MIN_MS = 450;
 const GREEN_LIGHT_DELAY_MAX_MS = 1600;
-const RACE_AUDIO_STORAGE_KEY = 'raceAudioEnabled';
 const OPPONENT_REACTION_RANGES = {
   easy: { min: 0.45, max: 0.9 },
   normal: { min: 0.34, max: 0.72 },
@@ -18,7 +17,7 @@ const OPPONENT_REACTION_RANGES = {
 };
 
 let raceAudioContext = null;
-let raceAudioEnabled = readRaceAudioEnabled();
+let raceAudioEnabled = getGameSettings().soundEnabled;
 
 function rollGreenLightDelayMs() {
   return Math.round(randomBetween(GREEN_LIGHT_DELAY_MIN_MS, GREEN_LIGHT_DELAY_MAX_MS));
@@ -48,22 +47,6 @@ function formatReactionAdvantage(playerReaction, opponentReaction) {
   }
 
   return `起步优势：电脑快了 ${absDelta} 秒`;
-}
-
-function readRaceAudioEnabled() {
-  try {
-    return localStorage.getItem(RACE_AUDIO_STORAGE_KEY) !== 'false';
-  } catch (error) {
-    return true;
-  }
-}
-
-function writeRaceAudioEnabled(enabled) {
-  try {
-    localStorage.setItem(RACE_AUDIO_STORAGE_KEY, enabled ? 'true' : 'false');
-  } catch (error) {
-    // Ignore storage failures; the toggle still works for the current page session.
-  }
 }
 
 function getRaceAudioContext() {
@@ -155,18 +138,16 @@ function playRaceLoseSound() {
 }
 
 function setRaceAudioEnabled(enabled) {
-  raceAudioEnabled = Boolean(enabled);
-  writeRaceAudioEnabled(raceAudioEnabled);
+  setGameSettings({ soundEnabled: Boolean(enabled) });
+}
+
+function syncRaceAudioFromSettings() {
+  raceAudioEnabled = getGameSettings().soundEnabled;
+  updateRaceAudioToggleText();
 }
 
 function updateRaceAudioToggleText() {
-  const button = el.raceAudioToggleBtn || document.querySelector('[data-race-audio-toggle]');
-  if (!button) {
-    return;
-  }
-
-  button.textContent = raceAudioEnabled ? '音效：开' : '音效：关';
-  button.setAttribute('aria-pressed', raceAudioEnabled ? 'true' : 'false');
+  updateSettingsControls();
 }
 
 function toggleRaceAudioEnabled() {

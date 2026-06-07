@@ -195,6 +195,49 @@ function getVehicleShortageText() {
   return `${prefix}标签仅提示属性方向，不保证换装收益。`;
 }
 
+function getPartTraitLabel(part) {
+  const changes = part && part.changes ? part.changes : {};
+  const hpGain = Number(changes.hp) || 0;
+  const engineGain = Number(changes.engine) || 0;
+  const tireGain = Number(changes.tire) || 0;
+  const gearboxGain = Number(changes.gearbox) || 0;
+  const stabilityGain = Number(changes.stability) || 0;
+  const weightChange = Number(changes.weight) || 0;
+
+  if ((hpGain > 0 || engineGain > 0) && stabilityGain > 0) {
+    return '动力稳定';
+  }
+  if ((hpGain > 0 || engineGain > 0) && weightChange < 0) {
+    return '动力轻量化';
+  }
+  if (engineGain > 0 && hpGain > 0) {
+    return '动力强化';
+  }
+  if (engineGain > 0) {
+    return '引擎强化';
+  }
+  if (hpGain > 0) {
+    return '马力强化';
+  }
+  if (tireGain > 0) {
+    return '轮胎强化';
+  }
+  if (gearboxGain > 0) {
+    return '变速强化';
+  }
+  if (stabilityGain > 0 && weightChange < 0) {
+    return '稳定轻量化';
+  }
+  if (stabilityGain > 0) {
+    return '稳定增强';
+  }
+  if (weightChange < 0) {
+    return '轻量化';
+  }
+
+  return '';
+}
+
 function getPartAdviceLabel(part, shortages = getCurrentShortages()) {
   const changes = part && part.changes ? part.changes : {};
   const hpGain = Number(changes.hp) || 0;
@@ -222,11 +265,12 @@ function getPartAdviceLabel(part, shortages = getCurrentShortages()) {
   if (isCasualDifficulty() && stabilityGain >= 0 && weightChange < 85) {
     return '休闲友好';
   }
-  return '属性提示';
+  return getPartTraitLabel(part);
 }
 
 function renderPartAdviceLabel(part) {
-  return `<small class="part-advice-label">${getPartAdviceLabel(part)}</small>`;
+  const label = getPartAdviceLabel(part);
+  return label ? `<small class="part-advice-label">${label}</small>` : '';
 }
 
 function renderBuildAdvice() {
@@ -237,6 +281,127 @@ function renderBuildAdvice() {
   if (el.tuningAdviceText) {
     el.tuningAdviceText.textContent = text;
   }
+}
+
+function renderMythicUpgradePanel(part) {
+  if (!isMythicPart(part)) {
+    return '';
+  }
+
+  const level = getMythicUpgradeLevel(part.id);
+  const maxLevel = MYTHIC_UPGRADE_MAX_LEVEL;
+
+  if (level >= maxLevel) {
+    return `
+      <div class="mythic-upgrade-panel is-maxed">
+        <p><strong>强化等级：</strong>+${maxLevel} / +${maxLevel}</p>
+        <small>已满级</small>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="mythic-upgrade-panel">
+      <p><strong>强化等级：</strong>+${level} / +${maxLevel}</p>
+      <p><strong>下次费用：</strong>${getMythicUpgradeCost(part, level)}</p>
+      <p><strong>成功率：</strong>${formatMythicUpgradeSuccessRate(level)}</p>
+    </div>
+  `;
+}
+
+function showMythicUpgradeNotice(message, title = '神话强化') {
+  addLog(message);
+  if (typeof openNoticeModal === 'function') {
+    openNoticeModal(title, message);
+  }
+}
+
+function openMythicUpgradeConfirm(partId) {
+  if (!canManageTuning()) {
+    return;
+  }
+
+  const part = getPartById(Number(partId));
+  if (!part || !isMythicPart(part)) {
+    showMythicUpgradeNotice('只有神话装备可以强化。');
+    return;
+  }
+
+  const currentLevel = getMythicUpgradeLevel(part.id);
+  if (currentLevel >= MYTHIC_UPGRADE_MAX_LEVEL) {
+    showMythicUpgradeNotice('该神话装备已经强化到 +10。');
+    return;
+  }
+
+  const cost = getMythicUpgradeCost(part, currentLevel);
+  const successRate = formatMythicUpgradeSuccessRate(currentLevel);
+  const message = `是否强化「${formatPartNameWithUpgrade(part)}」？\n\n费用：${cost}\n成功率：${successRate}\n失败不会降级，但会消耗费用。`;
+
+  openNoticeModal('确认强化', message, {
+    showCancel: true,
+    confirmText: '确认强化',
+    cancelText: '取消',
+    onConfirm: () => upgradeMythicPart(part.id),
+  });
+}
+
+function upgradeMythicPart(partId) {
+  if (!canManageTuning()) {
+    return;
+  }
+
+  const part = getPartById(Number(partId));
+  if (!part || !isMythicPart(part)) {
+    showMythicUpgradeNotice('只有神话装备可以强化。');
+    return;
+  }
+
+  const currentLevel = getMythicUpgradeLevel(part.id);
+  if (currentLevel >= MYTHIC_UPGRADE_MAX_LEVEL) {
+    showMythicUpgradeNotice('该神话装备已经强化到 +10。');
+    return;
+  }
+
+  const cost = getMythicUpgradeCost(part, currentLevel);
+  if (gameState.cash < cost) {
+    showMythicUpgradeNotice('金币不足，无法强化。');
+    return;
+  }
+
+  const successRate = getMythicUpgradeSuccessRate(currentLevel);
+  const success = Math.random() < successRate;
+  gameState.cash -= cost;
+
+  if (success) {
+    const nextLevel = currentLevel + 1;
+    gameState.mythicUpgrades[String(part.id)] = nextLevel;
+    recalculatePlayerStats();
+    showMythicUpgradeNotice(`强化成功！${part.name} 提升至 +${nextLevel}。`);
+    if (typeof checkAchievements === 'function') {
+      checkAchievements({ source: 'mythicUpgrade' });
+    }
+  } else {
+    showMythicUpgradeNotice('强化失败，费用已消耗，但装备没有降级。');
+  }
+
+  if (typeof trackRaceEvent === 'function') {
+    trackRaceEvent('lab_race_mythic_upgrade', {
+      partId: String(part.id),
+      templateId: getPartTemplateId(part),
+      slot: part.type,
+      fromLevel: currentLevel,
+      toLevel: success ? currentLevel + 1 : currentLevel,
+      success,
+      cost,
+      money: gameState.cash,
+      version: GAME_VERSION,
+    });
+  }
+
+  updateStats();
+  renderGarage();
+  renderAtlas();
+  autoSaveGame();
 }
 
 function renderShop() {
@@ -370,7 +535,10 @@ function getTuningPartsByType(type) {
 }
 
 function getSlotSummaryTags(part) {
-  return renderPartChangeTags(part ? part.changes : {}, part ? '属性无变化' : '当前无加成');
+  return renderPartChangeTags(
+    part ? getEffectivePartChanges(part) : {},
+    part ? '属性无变化' : '当前无加成'
+  );
 }
 
 function createSlotSummaryCard(type, layout) {
@@ -401,7 +569,9 @@ function createSlotSummaryCard(type, layout) {
         <span class="slot-summary-state">${stateLabel}</span>
       </div>
       <p class="slot-summary-effect">${
-        equippedPart ? `效果：${equippedPart.effectText}` : '效果：没有装备效果'
+        equippedPart
+          ? `效果：${formatPartChangeText(getEffectivePartChanges(equippedPart))}`
+          : '效果：没有装备效果'
       }</p>
       ${getSlotSummaryTags(equippedPart)}
     </button>
@@ -443,7 +613,7 @@ function createPartOptionList(type) {
                   <div class="part-option-meta">
                     ${renderPartBadges(part)}
                     <span class="part-option-id">#${part.id}</span>
-                    <span class="part-option-name part-quality part-quality-${getPartRarity(part)}">${part.name}</span>
+                    <span class="part-option-name part-quality part-quality-${getPartRarity(part)}">${formatPartNameWithUpgrade(part)}</span>
                   </div>
                   <button
                     type="button"
@@ -472,13 +642,33 @@ function createSlotDetailPanel(type, mobile = false) {
   const equippedPart = getEquippedPart(type);
   const panel = document.createElement(mobile ? 'div' : 'section');
 
+  if (mobile) {
+    panel.className = 'slot-detail-panel is-mobile';
+    panel.innerHTML = `
+      <div class="slot-detail-header">
+        <small class="slot-detail-kicker">候选零件</small>
+        <button
+          type="button"
+          class="slot-detail-unequip"
+          data-action="unequip-slot"
+          data-slot="${type}"
+          ${equippedPart ? '' : 'disabled'}
+        >
+          ${equippedPart ? '卸下当前' : '当前空槽'}
+        </button>
+      </div>
+    `;
+    panel.appendChild(createPartOptionList(type));
+    return panel;
+  }
+
   panel.className = `slot-detail-panel${mobile ? ' is-mobile' : ''}${
     equippedPart ? ` ${getPartRarityFrameClass(equippedPart)}` : ''
   }`;
   panel.innerHTML = `
     <div class="slot-detail-header">
       <div class="slot-detail-copy">
-        <small class="slot-detail-kicker">${mobile ? '候选零件' : '当前槽位'}</small>
+        <small class="slot-detail-kicker">当前槽位</small>
         <h3>${formatPartType(type)}</h3>
         <p class="slot-detail-current">${
           equippedPart ? `当前装备：${renderPartInlineLabel(equippedPart, true)}` : '当前装备：未装备'
@@ -495,7 +685,9 @@ function createSlotDetailPanel(type, mobile = false) {
       </button>
     </div>
     <p class="slot-detail-effect">${
-      equippedPart ? `效果：${equippedPart.effectText}` : '效果：没有装备效果'
+      equippedPart
+        ? `效果：${formatPartChangeText(getEffectivePartChanges(equippedPart))}`
+        : '效果：没有装备效果'
     }</p>
     ${getSlotSummaryTags(equippedPart)}
   `;
@@ -626,11 +818,14 @@ function createTuningPartCard(part, equipped) {
       </div>
       <p>类型：${formatPartType(part.type)}</p>
       ${renderPartComparison(part, equippedPart)}
+      ${equipped ? renderMythicUpgradePanel(part) : ''}
       ${renderPartAdviceLabel(part)}
       <small>${equipped ? '当前车辆已装备' : '库存零件，可装备或出售'}</small>
     </div>
   `;
 
+  const actions = document.createElement('div');
+  actions.className = 'inventory-actions';
   const actionButton = document.createElement('button');
   actionButton.type = 'button';
   actionButton.dataset.partId = String(part.id);
@@ -643,7 +838,22 @@ function createTuningPartCard(part, equipped) {
     actionButton.dataset.action = 'sell';
     actionButton.addEventListener('click', () => sellPart(part.id));
   }
-  card.appendChild(actionButton);
+  actions.appendChild(actionButton);
+
+  if (equipped && isMythicPart(part)) {
+    const upgradeButton = document.createElement('button');
+    const currentLevel = getMythicUpgradeLevel(part.id);
+    upgradeButton.type = 'button';
+    upgradeButton.dataset.action = 'upgrade-mythic';
+    upgradeButton.dataset.partId = String(part.id);
+    upgradeButton.textContent =
+      currentLevel >= MYTHIC_UPGRADE_MAX_LEVEL ? '已满级' : '强化 +1';
+    upgradeButton.disabled = currentLevel >= MYTHIC_UPGRADE_MAX_LEVEL;
+    upgradeButton.addEventListener('click', () => openMythicUpgradeConfirm(part.id));
+    actions.appendChild(upgradeButton);
+  }
+
+  card.appendChild(actions);
   return card;
 }
 

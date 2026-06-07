@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
     />
-    <title>赛车小游戏 v1.8.1｜MPS Lab 复古赛车经营游戏</title>
+    <title>赛车小游戏 v2.0｜MPS Lab 复古赛车经营游戏</title>
     <meta
       name="description"
       content="MPS Lab 赛车小游戏是一个复古 Windows 风格的网页赛车经营小游戏，支持手机和电脑访问，包含赛道比赛、金币收益、车辆升级与轻量经营玩法。"
@@ -21,7 +21,7 @@
       <main class="app-window" aria-label="横线赛车经营赛">
         <div class="title-bar">
           <span class="title-icon"></span>
-          <span>横线赛车经营赛 v1.8.1</span>
+          <span>横线赛车经营赛 v2.0</span>
           <div class="window-buttons" aria-hidden="true">
             <span>_</span>
             <span>□</span>
@@ -338,15 +338,30 @@
             </section>
 
             <section class="storage-section">
-              <h2>重开 / 清档</h2>
+              <h2>存档 / 设置</h2>
               <p class="panel-note">
-                保存和读取只影响本地浏览器。重开会清除当前进度与本地存档，需弹窗确认。
+                保存和读取只影响本地浏览器。重开并清档只重置当前游戏进度，保留成就与设置。
               </p>
+              <div class="settings-list" aria-label="游戏设置">
+                <article class="setting-item">
+                  <div>
+                    <strong>音效</strong>
+                    <small>只控制红黄绿灯、抢跑和赛果的 beep 声音。</small>
+                  </div>
+                  <button type="button" data-race-audio-toggle aria-pressed="true">开启</button>
+                </article>
+                <article class="setting-item">
+                  <div>
+                    <strong>接受信息收集</strong>
+                    <small>用于帮助改进游戏体验。关闭后不会发送游玩日志。</small>
+                  </div>
+                  <button id="telemetryToggleBtn" type="button" aria-pressed="true">开启</button>
+                </article>
+              </div>
               <div class="system-actions" aria-label="系统操作">
                 <button id="saveBtn" type="button">保存</button>
                 <button id="loadBtn" type="button">读取</button>
                 <button id="restartBtn" type="button">重开并清档</button>
-                <button type="button" data-race-audio-toggle aria-pressed="true">音效：开</button>
               </div>
             </section>
 
@@ -382,6 +397,10 @@
                   <dd id="statsHighestCash">1500 元</dd>
                 </div>
                 <div>
+                  <dt>装备收集进度</dt>
+                  <dd id="statsCollectionProgress">已收集 0 / 0 件</dd>
+                </div>
+                <div>
                   <dt>各难度胜场</dt>
                   <dd id="statsDifficultyWins">休闲 0 / 标准 0 / 挑战 0 / 专家 0 / 噩梦 0</dd>
                 </div>
@@ -390,10 +409,6 @@
                   <dd id="statsDifficultyBestStreaks">
                     休闲 0 / 标准 0 / 挑战 0 / 专家 0 / 噩梦 0
                   </dd>
-                </div>
-                <div>
-                  <dt>装备收集进度</dt>
-                  <dd id="statsCollectionProgress">已收集 0 / 0 件</dd>
                 </div>
               </dl>
             </section>
@@ -404,15 +419,27 @@
               <div id="achievementsBody" class="achievement-list"></div>
             </section>
 
+            <section class="storage-section danger-section">
+              <h2>危险操作</h2>
+              <p class="panel-note">
+                会删除本浏览器内的所有 Race 数据，包括存档、成就、神话强化和设置。
+              </p>
+              <div class="danger-actions" aria-label="危险操作">
+                <button id="clearLocalDataBtn" class="danger-button" type="button">
+                  清理本地数据
+                </button>
+              </div>
+            </section>
+
             <section class="storage-section">
               <h2>版本信息</h2>
               <div class="version-card">
                 <div class="version-card-head">
-                  <strong id="versionText">v1.8.1</strong>
+                  <strong id="versionText">v2.0</strong>
                   <span class="version-qq">QQ群 727419840</span>
                 </div>
                 <p id="versionNote">
-                  灯号与音效补丁：黄灯到绿灯随机等待，并加入可关闭的轻量 beep。
+                  神话装备强化系统与设置更新：可强化神话装备，并新增信息收集与本地数据清理开关。
                 </p>
                 <small>商店改为比赛结束后刷新；切换难度不会免费刷新。</small>
               </div>
@@ -465,7 +492,7 @@
             </a>
           </div>
           <div class="status-panel status-panel-version">
-            <span id="statusVersionText">v1.8.1</span>
+            <span id="statusVersionText">v2.0</span>
           </div>
         </footer>
       </main>

@@ -274,7 +274,7 @@
 
 .vehicle-card,
 .inventory-card {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) max-content;
   align-items: center;
 }
 
@@ -288,6 +288,54 @@
   box-shadow:
     inset 4px 0 0 var(--part-accent),
     inset 0 0 0 2px #9fb9e8;
+}
+
+.inventory-actions {
+  display: grid;
+  gap: 6px;
+  align-self: start;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  justify-content: end;
+  min-width: 0;
+}
+
+.inventory-actions button {
+  min-height: 36px;
+  min-width: 74px;
+  padding: 6px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.mythic-upgrade-panel {
+  display: grid;
+  gap: 3px;
+  padding: 7px;
+  color: #4d1730;
+  background: #fff0f6;
+  border: 1px solid #eda0be;
+  border-radius: 4px;
+}
+
+.mythic-upgrade-panel p,
+.mythic-upgrade-panel small {
+  margin: 0;
+}
+
+.mythic-upgrade-panel small {
+  color: #6f2548;
+  font-weight: bold;
+}
+
+.mythic-upgrade-panel.is-maxed {
+  color: #0a3d18;
+  background: #e9f7ed;
+  border-color: #7eb98d;
+}
+
+.mythic-upgrade-panel.is-maxed small {
+  color: #0a3d18;
 }
 
 .storage-stats {
@@ -322,6 +370,58 @@
   color: #143f1f;
   background: #e9f7ed;
   border-color: #7eb98d;
+}
+
+.settings-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.setting-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #808080;
+}
+
+.setting-item strong,
+.setting-item small {
+  display: block;
+  line-height: 1.4;
+}
+
+.setting-item small {
+  color: #505050;
+}
+
+.setting-item button {
+  min-width: 72px;
+}
+
+.danger-section .panel-note {
+  color: #5a1212;
+  background: #fff1e8;
+  border-color: #c57957;
+}
+
+.danger-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 220px);
+  gap: 8px;
+}
+
+.danger-button {
+  color: #fff;
+  background: #9f1d1d;
+  border-color: #f0c0c0 #4f0d0d #4f0d0d #f0c0c0;
+}
+
+.danger-button:hover:not(:disabled) {
+  background: #b92a2a;
 }
 
 .part-advice-label {
@@ -369,7 +469,7 @@
 
 .tuning-layout-desktop {
   grid-template-columns: minmax(280px, 0.92fr) minmax(0, 1.18fr);
-  align-items: start;
+  align-items: stretch;
 }
 
 .slot-overview {
@@ -465,6 +565,13 @@
 .slot-detail-panel {
   display: grid;
   gap: 8px;
+  align-content: start;
+}
+
+.tuning-layout-desktop .slot-detail-panel {
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
 }
 
 .slot-detail-header {
@@ -490,16 +597,45 @@
   font-size: 12px;
 }
 
+.slot-detail-panel.is-mobile {
+  padding: 8px 0 0;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid #bdbdbd;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.slot-detail-panel.is-mobile .slot-detail-header {
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: center;
+}
+
+.slot-detail-panel.is-mobile .slot-detail-unequip {
+  min-width: 72px;
+}
+
 .slot-choices {
   display: grid;
   gap: 6px;
   min-width: 0;
+  min-height: 0;
 }
 
 .slot-choice-scroller {
   max-height: 460px;
   padding-right: 2px;
   overflow: auto;
+}
+
+.tuning-layout-desktop .slot-choices {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.tuning-layout-desktop .slot-choice-scroller {
+  height: 100%;
+  max-height: none;
+  min-height: 0;
 }
 
 .slot-empty-state {
@@ -544,7 +680,7 @@
 
 .part-option-top {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) max-content;
   align-items: start;
   gap: 8px;
   min-width: 0;
@@ -571,8 +707,10 @@
 .part-option-button {
   flex: 0 0 auto;
   min-height: 30px;
+  min-width: 58px;
   padding: 5px 9px;
   font-size: 12px;
+  white-space: nowrap;
 }
 
 /* 底部存档/读档/重开操作栏，保持在改装页滚动区域底部可见。 */

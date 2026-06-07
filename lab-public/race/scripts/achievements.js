@@ -137,6 +137,14 @@ function completeAchievement(achievement, options = {}) {
   if (!options.silent) {
     addLog(`成就达成：${achievement.name}`);
     enqueueAchievementToast(achievement);
+    if (typeof trackRaceEvent === 'function') {
+      trackRaceEvent('lab_race_achievement_unlock', {
+        achievementId: achievement.id,
+        category: achievement.category,
+        source: typeof options.source === 'string' ? options.source : 'unknown',
+        version: GAME_VERSION,
+      });
+    }
   }
 
   return true;
@@ -173,6 +181,12 @@ function checkAchievementCondition(achievement) {
       return EQUIPMENT_SLOTS.some((type) => Boolean(gameState.equippedParts[type]));
     case 'fullSlots':
       return stats.hasFilledAllSlots || isAllSlotsFilled();
+    case 'firstMythicUpgrade':
+      return hasAnyMythicUpgradeAtLeast(1);
+    case 'anyMythicUpgradeMaxed':
+      return hasAnyMythicUpgradeAtLeast(MYTHIC_UPGRADE_MAX_LEVEL);
+    case 'allEquippedMythicUpgradeMaxed':
+      return isAllEquippedMythicUpgradeMaxed();
     case 'normalWin':
       return (stats.winsByDifficulty.normal || 0) >= 1;
     case 'hardWin':

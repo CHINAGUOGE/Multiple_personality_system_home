@@ -50,6 +50,40 @@ function createDefaultAchievementsState() {
   };
 }
 
+function readLegacyRaceAudioEnabled() {
+  try {
+    return localStorage.getItem(RACE_AUDIO_STORAGE_KEY) !== 'false';
+  } catch (error) {
+    return DEFAULT_SETTINGS.soundEnabled;
+  }
+}
+
+function normalizeBooleanSetting(value, fallback) {
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function createDefaultSettings() {
+  return {
+    ...DEFAULT_SETTINGS,
+    soundEnabled: readLegacyRaceAudioEnabled(),
+  };
+}
+
+function sanitizeSettingsData(data, legacyData = null) {
+  const settings = data && typeof data === 'object' ? data : {};
+  const legacy = legacyData && typeof legacyData === 'object' ? legacyData : {};
+  const defaults = createDefaultSettings();
+  const legacySoundEnabled = normalizeBooleanSetting(legacy.soundEnabled, defaults.soundEnabled);
+
+  return {
+    soundEnabled: normalizeBooleanSetting(settings.soundEnabled, legacySoundEnabled),
+    telemetryEnabled: normalizeBooleanSetting(
+      settings.telemetryEnabled,
+      DEFAULT_SETTINGS.telemetryEnabled
+    ),
+  };
+}
+
 function createDefaultAiAssistState() {
   return {
     active: false,
@@ -110,6 +144,8 @@ const gameState = {
   atlasFilter: 'all',
   inventory: [],
   equippedParts: createEmptyEquippedParts(),
+  mythicUpgrades: {},
+  settings: createDefaultSettings(),
   nextPartId: 1,
   cars: [],
   materials: [],
@@ -131,7 +167,9 @@ const el = {
   saveBtn: document.getElementById('saveBtn'),
   loadBtn: document.getElementById('loadBtn'),
   restartBtn: document.getElementById('restartBtn'),
+  clearLocalDataBtn: document.getElementById('clearLocalDataBtn'),
   raceAudioToggleBtn: document.querySelector('[data-race-audio-toggle]'),
+  telemetryToggleBtn: document.getElementById('telemetryToggleBtn'),
   tabs: Array.from(document.querySelectorAll('.page-tabs button')),
   pages: Array.from(document.querySelectorAll('.app-page')),
   lanes: document.getElementById('lanes'),

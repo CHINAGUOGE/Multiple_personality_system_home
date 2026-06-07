@@ -3,7 +3,20 @@
 const RACE_LOG_ENDPOINT = '/api/log';
 const RACE_SESSION_STORAGE_KEY = 'mpsteam-race-session-id-v1';
 const RACE_SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
-const RACE_ALLOWED_TELEMETRY_EVENTS = new Set(['lab_race_finish', 'lab_error']);
+const RACE_ALLOWED_TELEMETRY_EVENTS = new Set([
+  'lab_race_finish',
+  'lab_race_mythic_upgrade',
+  'lab_race_achievement_unlock',
+  'lab_error',
+]);
+
+function canSendTelemetry() {
+  if (typeof gameState === 'undefined') {
+    return true;
+  }
+
+  return gameState.settings?.telemetryEnabled !== false;
+}
 
 function createRaceSessionId() {
   const bytes = new Uint8Array(16);
@@ -91,6 +104,10 @@ function sendRaceTelemetry(body) {
 }
 
 function trackRaceEvent(eventName, payload = {}) {
+  if (!canSendTelemetry()) {
+    return;
+  }
+
   if (!RACE_ALLOWED_TELEMETRY_EVENTS.has(eventName)) {
     return;
   }
