@@ -11,7 +11,13 @@ import {
   WEATHERS,
 } from './data.js';
 
-export function createTrip(foodId, toolIds, now = Date.now(), randomSource = Math.random) {
+export function createTrip(
+  foodId,
+  toolIds,
+  now = Date.now(),
+  randomSource = Math.random,
+  hourMs = HOUR_MS
+) {
   const food = FOODS.find((item) => item.id === foodId);
 
   if (!food) {
@@ -23,12 +29,13 @@ export function createTrip(foodId, toolIds, now = Date.now(), randomSource = Mat
   );
   const route = chooseRoute(durationHours, toolIds, randomSource);
   const resultSeed = Math.floor(randomSource() * 2_147_483_647);
+  const effectiveHourMs = Number.isFinite(hourMs) && hourMs > 0 ? hourMs : HOUR_MS;
 
   return {
     id: createId('trip', now, randomSource),
     routeId: route.id,
     startedAt: now,
-    returnsAt: now + Math.max(1, durationHours) * HOUR_MS,
+    returnsAt: now + Math.max(1, durationHours) * effectiveHourMs,
     foodId,
     toolIds: [...toolIds],
     resultSeed,

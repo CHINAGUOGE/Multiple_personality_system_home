@@ -1,7 +1,8 @@
 import {
-  DEV_TIME_SCALE,
+  DEV_HOUR_MS,
   FOODS,
   HOME_LINES,
+  PROD_HOUR_MS,
   RESOURCE_CAP,
   RESOURCE_INTERVAL_MS,
   RETURNED_LINES,
@@ -33,6 +34,9 @@ const state = {
 };
 
 const $ = (selector) => document.querySelector(selector);
+const queryParams = new URLSearchParams(window.location.search);
+const isDevMode = () => queryParams.has('dev');
+const getTripHourMs = () => (isDevMode() ? DEV_HOUR_MS : PROD_HOUR_MS);
 const THEME_SEQUENCE = ['system', 'light', 'dark'];
 const THEME_LABELS = {
   system: '主题：跟随系统',
@@ -47,6 +51,7 @@ function init() {
   initTheme();
   state.slot = getActiveSlot();
   state.save = loadSave(state.slot);
+  state.save.settings.devTimeScale = isDevMode();
   state.saveStatus = `已自动加载 槽位 ${state.slot}`;
   bindEvents();
   syncCurrentSave();
@@ -210,6 +215,7 @@ function switchSlot(nextSlot) {
   autoSave('切换前已保存当前槽');
   state.slot = setActiveSlot(nextSlot);
   state.save = loadSave(state.slot);
+  state.save.settings.devTimeScale = isDevMode();
   state.selectedFoodId = null;
   state.selectedToolIds.clear();
   state.saveStatus = `已自动加载 槽位 ${state.slot}`;
@@ -316,7 +322,7 @@ function startTrip() {
     return;
   }
 
-  const trip = createTrip(state.selectedFoodId, toolIds);
+  const trip = createTrip(state.selectedFoodId, toolIds, Date.now(), Math.random, getTripHourMs());
 
   if (!trip) {
     showToast('行李好像没有准备好。');
@@ -328,6 +334,7 @@ function startTrip() {
   state.save.traveler.status = 'traveling';
   state.save.traveler.lastActionAt = Date.now();
   state.save.traveler.lastReturnMessage = '';
+  state.save.settings.devTimeScale = isDevMode();
   state.selectedFoodId = null;
   state.selectedToolIds.clear();
   autoSave('猫出门后已保存');
@@ -364,6 +371,9 @@ function renderHeader() {
   $('#currentSlotText').textContent = `槽位 ${state.slot}`;
   $('#dewBalance').textContent = `${state.save.dew} 露珠`;
   $('#statusBadge').textContent = state.save.traveler.status === 'traveling' ? '旅行中' : '在家';
+  $('#paceNote').textContent = isDevMode()
+    ? '测试节奏：1 小时 = 1 分钟'
+    : '真实节奏：旅行按真实时间';
 
   const summaries = getSlotSummaries();
   $('#slotButtons').innerHTML = summaries
@@ -432,6 +442,11 @@ function renderGarden() {
   const pending = state.save.garden.pending;
   const elapsed = Math.max(0, Date.now() - state.save.garden.lastGeneratedAt);
   const nextMs = pending >= RESOURCE_CAP ? 0 : Math.max(0, RESOURCE_INTERVAL_MS - elapsed);
+  const dropProgress = pending >= RESOURCE_CAP ? 1 : clamp(elapsed / RESOURCE_INTERVAL_MS, 0, 1);
+  const gardenPanel = $('.garden-panel');
+  const dewTop = 12 + dropProgress * 76;
+  const landingScale = 0.56 + dropProgress * 0.44;
+  const landingOpacity = 0.24 + dropProgress * 0.54;
 
   $('#gardenPending').textContent = `${pending} / ${RESOURCE_CAP}`;
   $('#gardenHint').textContent =
@@ -439,6 +454,12 @@ function renderGarden() {
       ? '庭院已经满了，先收一下吧。'
       : `下一颗露珠约 ${formatDuration(nextMs)} 后出现。`;
   $('#collectDewBtn').disabled = pending <= 0;
+  gardenPanel.style.setProperty('--dew-progress', dropProgress.toFixed(3));
+  gardenPanel.style.setProperty('--dew-top', `${dewTop.toFixed(1)}px`);
+  gardenPanel.style.setProperty('--dew-landing-scale', landingScale.toFixed(3));
+  gardenPanel.style.setProperty('--dew-landing-opacity', landingOpacity.toFixed(3));
+  gardenPanel.classList.toggle('is-full', pending >= RESOURCE_CAP);
+  gardenPanel.classList.toggle('has-pending', pending > 0);
 }
 
 function renderShop() {
@@ -688,7 +709,7 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-if (new URLSearchParams(window.location.search).has('debug')) {
+if (queryParams.has('debug')) {
   window.littleTravelCatDebug = {
     getState: () => state,
     forceReturn: () => {
@@ -701,6 +722,6 @@ if (new URLSearchParams(window.location.search).has('debug')) {
       render();
       return true;
     },
-    isDevTimeScale: () => DEV_TIME_SCALE,
+    isDevTimeScale: () => isDevMode(),
   };
 }

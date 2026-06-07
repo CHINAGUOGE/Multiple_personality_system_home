@@ -41,6 +41,10 @@
   --paw: rgba(38, 49, 63, 0.22);
   --luggage-line: rgba(38, 49, 63, 0.72);
   --luggage-bg: rgba(255, 255, 255, 0.58);
+  --dew: #8de3ff;
+  --dew-deep: #35aee3;
+  --leaf: #45b57e;
+  --leaf-dark: #27825e;
   --dev-bg: rgba(244, 197, 66, 0.2);
   --dev-ink: #846100;
   --toast-bg: #ffffff;
@@ -103,6 +107,10 @@ html[data-theme='dark'] {
   --paw: rgba(244, 234, 223, 0.22);
   --luggage-line: rgba(244, 234, 223, 0.54);
   --luggage-bg: rgba(244, 234, 223, 0.12);
+  --dew: #a8eeff;
+  --dew-deep: #62c8ea;
+  --leaf: #77d5b8;
+  --leaf-dark: #4d9d85;
   --dev-bg: rgba(232, 179, 108, 0.16);
   --dev-ink: #f0c98c;
   --toast-bg: #222a38;
@@ -365,7 +373,8 @@ h4 {
   font-weight: 700;
 }
 
-.dev-note {
+.dev-note,
+.pace-note {
   border-radius: var(--radius);
   background: var(--dev-bg);
   color: var(--dev-ink);
@@ -626,6 +635,13 @@ main {
   padding: 18px;
 }
 
+.garden-panel {
+  --dew-progress: 0;
+  --dew-top: 12px;
+  --dew-landing-opacity: 0.24;
+  --dew-landing-scale: 0.56;
+}
+
 .shop-panel,
 .collection-panel {
   grid-column: 1 / -1;
@@ -640,6 +656,139 @@ main {
 .panel-heading strong {
   color: var(--mint-dark);
   font-size: 22px;
+}
+
+.dewfall-scene {
+  position: relative;
+  height: 132px;
+  margin: -2px 0 14px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(141, 227, 255, 0.26), transparent 22%),
+    linear-gradient(180deg, rgba(95, 140, 255, 0.12), rgba(71, 196, 157, 0.2));
+}
+
+.dewfall-scene::before {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  left: 18px;
+  height: 16px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 18% 50%, var(--leaf) 0 8px, transparent 9px),
+    radial-gradient(circle at 34% 50%, var(--leaf-dark) 0 6px, transparent 7px),
+    radial-gradient(circle at 58% 50%, var(--leaf) 0 9px, transparent 10px),
+    radial-gradient(circle at 80% 50%, var(--leaf-dark) 0 7px, transparent 8px);
+  content: '';
+  opacity: 0.72;
+}
+
+.garden-stem,
+.garden-stem::before,
+.garden-stem::after {
+  position: absolute;
+  display: block;
+  border-radius: 999px 999px 12px 12px;
+  background: linear-gradient(180deg, var(--leaf), var(--leaf-dark));
+  content: '';
+}
+
+.garden-stem {
+  bottom: 24px;
+  width: 8px;
+  height: 62px;
+  transform-origin: bottom center;
+}
+
+.garden-stem::before,
+.garden-stem::after {
+  width: 28px;
+  height: 13px;
+  border-radius: 999px 4px 999px 4px;
+}
+
+.garden-stem::before {
+  top: 14px;
+  left: -24px;
+  transform: rotate(-24deg);
+}
+
+.garden-stem::after {
+  top: 31px;
+  left: 6px;
+  transform: rotate(22deg);
+}
+
+.garden-stem-left {
+  left: 24%;
+  transform: rotate(-7deg);
+}
+
+.garden-stem-right {
+  right: 20%;
+  height: 76px;
+  transform: rotate(8deg);
+}
+
+.falling-dew {
+  position: absolute;
+  z-index: 2;
+  top: var(--dew-top);
+  left: 50%;
+  width: 18px;
+  height: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 62% 62% 68% 68%;
+  background:
+    radial-gradient(circle at 38% 26%, rgba(255, 255, 255, 0.95) 0 3px, transparent 4px),
+    linear-gradient(180deg, var(--dew), var(--dew-deep));
+  box-shadow:
+    0 9px 18px rgba(53, 174, 227, 0.22),
+    inset 0 -6px 9px rgba(38, 132, 106, 0.16);
+  transform: translateX(-50%);
+  transition:
+    top 1s linear,
+    opacity 0.2s ease;
+}
+
+.falling-dew::after {
+  position: absolute;
+  inset: 4px 5px auto auto;
+  width: 4px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.56);
+  content: '';
+}
+
+.dew-landing {
+  position: absolute;
+  right: 50%;
+  bottom: 23px;
+  width: 46px;
+  height: 9px;
+  border-radius: 999px;
+  background: radial-gradient(ellipse at center, rgba(141, 227, 255, 0.72), transparent 70%);
+  transform: translateX(50%) scaleX(var(--dew-landing-scale));
+  transform-origin: center;
+  opacity: var(--dew-landing-opacity);
+  transition:
+    opacity 1s linear,
+    transform 1s linear;
+}
+
+.garden-panel.is-full .falling-dew {
+  opacity: 0;
+}
+
+.garden-panel.has-pending .dew-landing {
+  background:
+    radial-gradient(circle at 26% 50%, rgba(141, 227, 255, 0.82) 0 4px, transparent 5px),
+    radial-gradient(circle at 52% 50%, rgba(141, 227, 255, 0.7) 0 5px, transparent 6px),
+    radial-gradient(circle at 74% 50%, rgba(141, 227, 255, 0.78) 0 4px, transparent 5px);
 }
 
 .primary-action,
@@ -994,5 +1143,12 @@ main {
 
   .app-footer {
     justify-content: stretch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .falling-dew,
+  .dew-landing {
+    transition: none;
   }
 }
