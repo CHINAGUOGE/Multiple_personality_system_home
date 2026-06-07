@@ -39,25 +39,38 @@ npm run lint:fix
 
 ## 项目结构
 
-```
+```text
 .
-├─ public/                 # 静态资源
-├─ src/
-│  ├─ content/             # 内容片段
+├─ src/                    # 主站源码入口
+│  ├─ components/          # 主站组件
+│  ├─ content/             # 主站内容数据
 │  ├─ layouts/             # 页面布局
-│  ├─ components/          # 组件
-│  ├─ pages/               # 页面路由
-│  ├─ styles/              # 全局样式
+│  ├─ pages/               # 主站页面路由
+│  ├─ styles/              # 全局样式与主题变量
 │  └─ utils/               # 工具函数
-├─ scripts/                # 构建脚本
-└─ astro.config.mjs        # Astro 配置
+├─ public/                 # 主站静态资源
+├─ lab-src/                # Lab 子站 Astro 源码
+│  └─ pages/               # Lab 首页与 sitemap 路由
+├─ lab-public/             # Lab 子站静态项目与资源
+│  ├─ img/                 # Lab 项目封面图
+│  ├─ little-travel-cat/   # 小旅猫
+│  ├─ race/                # 横线赛车经营赛
+│  └─ throw-battle/        # 后院投掷赛
+├─ scripts/                # 构建、SEO、图标与分析注入脚本
+├─ tools/                  # 本地辅助检查工具
+├─ astro.config.mjs        # 主站 Astro 配置
+├─ astro.config.lab.mjs    # Lab 子站 Astro 配置
+├─ tailwind.config.ts      # Tailwind 配置
+├─ eslint.config.js        # ESLint 配置
+└─ package.json            # 项目脚本与依赖声明
 ```
 
 ## 链接
 
-- 官网: https://mpsteam.cn
-- Wiki: https://wiki.mpsteam.cn
-- GitHub: https://github.com/mps-team-cn
+- 官网: <https://mpsteam.cn>
+- Wiki: <https://wiki.mpsteam.cn>
+- GitHub: <https://github.com/mps-team-cn>
+- Lab: <https://Lab.com/mps-team-cn>
 
 ## 协议
 
