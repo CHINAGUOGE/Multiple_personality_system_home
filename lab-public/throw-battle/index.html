@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>后院投掷赛 v0.2｜MPS Lab 小动物投掷大战</title>
+    <meta
+      name="description"
+      content="后院投掷赛是 MPS Lab 的原创回合制投掷小游戏。调角度、按住蓄力、松开投掷，再用一次性道具和风向改变弹道。"
+    />
+    <meta name="robots" content="index,follow" />
+    <link rel="canonical" href="https://lab.mpsteam.cn/throw-battle/" />
+    <link rel="icon" type="image/png" href="https://mpsteam.cn/favicon.png" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./game.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <a class="lab-link" href="../">MPS Lab</a>
+          <p class="eyebrow">Backyard Throw Battle</p>
+          <h1>后院投掷赛</h1>
+        </div>
+        <div class="top-actions" aria-label="游戏设置">
+          <div class="segmented-control" aria-label="游玩模式">
+            <button class="is-active" type="button" data-mode="ai" aria-pressed="true">单人</button>
+            <button type="button" data-mode="local" aria-pressed="false">双人</button>
+          </div>
+          <a class="ghost-button" href="./CHANGELOG.md">更新日志</a>
+          <button id="restartBtn" class="ghost-button" type="button">再来一局</button>
+        </div>
+      </header>
+
+      <main class="game-layout">
+        <section class="stage-panel" aria-labelledby="stageTitle">
+          <div class="stage-heading">
+            <div>
+              <p class="section-kicker">回合制投掷</p>
+              <h2 id="stageTitle">按住蓄力，松开投掷</h2>
+            </div>
+            <div id="statusBadge" class="status-badge" aria-live="polite">玩家回合</div>
+          </div>
+
+          <div class="stage-frame">
+            <canvas
+              id="gameCanvas"
+              width="960"
+              height="540"
+              aria-label="后院投掷赛游戏画面"
+            ></canvas>
+          </div>
+
+          <div class="power-panel" aria-label="蓄力与瞄准操作">
+            <button id="chargeBtn" class="charge-button" type="button">按住蓄力</button>
+            <div class="control-stack">
+              <div class="power-readout">
+                <span>力度</span>
+                <div class="power-track" aria-hidden="true">
+                  <span id="powerFill"></span>
+                </div>
+                <strong id="powerText">0</strong>
+              </div>
+              <label class="angle-control" for="angleInput">
+                <span>角度</span>
+                <input id="angleInput" type="range" min="25" max="70" value="45" />
+                <strong id="angleText">45°</strong>
+              </label>
+            </div>
+          </div>
+
+          <div class="item-panel" aria-labelledby="itemTitle">
+            <div>
+              <p class="section-kicker">v0.2 道具</p>
+              <h2 id="itemTitle">每名角色每局各有一次</h2>
+            </div>
+            <div class="item-actions" aria-label="可用道具">
+              <button type="button" data-item="heal">急救包</button>
+              <button type="button" data-item="heavy">重球</button>
+            </div>
+            <p id="itemText" class="item-text" aria-live="polite">
+              急救包立刻恢复 HP，重球会强化下一次投掷。
+            </p>
+          </div>
+        </section>
+
+        <aside class="side-panel" aria-label="对局信息">
+          <section class="info-block" aria-labelledby="roundTitle">
+            <h2 id="roundTitle">战况</h2>
+            <div class="info-row">
+              <span>当前回合</span>
+              <strong id="turnText">玩家</strong>
+            </div>
+            <div class="info-row">
+              <span>风向</span>
+              <strong id="windText">0.00</strong>
+            </div>
+            <p id="messageText" class="message-text" aria-live="polite">按住画面或按钮开始蓄力。</p>
+          </section>
+
+          <section class="info-block" aria-labelledby="hpTitle">
+            <h2 id="hpTitle">HP</h2>
+            <div class="hp-row">
+              <div class="hp-copy">
+                <span id="playerNameText">猫猫</span>
+                <strong id="playerHpText">100 / 100</strong>
+              </div>
+              <div class="hp-track" aria-hidden="true">
+                <span id="playerHpFill"></span>
+              </div>
+            </div>
+            <div class="hp-row">
+              <div class="hp-copy">
+                <span id="opponentNameText">狗狗</span>
+                <strong id="opponentHpText">100 / 100</strong>
+              </div>
+              <div class="hp-track" aria-hidden="true">
+                <span id="opponentHpFill"></span>
+              </div>
+            </div>
+          </section>
+
+          <section class="info-block" aria-labelledby="difficultyTitle">
+            <h2 id="difficultyTitle">难度</h2>
+            <div class="segmented-control wide" aria-label="AI 难度">
+              <button type="button" data-difficulty="easy" aria-pressed="false">简单</button>
+              <button class="is-active" type="button" data-difficulty="normal" aria-pressed="true">
+                普通
+              </button>
+              <button type="button" data-difficulty="hard" aria-pressed="false">困难</button>
+            </div>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <section id="resultModal" class="result-modal" aria-labelledby="resultTitle" hidden>
+      <div class="result-dialog" role="dialog" aria-modal="true">
+        <p class="section-kicker">比赛结束</p>
+        <h2 id="resultTitle">胜负已分</h2>
+        <p id="resultText">再来一局？</p>
+        <button id="modalRestartBtn" class="charge-button" type="button">再来一局</button>
+      </div>
+    </section>
+  </body>
+</html>

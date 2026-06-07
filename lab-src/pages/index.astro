@@ -1,6 +1,6 @@
 ---
 const title = 'MPSTEAM Lab';
-const description = 'MPS Team CN 的实验项目与小游戏集合。';
+const description = 'MPS Team CN 的实验项目、互动页面与小游戏入口。';
 const currentYear = new Date().getFullYear();
 const mainSite = 'https://mpsteam.cn';
 const labSite = 'https://lab.mpsteam.cn';
@@ -18,20 +18,44 @@ const navItems = [
 
 const projects = [
   {
-    title: '小旅猫',
-    description:
-      '原创低压力放置旅行猫小游戏。收集露珠，准备行李，等猫自己出门，再带回明信片和奇怪的小东西。',
-    href: 'little-travel-cat/',
-    status: 'v0.1',
+    title: '横线赛车经营赛',
+    eyebrow: 'Line Racing Manager',
+    description: '复古 Windows 风格赛车经营小游戏。报名、起步、改装，在横线赛道里攒出更好的车。',
+    href: 'race/',
+    status: '主推 v1.8',
+    accent: 'race',
+    cta: '开始比赛',
+    image: '/img/race-cover.png',
+    imageAlt: '横线赛车经营赛截图',
+    meta: ['经营', '改装', '成就'],
   },
   {
-    title: '复古赛车小游戏',
-    description:
-      'XP/VB 风格的复古横线赛车经营小游戏。报名、起跑、升级配件，在简单规则里跑出更好的成绩。',
-    href: 'race/',
-    status: '可玩',
+    title: '后院投掷赛',
+    eyebrow: 'Backyard Throw Battle',
+    description: '回合制投掷小游戏。调角度、按住蓄力，再用一次性道具和风向改变弹道。',
+    href: 'throw-battle/',
+    status: '实验 v0.2',
+    accent: 'throw',
+    cta: '进入实验',
+    image: '/img/throw-battle-cover.png',
+    imageAlt: '后院投掷赛截图',
+    meta: ['单人 / 双人', '角度瞄准', '道具'],
+  },
+  {
+    title: '小旅猫',
+    eyebrow: 'Little Travel Cat',
+    description: '低压力放置旅行小游戏。收集露珠，准备行李，等猫带回明信片和纪念品。',
+    href: 'little-travel-cat/',
+    status: '实验 v0.1',
+    accent: 'cat',
+    cta: '进入实验',
+    image: '/img/little-travel-cat-cover.png',
+    imageAlt: '小旅猫截图',
+    meta: ['放置', '本地存档', '慢节奏'],
   },
 ];
+
+const featuredProject = projects[0];
 ---
 
 <!doctype html>
@@ -41,20 +65,28 @@ const projects = [
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <link rel="canonical" href={`${labSite}/`} />
-    <meta name="theme-color" content="#4fc08d" />
+    <meta name="theme-color" content="#2f9b73" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={`${labSite}/`} />
+    <meta property="og:title" content={`${title} - 实验项目入口`} />
+    <meta property="og:description" content={description} />
+    <meta property="og:site_name" content="MPS Team CN" />
     <link rel="icon" type="image/png" href={`${mainSite}/favicon.png`} />
-    <title>{title} - 实验项目集合</title>
+    <title>{title} - 实验项目入口</title>
   </head>
   <body>
+    <a class="skip-link" href="#projects">跳到项目列表</a>
+
     <nav class="site-nav" aria-label="主导航">
       <div class="nav-inner">
         <a class="brand" href={`${mainSite}/`}>MPS Team CN</a>
-        <div class="nav-links" aria-label="桌面导航">
+        <div class="nav-links" aria-label="站点导航">
           {
             navItems.map((item) => (
               <a
                 href={item.href}
                 class={item.active ? 'active' : undefined}
+                aria-current={item.active ? 'page' : undefined}
                 target={item.external ? '_blank' : undefined}
                 rel={item.external ? 'noopener noreferrer' : undefined}
               >
@@ -67,40 +99,74 @@ const projects = [
     </nav>
 
     <main>
-      <section class="hero">
-        <div class="hero-inner">
-          <p class="eyebrow">MPS Team CN</p>
-          <h1>MPSTEAM Lab</h1>
-          <p class="lead">
-            这里收纳主站之外的实验性页面、互动工具和小游戏。整体视觉延续 MPS Team CN
-            主站，具体项目保留各自的玩法与风格。
-          </p>
-          <div class="actions" aria-label="主要操作">
-            <a class="button primary" href="little-travel-cat/">进入小旅猫</a>
-            <a class="button primary" href="race/">进入复古赛车小游戏</a>
-            <a class="button secondary" href={`${mainSite}/`}>返回主站</a>
+      <section class="intro" aria-labelledby="lab-title">
+        <div class="intro-copy">
+          <p class="overline">MPS Team CN / Lab</p>
+          <h1 id="lab-title">MPSTEAM Lab</h1>
+          <p class="lead">主推项目是横线赛车经营赛；其他互动页面和小游戏仍按实验项目整理在下方。</p>
+          <div class="intro-actions" aria-label="主要操作">
+            <a class="button primary" href={featuredProject.href}>{featuredProject.cta}</a>
+            <a class="button secondary" href="#projects">查看全部项目</a>
           </div>
         </div>
+
+        <aside class="feature-panel" aria-label="当前重点项目">
+          <div class="feature-heading">
+            <span>主推项目</span>
+            <strong>{featuredProject.status}</strong>
+          </div>
+          <div class={`project-media ${featuredProject.accent}`}>
+            <img
+              src={featuredProject.image}
+              alt={featuredProject.imageAlt}
+              loading="eager"
+              decoding="async"
+              fetchpriority="high"
+            />
+          </div>
+          <p class="card-eyebrow">{featuredProject.eyebrow}</p>
+          <h2>{featuredProject.title}</h2>
+          <p>{featuredProject.description}</p>
+          <div class="meta-list" aria-label="项目标签">
+            {featuredProject.meta.map((item) => <span>{item}</span>)}
+          </div>
+        </aside>
       </section>
 
-      <section class="project-section" aria-labelledby="projects-title">
+      <section id="projects" class="project-section" aria-labelledby="projects-title">
         <div class="section-inner">
           <div class="section-heading">
-            <h2 id="projects-title">实验项目</h2>
-            <p>小项目会在这里集中展示，便于从 Lab 入口访问。</p>
+            <p class="section-label">Projects</p>
+            <h2 id="projects-title">全部项目</h2>
+            <p>Race 保持为主要入口，其它页面按实验状态标注。</p>
           </div>
 
           <div class="project-grid">
             {
               projects.map((project) => (
-                <article class="project-card">
-                  <div class="card-topline">
+                <article class={`project-card ${project.accent}`}>
+                  <div class="card-status">
                     <span>{project.status}</span>
                   </div>
+                  <div class={`project-media ${project.accent}`}>
+                    <img
+                      src={project.image}
+                      alt={project.imageAlt}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                  <p class="card-eyebrow">{project.eyebrow}</p>
                   <h3>{project.title}</h3>
                   <p>{project.description}</p>
+                  <div class="meta-list" aria-label="项目标签">
+                    {project.meta.map((item) => (
+                      <span>{item}</span>
+                    ))}
+                  </div>
                   <a class="card-link" href={project.href}>
-                    打开{project.title}
+                    <span>{project.cta}</span>
+                    <span aria-hidden="true">→</span>
                   </a>
                 </article>
               ))
@@ -117,16 +183,15 @@ const projects = [
           <p>多意识体科普与社区</p>
         </div>
         <div>
-          <h2>快速链接</h2>
+          <h2>主站</h2>
           <ul>
             <li><a href={`${mainSite}/about`}>关于我们</a></li>
             <li><a href={`${mainSite}/join`}>加入社区</a></li>
-            <li><a href={`${mainSite}/contact`}>联系我们</a></li>
-            <li><a href="https://wiki.mpsteam.cn/">Wiki</a></li>
+            <li><a href={`${mainSite}/links`}>友情链接</a></li>
           </ul>
         </div>
         <div>
-          <h2>联系方式</h2>
+          <h2>联系</h2>
           <ul>
             <li><a href="mailto:contact@mpsteam.cn">contact@mpsteam.cn</a></li>
             <li><a href="mailto:support@mpsteam.cn">support@mpsteam.cn</a></li>
@@ -140,31 +205,32 @@ const projects = [
 
 <style>
   :root {
-    --brand: #4fc08d;
-    --brand-600: #3da576;
-    --brand-hover: #5cd4a0;
-    --accent: #8b9eff;
-    --bg: #ffffff;
-    --fg: #0f172a;
+    --brand: #2f9b73;
+    --brand-strong: #217a5a;
+    --ink: #111827;
     --muted: #64748b;
-    --surface: #f8fafc;
-    --card: #ffffff;
-    --border: #e2e8f0;
-    --radius: 12px;
-    --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --shadow-hover: 0 8px 24px rgba(79, 192, 141, 0.15);
+    --bg: #fbfcfb;
+    --surface: #f2f6f3;
+    --panel: #ffffff;
+    --border: #dbe5dd;
+    --shadow: 0 18px 45px rgba(23, 43, 34, 0.1);
+    --throw: #e7773d;
+    --cat: #2c8fb8;
+    --race: #6f66d8;
+    --radius: 8px;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #141b23;
-      --fg: #e7edf7;
-      --surface: #1e2532;
-      --card: #1e2532;
-      --border: #2d3748;
-      --muted: #94a3b8;
-      --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      --shadow-hover: 0 8px 24px rgba(79, 192, 141, 0.25);
+      --brand: #54c595;
+      --brand-strong: #83d9b2;
+      --ink: #ecf4ef;
+      --muted: #a7b8ad;
+      --bg: #101410;
+      --surface: #171d18;
+      --panel: #1d241e;
+      --border: #2c392f;
+      --shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
     }
   }
 
@@ -174,8 +240,9 @@ const projects = [
 
   html {
     min-height: 100%;
-    color: var(--fg);
+    scroll-behavior: smooth;
     background: var(--bg);
+    color: var(--ink);
     font-family:
       Inter,
       ui-sans-serif,
@@ -197,15 +264,45 @@ const projects = [
     text-decoration: none;
   }
 
+  h1,
+  h2,
+  h3,
+  p {
+    margin-top: 0;
+  }
+
+  .skip-link {
+    position: fixed;
+    left: 16px;
+    top: 16px;
+    z-index: 20;
+    border-radius: var(--radius);
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 14px;
+    transform: translateY(-140%);
+    transition: transform 0.2s ease;
+  }
+
+  .skip-link:focus {
+    transform: translateY(0);
+  }
+
   .site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
     border-bottom: 1px solid var(--border);
-    background: var(--bg);
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(14px);
   }
 
   .nav-inner {
     display: flex;
-    width: min(100% - 32px, 1280px);
-    height: 64px;
+    width: min(100% - 40px, 1180px);
+    min-height: 64px;
     margin: 0 auto;
     align-items: center;
     justify-content: space-between;
@@ -214,24 +311,25 @@ const projects = [
 
   .brand {
     color: var(--brand);
-    font-size: 20px;
-    font-weight: 700;
+    font-size: 19px;
+    font-weight: 800;
     white-space: nowrap;
   }
 
   .nav-links {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 6px;
   }
 
   .nav-links a {
-    border-radius: 8px;
-    color: var(--fg);
+    border-radius: var(--radius);
+    color: var(--muted);
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 650;
     line-height: 1;
     padding: 10px 12px;
+    white-space: nowrap;
     transition:
       background 0.2s ease,
       color 0.2s ease;
@@ -240,80 +338,85 @@ const projects = [
   .nav-links a:hover,
   .nav-links .active {
     background: var(--surface);
-    color: var(--brand);
+    color: var(--brand-strong);
   }
 
-  .hero {
-    padding: 104px 0 112px;
-  }
-
-  .hero-inner,
-  .section-inner {
-    width: min(100% - 48px, 1152px);
+  .intro {
+    display: grid;
+    width: min(100% - 48px, 1180px);
     margin: 0 auto;
+    align-items: center;
+    gap: 56px;
+    grid-template-columns: minmax(0, 1fr) minmax(330px, 420px);
+    padding: 72px 0 64px;
   }
 
-  .hero-inner {
-    text-align: center;
+  .intro-copy {
+    max-width: 720px;
   }
 
-  .eyebrow {
-    margin: 0 0 14px;
-    color: var(--brand);
-    font-size: 14px;
-    font-weight: 700;
+  .overline,
+  .section-label,
+  .card-eyebrow {
+    color: var(--brand-strong);
+    font-size: 13px;
+    font-weight: 800;
     letter-spacing: 0;
+    line-height: 1.2;
   }
 
-  h1,
-  h2,
-  h3,
-  p {
-    margin-top: 0;
+  .overline {
+    margin-bottom: 16px;
   }
 
   h1 {
-    margin-bottom: 24px;
-    color: var(--fg);
-    font-size: clamp(40px, 7vw, 64px);
-    font-weight: 800;
-    line-height: 1.08;
+    margin-bottom: 22px;
+    font-size: clamp(44px, 8vw, 76px);
+    font-weight: 850;
     letter-spacing: 0;
+    line-height: 0.98;
   }
 
   .lead {
-    max-width: 760px;
-    margin: 0 auto;
+    max-width: 620px;
+    margin-bottom: 0;
     color: var(--muted);
-    font-size: 20px;
-    line-height: 1.7;
+    font-size: 19px;
+    line-height: 1.8;
   }
 
-  .actions {
+  .intro-actions {
     display: flex;
-    justify-content: center;
-    gap: 16px;
-    margin-top: 40px;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 32px;
   }
 
-  .button {
+  .button,
+  .card-link {
     display: inline-flex;
-    min-height: 48px;
+    min-height: 46px;
     align-items: center;
     justify-content: center;
     border-radius: var(--radius);
     border: 1px solid transparent;
-    padding: 12px 32px;
-    font-size: 16px;
-    font-weight: 500;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.1;
     transition:
       background 0.2s ease,
       border-color 0.2s ease,
+      color 0.2s ease,
       transform 0.2s ease;
   }
 
-  .button:hover {
-    transform: scale(1.04);
+  .button {
+    padding: 0 22px;
+  }
+
+  .button:hover,
+  .card-link:hover {
+    transform: translateY(-1px);
   }
 
   .button.primary {
@@ -322,127 +425,218 @@ const projects = [
   }
 
   .button.primary:hover {
-    background: var(--brand-hover);
+    background: var(--brand-strong);
   }
 
   .button.secondary {
     border-color: var(--border);
-    color: var(--fg);
+    background: var(--panel);
+    color: var(--ink);
   }
 
   .button.secondary:hover {
-    background: var(--surface);
+    border-color: color-mix(in srgb, var(--brand) 55%, var(--border));
+    color: var(--brand-strong);
   }
 
-  .project-section {
-    background: var(--surface);
-    padding: 80px 0;
-  }
-
-  .section-heading {
-    margin-bottom: 48px;
-    text-align: center;
-  }
-
-  .section-heading h2 {
-    margin-bottom: 16px;
-    color: var(--fg);
-    font-size: 36px;
-    font-weight: 700;
-    line-height: 1.2;
-    letter-spacing: 0;
-  }
-
-  .section-heading p {
-    margin-bottom: 0;
-    color: var(--muted);
-    font-size: 18px;
-    line-height: 1.7;
-  }
-
-  .project-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 32px;
-  }
-
+  .feature-panel,
   .project-card {
-    min-height: 260px;
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    background: var(--card);
+    background: var(--panel);
     box-shadow: var(--shadow);
-    padding: 28px;
-    transition:
-      box-shadow 0.2s ease,
-      transform 0.2s ease;
   }
 
-  .project-card:hover {
-    box-shadow: var(--shadow-hover);
-    transform: translateY(-4px);
+  .feature-panel {
+    padding: 22px;
   }
 
-  .card-topline {
+  .feature-heading,
+  .card-status {
     display: flex;
-    margin-bottom: 18px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
   }
 
-  .card-topline span {
-    border: 1px solid rgba(79, 192, 141, 0.35);
+  .feature-heading strong,
+  .card-status span {
     border-radius: 999px;
-    background: rgba(79, 192, 141, 0.1);
-    color: var(--brand-600);
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1;
+    background: color-mix(in srgb, var(--brand) 12%, transparent);
+    color: var(--brand-strong);
     padding: 7px 10px;
   }
 
+  .project-media {
+    height: 132px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  .feature-panel .project-media {
+    height: 188px;
+  }
+
+  .project-media img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .card-eyebrow {
+    margin-bottom: 8px;
+  }
+
+  .feature-panel h2,
   .project-card h3 {
-    margin-bottom: 14px;
-    color: var(--fg);
-    font-size: 22px;
-    line-height: 1.35;
+    margin-bottom: 12px;
+    color: var(--ink);
     letter-spacing: 0;
+    line-height: 1.25;
+  }
+
+  .feature-panel h2 {
+    font-size: 28px;
+  }
+
+  .project-card h3 {
+    font-size: 22px;
+  }
+
+  .feature-panel p,
+  .project-card p {
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .feature-panel p {
+    margin-bottom: 18px;
   }
 
   .project-card p {
-    margin-bottom: 24px;
+    margin-bottom: 18px;
+  }
+
+  .meta-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .meta-list span {
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1;
+    padding: 8px 10px;
+  }
+
+  .project-section {
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    padding: 58px 0 72px;
+  }
+
+  .section-inner {
+    width: min(100% - 48px, 1180px);
+    margin: 0 auto;
+  }
+
+  .section-heading {
+    display: grid;
+    max-width: 720px;
+    gap: 10px;
+    margin-bottom: 26px;
+  }
+
+  .section-label,
+  .section-heading h2,
+  .section-heading p {
+    margin-bottom: 0;
+  }
+
+  .section-heading h2 {
+    font-size: 32px;
+    line-height: 1.2;
+  }
+
+  .section-heading p {
     color: var(--muted);
     font-size: 16px;
     line-height: 1.7;
   }
 
+  .project-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .project-card {
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+    padding: 20px;
+    transition:
+      border-color 0.2s ease,
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .project-card:hover {
+    border-color: color-mix(in srgb, var(--brand) 45%, var(--border));
+    box-shadow: 0 22px 55px rgba(23, 43, 34, 0.13);
+    transform: translateY(-3px);
+  }
+
   .card-link {
-    color: var(--brand);
-    font-size: 15px;
-    font-weight: 700;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    margin-top: auto;
+    border-color: var(--border);
+    color: var(--ink);
+    padding: 0 14px;
   }
 
   .card-link:hover {
-    text-decoration: underline;
+    border-color: color-mix(in srgb, var(--brand) 55%, var(--border));
+    color: var(--brand-strong);
+  }
+
+  .project-card .meta-list {
+    margin-bottom: 22px;
   }
 
   .site-footer {
     border-top: 1px solid var(--border);
-    background: var(--surface);
-    padding: 48px 0 32px;
+    background: var(--bg);
+    padding: 42px 0 28px;
   }
 
   .footer-inner {
     display: grid;
-    width: min(100% - 48px, 1280px);
+    width: min(100% - 48px, 1180px);
     margin: 0 auto;
-    gap: 32px;
-    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 30px;
+    grid-template-columns: 1.5fr 1fr 1fr;
   }
 
   .footer-brand {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     color: var(--brand);
-    font-size: 20px;
-    font-weight: 700;
+    font-size: 19px;
+    font-weight: 800;
   }
 
   .site-footer p,
@@ -453,10 +647,9 @@ const projects = [
   }
 
   .site-footer h2 {
-    margin-bottom: 16px;
-    color: var(--fg);
+    margin-bottom: 14px;
+    color: var(--ink);
     font-size: 14px;
-    font-weight: 700;
     line-height: 1.2;
   }
 
@@ -469,39 +662,45 @@ const projects = [
   }
 
   .site-footer a:hover {
+    color: var(--brand-strong);
     text-decoration: underline;
   }
 
   .copyright {
-    width: min(100% - 48px, 1280px);
-    margin: 32px auto 0;
+    width: min(100% - 48px, 1180px);
+    margin: 30px auto 0;
     border-top: 1px solid var(--border);
-    padding-top: 32px;
+    padding-top: 24px;
     color: var(--muted);
-    font-size: 14px;
+    font-size: 13px;
     text-align: center;
   }
 
-  @media (max-width: 900px) {
+  @media (max-width: 980px) {
     .nav-inner {
-      height: auto;
-      min-height: 64px;
-      flex-wrap: wrap;
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 12px;
       padding: 14px 0;
     }
 
     .nav-links {
       width: 100%;
-      flex-wrap: wrap;
-      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
     }
 
-    .nav-links a {
-      padding: 9px 10px;
+    .intro {
+      grid-template-columns: 1fr;
+      padding-top: 56px;
     }
 
-    .hero {
-      padding: 72px 0 84px;
+    .feature-panel {
+      max-width: 560px;
+    }
+
+    .project-grid {
+      grid-template-columns: 1fr;
     }
 
     .footer-inner {
@@ -510,27 +709,40 @@ const projects = [
   }
 
   @media (max-width: 640px) {
-    .hero-inner,
+    .intro,
     .section-inner,
     .footer-inner,
-    .copyright {
-      width: min(100% - 32px, 1280px);
+    .copyright,
+    .nav-inner {
+      width: min(100% - 32px, 1180px);
+    }
+
+    h1 {
+      font-size: 42px;
     }
 
     .lead {
       font-size: 17px;
     }
 
-    .actions {
-      flex-direction: column;
+    .intro-actions {
+      display: grid;
     }
 
     .button {
       width: 100%;
     }
 
+    .feature-panel {
+      padding: 16px;
+    }
+
+    .feature-panel .project-media {
+      height: 150px;
+    }
+
     .project-section {
-      padding: 64px 0;
+      padding: 46px 0 56px;
     }
   }
 </style>
