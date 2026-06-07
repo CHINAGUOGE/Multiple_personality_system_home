@@ -614,12 +614,15 @@ main {
 }
 
 .toast {
-  position: sticky;
-  z-index: 5;
-  top: 12px;
-  width: fit-content;
-  max-width: min(100%, 560px);
-  margin: 12px auto 0;
+  position: fixed;
+  z-index: 20;
+  top: calc(env(safe-area-inset-top, 0px) + 28px);
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  width: max-content;
+  max-width: min(calc(100% - 24px), 560px);
+  margin: 0;
   border: 1px solid var(--toast-line);
   border-radius: var(--radius);
   background: var(--toast-bg);
@@ -627,6 +630,8 @@ main {
   color: var(--mint-dark);
   font-weight: 800;
   padding: 11px 14px;
+  text-align: center;
+  transform: translateX(-50%);
 }
 
 /* 主内容两列：庭院/行李在左，商店和收藏可跨列铺开。 */
