@@ -19,6 +19,7 @@ import {
   setActiveSlot,
   updateGardenByOfflineTime,
 } from './save.js';
+import { trackTravelCatEvent } from './telemetry.js';
 import { createTrip, getRouteName, settleTrip } from './trip.js';
 
 /*
@@ -63,6 +64,14 @@ function init() {
   bindEvents();
   syncCurrentSave();
   render();
+  trackTravelCatEvent('lab_little_travel_cat_ready', {
+    slot: state.slot,
+    devMode: isDevMode(),
+    theme: state.theme,
+    travelerStatus: state.save.traveler.status,
+    dew: state.save.dew,
+    tripsCompleted: state.save.stats.tripsCompleted,
+  });
 
   window.setInterval(() => {
     const result = syncCurrentSave();
@@ -194,15 +203,44 @@ function cycleTheme() {
   saveTheme(nextTheme);
   applyTheme(nextTheme);
   renderThemeButton(nextTheme);
+  trackTravelCatEvent('lab_little_travel_cat_theme_change', {
+    from: currentTheme,
+    to: nextTheme,
+    resolved: resolveTheme(nextTheme),
+  });
 }
 
 // 同步当前存档的可变时间状态：离线资源和已完成旅行会在这里落盘。
 function syncCurrentSave() {
   const generated = updateGardenByOfflineTime(state.save);
+  const finishingTrip = state.save.traveler.trip
+    ? {
+        id: state.save.traveler.trip.id,
+        routeId: state.save.traveler.trip.routeId,
+        startedAt: state.save.traveler.trip.startedAt,
+        returnsAt: state.save.traveler.trip.returnsAt,
+      }
+    : null;
   const result = settleTrip(state.save);
 
   if (generated > 0 || result) {
     autoSave(result ? '旅行已结算并保存' : '庭院已自动保存');
+  }
+
+  if (result) {
+    trackTravelCatEvent('lab_little_travel_cat_trip_return', {
+      slot: state.slot,
+      tripId: finishingTrip?.id || null,
+      routeId: result.postcard?.routeId || finishingTrip?.routeId || null,
+      hadSouvenir: Boolean(result.souvenir),
+      alreadySettled: Boolean(result.alreadySettled),
+      tripsCompleted: state.save.stats.tripsCompleted,
+      postcardsReceived: state.save.stats.postcardsReceived,
+      souvenirsReceived: state.save.stats.souvenirsReceived,
+      travelMs: finishingTrip
+        ? Math.max(0, finishingTrip.returnsAt - finishingTrip.startedAt)
+        : null,
+    });
   }
 
   return result;
@@ -221,6 +259,7 @@ function switchSlot(nextSlot) {
     return;
   }
 
+  const previousSlot = state.slot;
   syncCurrentSave();
   autoSave('切换前已保存当前槽');
   state.slot = setActiveSlot(nextSlot);
@@ -232,6 +271,12 @@ function switchSlot(nextSlot) {
 
   const result = syncCurrentSave();
   render();
+  trackTravelCatEvent('lab_little_travel_cat_slot_switch', {
+    fromSlot: previousSlot,
+    toSlot: state.slot,
+    devMode: isDevMode(),
+    travelerStatus: state.save.traveler.status,
+  });
   showToast(
     result?.souvenir ? '猫回来了，还带回了一件奇怪的小东西。' : `已切换到槽位 ${state.slot}。`
   );
@@ -252,6 +297,11 @@ function collectDew() {
   state.save.garden.lastGeneratedAt = Date.now();
   autoSave('收集露珠后已保存');
   render();
+  trackTravelCatEvent('lab_little_travel_cat_dew_collect', {
+    slot: state.slot,
+    amount,
+    dew: state.save.dew,
+  });
   showToast(`收集了 ${amount} 个露珠。`);
 }
 
@@ -285,6 +335,13 @@ function buyItem(type, id) {
 
   autoSave('购买后已保存');
   render();
+  trackTravelCatEvent('lab_little_travel_cat_shop_buy', {
+    slot: state.slot,
+    type,
+    itemId: id,
+    price: item.price,
+    dew: state.save.dew,
+  });
   showToast(`买到了${item.name}。`);
 }
 
@@ -350,6 +407,15 @@ function startTrip() {
   state.selectedToolIds.clear();
   autoSave('猫出门后已保存');
   render();
+  trackTravelCatEvent('lab_little_travel_cat_trip_start', {
+    slot: state.slot,
+    tripId: trip.id,
+    foodId: trip.foodId,
+    toolIds: trip.toolIds,
+    routeId: trip.routeId,
+    devMode: isDevMode(),
+    travelMs: Math.max(0, trip.returnsAt - trip.startedAt),
+  });
   showToast('猫带着行李出门了。');
 }
 
@@ -364,6 +430,9 @@ function resetCurrentSlot() {
   state.saveStatus = '存档已重置。';
   state.lastSavedAt = Date.now();
   render();
+  trackTravelCatEvent('lab_little_travel_cat_save_reset', {
+    slot: state.slot,
+  });
   showToast('存档已重置。');
 }
 
@@ -729,9 +798,14 @@ if (queryParams.has('debug')) {
         return false;
       }
 
+      const tripId = state.save.traveler.trip.id;
       state.save.traveler.trip.returnsAt = Date.now();
       syncCurrentSave();
       render();
+      trackTravelCatEvent('lab_little_travel_cat_debug_force_return', {
+        slot: state.slot,
+        tripId,
+      });
       return true;
     },
     isDevTimeScale: () => isDevMode(),

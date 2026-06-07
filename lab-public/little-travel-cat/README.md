@@ -50,6 +50,24 @@
 
 验收时也可以在地址后加 `?debug=1`，页面会挂载 `window.littleTravelCatDebug.forceReturn()`，用于强制当前旅行立刻结算。普通访问不会暴露这个调试入口。
 
+页面内置轻量日志钩子：
+
+- 生产环境会把白名单事件发送到 `/api/log`，包括启动、出门、归来、收集露珠、购买、切换槽位、重置存档、切换主题和前端错误。
+- 日志 payload 只包含槽位、物品 / 路线 id、数量、状态等摘要，不上传完整 localStorage 存档。
+- 所有日志事件都会同步派发 `window` 级 `CustomEvent`，事件名为 `little-travel-cat:event`。
+- 在地址后加 `?log=1` 或 `?debug=1` 时，日志事件也会输出到浏览器控制台。
+
+监听钩子示例：
+
+```js
+const unsubscribe = window.littleTravelCatHooks.on((event) => {
+  console.log(event.detail.eventName, event.detail.payload);
+});
+
+// 不再监听时：
+unsubscribe();
+```
+
 ## 不在 v0.1 范围
 
 - 天气系统
