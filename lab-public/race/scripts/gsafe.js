@@ -1,38 +1,29 @@
 'use strict';
 
 /*
- * GSafe 反作弊系统 v1.0
+ * GSafe 反作弊系统 v1.2.0
  *
  * Powered by Guoge
  * GitHub  : https://github.com/CHINAGUOGE
  * 主页    : https://me.51320721.xyz
  *
- * 检测维度：
- *   1. 关键函数完整性 (toString 签名校验)
- *   2. Math.random / performance.now / Date.now 原生函数替换
- *   3. gameState 属性快照差分 (不可能的状态突变)
- *   4. 反应时间合理性 (低于人类极限)
- *   5. 存档数据校验和 (FNV-1a 哈希)
- *   6. 脚本自保护 (检测自身是否被移除)
- *   7. 阶段跳转合法性
- *   8. 刷钱检测 (连续异常现金增长)
- *   9. 刷成就检测 (批量解锁)
- *  10. 参数篡改检测 (属性突破理论上限)
- *  11. 脚本注入检测 (控制台操作痕迹)
- *  12. 存档哈希链 (防批量篡改)
- *
- * 硬标记 -> 立即封禁
- * 软标记 -> 累计 3 条封禁
- * 封禁通过 cookie 下发，有效期 1 年
+ * v1.2.0 变更：
+ *   - 移除封禁机制，改为安全期（惩罚性暂停）
+ *   - softCount >= 5  → 安全期 30 分钟
+ *   - softCount >= 10 → 安全期 180 分钟
+ *   - 硬标记直接进入安全期，时长按严重程度 60-600 分钟
+ *   - 安全期内：成绩/日志/排行/成就不上传，游玩记录不计入，扣款 500-3000，暂停资金获取
+ *   - 违规记录持久化到 cookie 和存档
  */
 
 const GSafe = (() => {
-  /* ═══ 字符串编码（避免静态搜索） ═══ */
+  /* ═══ 字符串编码 ═══ */
   const _s = (arr) => arr.map((c) => String.fromCharCode(c)).join('');
   const TAG = _s([91, 71, 83, 97, 102, 101, 93]); // [GSafe]
-  const BAN_KEY = _s([103, 115, 97, 102, 101, 95, 98, 97, 110]); // gsafe_ban
+  const COOKIE_KEY = _s([103, 115, 97, 102, 101, 95, 115, 97, 102, 101, 116, 121]); // gsafe_safety
   const FP_KEY = _s([103, 115, 102, 112]); // gsfp
-  const VER = '1.0';
+  const REC_KEY = _s([103, 115, 97, 102, 101, 95, 114, 101, 99]); // gsafe_rec
+  const VER = '1.2.0';
 
   /* ═══ FNV-1a 32 位哈希 ═══ */
   function fnv1a(str) {
@@ -44,7 +35,6 @@ const GSafe = (() => {
     return h;
   }
 
-  /* ═══ 排序 JSON 序列化（确定性） ═══ */
   function sortedJSON(obj) {
     if (obj === null || typeof obj !== 'object') return JSON.stringify(obj);
     if (Array.isArray(obj)) return '[' + obj.map(sortedJSON).join(',') + ']';
@@ -52,7 +42,7 @@ const GSafe = (() => {
     return '{' + keys.map((k) => JSON.stringify(k) + ':' + sortedJSON(obj[k])).join(',') + '}';
   }
 
-  /* ═══ 暴露校验和函数供 core.js / storage.js 调用 ═══ */
+  /* ═══ 暴露校验和函数 ═══ */
   globalThis.gsafeChecksum = function (data) {
     return fnv1a(sortedJSON(data));
   };
@@ -66,28 +56,152 @@ const GSafe = (() => {
     return fnv1a(sortedJSON(copy)) === data._gsafeChecksum;
   };
 
+  /* ═══ 安全期状态 ═══ */
+  let safetyActive = false;
+  let safetyUntil = 0;
+  let safetyCode = '';
+  let softCount = 0;
+  const violations = []; // 所有违规记录（持久化）
+
   /* ═══ 证据收集 ═══ */
   const evidence = [];
-  let softCount = 0;
 
-  function flag(code, detail, hard) {
-    const entry = { flag: code, ts: Date.now(), detail: detail || '' };
+  function flag(code, detail, severity) {
+    // severity: 'hard_high'=600min, 'hard'=120min, 'hard_low'=60min, 'soft'=累计
+    const entry = { flag: code, ts: Date.now(), detail: detail || '', severity: severity || 'soft' };
     evidence.push(entry);
+    violations.push(entry);
     console.warn(TAG + ' ' + code + ': ' + (detail || ''));
-    if (hard) {
-      ban(code);
+
+    if (severity === 'hard_high') {
+      enterSafety(code, 600);
+    } else if (severity === 'hard') {
+      enterSafety(code, 120);
+    } else if (severity === 'hard_low') {
+      enterSafety(code, 60);
     } else {
       softCount++;
-      if (softCount >= 3) ban(code);
+      if (softCount >= 10) {
+        enterSafety(code, 180);
+      } else if (softCount >= 5) {
+        enterSafety(code, 30);
+      }
     }
+
+    // 持久化违规记录
+    saveViolationRecords();
   }
 
-  /* ═══ 生成封禁代码 ═══ */
-  function genBanCode(reason) {
+  /* ═══ 生成安全期代码 ═══ */
+  function genSafetyCode(reason) {
     const ts = Date.now().toString(36);
     const rh = fnv1a(reason + ts).toString(36).toUpperCase().slice(0, 6);
     return 'GS-' + ts.toUpperCase().slice(-4) + '-' + rh;
   }
+
+  /* ═══ 进入安全期 ═══ */
+  function enterSafety(reason, minutes) {
+    minutes = Math.max(10, Math.min(600, minutes));
+    const now = Date.now();
+
+    // 如果已在安全期内，延长而非重置（取更晚的到期时间）
+    const newUntil = now + minutes * 60 * 1000;
+    if (safetyActive && safetyUntil >= newUntil) return;
+
+    safetyActive = true;
+    safetyUntil = newUntil;
+    safetyCode = genSafetyCode(reason);
+
+    // 扣款 500-3000
+    let deducted = 0;
+    if (typeof gameState !== 'undefined' && gameState && typeof gameState.cash === 'number') {
+      const maxDeduct = Math.min(3000, gameState.cash);
+      deducted = Math.floor(500 + Math.random() * Math.max(0, maxDeduct - 500));
+      deducted = Math.min(deducted, gameState.cash);
+      gameState.cash -= deducted;
+      try { if (typeof updateStats === 'function') updateStats(); } catch (_) {}
+      try { if (typeof autoSaveGame === 'function') autoSaveGame(); } catch (_) {}
+    }
+
+    // 写入 cookie
+    const fp = getFingerprint();
+    const payload = JSON.stringify({
+      v: 2,
+      ts: now,
+      until: safetyUntil,
+      minutes: minutes,
+      reason: reason,
+      code: safetyCode,
+      deducted: deducted,
+      softCount: softCount,
+      fp: fp,
+    });
+    setCookie(COOKIE_KEY, payload, 31536000);
+    try { sessionStorage.setItem(FP_KEY, fp); } catch (_) {}
+
+    // 通知游戏进入安全期状态
+    if (typeof gameState !== 'undefined' && gameState) {
+      gameState._gsafeSafety = true;
+      gameState._gsafeSafetyUntil = safetyUntil;
+    }
+
+    showSafetyOverlay(reason, minutes, safetyCode, deducted);
+    console.error(TAG + ' Safety period: ' + minutes + 'min | Code: ' + safetyCode + ' | Deducted: ' + deducted);
+
+    // 暂停资金获取：拦截 gameState.cash 的 setter
+    patchCashLock();
+  }
+
+  /* ═══ 暂停资金获取 ═══ */
+  let cashLocked = false;
+  let lockedCashValue = 0;
+
+  function patchCashLock() {
+    if (cashLocked || typeof gameState === 'undefined' || !gameState) return;
+    cashLocked = true;
+    lockedCashValue = gameState.cash;
+
+    // 用 Proxy 不可行（gameState 是 const 对象），改用定时器强制锁死
+    // 安全期内每 500ms 检查一次现金，不允许增长
+    const lockInterval = setInterval(() => {
+      if (!safetyActive || Date.now() > safetyUntil) {
+        cashLocked = false;
+        clearInterval(lockInterval);
+        return;
+      }
+      if (gameState.cash > lockedCashValue) {
+        gameState.cash = lockedCashValue;
+      }
+      // 允许消费（购买），更新锁定值为当前值的较低者
+      if (gameState.cash < lockedCashValue) {
+        lockedCashValue = gameState.cash;
+      }
+    }, 500);
+  }
+
+  /* ═══ 安全期状态查询（供游戏其他模块调用） ═══ */
+  globalThis.gsafeInSafety = function () {
+    if (!safetyActive) return false;
+    if (Date.now() > safetyUntil) {
+      safetyActive = false;
+      if (typeof gameState !== 'undefined' && gameState) {
+        gameState._gsafeSafety = false;
+      }
+      return false;
+    }
+    return true;
+  };
+
+  globalThis.gsafeGetSafetyInfo = function () {
+    if (!safetyActive || Date.now() > safetyUntil) return null;
+    return {
+      active: true,
+      until: safetyUntil,
+      remaining: Math.ceil((safetyUntil - Date.now()) / 60000),
+      code: safetyCode,
+      softCount: softCount,
+    };
+  };
 
   /* ═══ 浏览器指纹 ═══ */
   function getFingerprint() {
@@ -98,12 +212,12 @@ const GSafe = (() => {
       const ctx = canvas.getContext('2d');
       ctx.textBaseline = 'top';
       ctx.font = '14px Arial';
-      ctx.fillText('GSafe-fingerprint', 2, 2);
-      const canvasHash = fnv1a(canvas.toDataURL());
+      ctx.fillText('GSafe-fp', 2, 2);
+      const ch = fnv1a(canvas.toDataURL());
       const ua = fnv1a(navigator.userAgent || '');
-      const screen_ = fnv1a(screen.width + 'x' + screen.height);
-      const lang = fnv1a(navigator.language || '');
-      return ((canvasHash ^ ua ^ screen_ ^ lang) >>> 0).toString(36);
+      const sc = fnv1a(screen.width + 'x' + screen.height);
+      const lg = fnv1a(navigator.language || '');
+      return ((ch ^ ua ^ sc ^ lg) >>> 0).toString(36);
     } catch (_) {
       return fnv1a(navigator.userAgent + screen.width).toString(36);
     }
@@ -119,38 +233,65 @@ const GSafe = (() => {
     return m ? decodeURIComponent(m[1]) : null;
   }
 
-  /* ═══ 封禁系统 ═══ */
-  let banned = false;
-  let banCode = '';
-
-  function ban(reason) {
-    if (banned) return;
-    banned = true;
-    banCode = genBanCode(reason);
-    const fp = getFingerprint();
-    const payload = JSON.stringify({
-      v: 1,
-      ts: Date.now(),
-      reason: reason,
-      code: banCode,
-      evidence: evidence.slice(-20),
-      fp: fp,
-    });
-    setCookie(BAN_KEY, payload, 31536000);
-    try { sessionStorage.setItem(FP_KEY, fp); } catch (_) {}
-    showBanOverlay(reason, banCode);
-    console.error(TAG + ' Game suspended. Code: ' + banCode + ' Reason: ' + reason);
+  /* ═══ 违规记录持久化 ═══ */
+  function saveViolationRecords() {
+    try {
+      const data = JSON.stringify({
+        v: 1,
+        ts: Date.now(),
+        softCount: softCount,
+        violations: violations.slice(-50),
+      });
+      setCookie(REC_KEY, data, 31536000);
+    } catch (_) {}
+    // 同步到 gameState 以便随存档保存
+    if (typeof gameState !== 'undefined' && gameState) {
+      gameState._gsafeViolations = violations.slice(-50);
+      gameState._gsafeSoftCount = softCount;
+    }
   }
 
-  function checkExistingBan() {
-    const raw = getCookie(BAN_KEY);
+  function loadViolationRecords() {
+    try {
+      const raw = getCookie(REC_KEY);
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data && Array.isArray(data.violations)) {
+          data.violations.forEach((v) => violations.push(v));
+          softCount = data.softCount || 0;
+        }
+      }
+    } catch (_) {}
+    // 也从 gameState 恢复
+    if (typeof gameState !== 'undefined' && gameState && Array.isArray(gameState._gsafeViolations)) {
+      gameState._gsafeViolations.forEach((v) => {
+        if (!violations.find((x) => x.ts === v.ts && x.flag === v.flag)) {
+          violations.push(v);
+        }
+      });
+      if (typeof gameState._gsafeSoftCount === 'number') {
+        softCount = Math.max(softCount, gameState._gsafeSoftCount);
+      }
+    }
+  }
+
+  /* ═══ 检查已有安全期 ═══ */
+  function checkExistingSafety() {
+    const raw = getCookie(COOKIE_KEY);
     if (raw) {
       try {
         const data = JSON.parse(raw);
-        if (data && data.reason) {
-          banned = true;
-          banCode = data.code || genBanCode(data.reason);
-          showBanOverlay(data.reason, banCode);
+        if (data && data.until && Date.now() < data.until) {
+          safetyActive = true;
+          safetyUntil = data.until;
+          safetyCode = data.code || genSafetyCode(data.reason || '');
+          softCount = data.softCount || 0;
+          if (typeof gameState !== 'undefined' && gameState) {
+            gameState._gsafeSafety = true;
+            gameState._gsafeSafetyUntil = safetyUntil;
+          }
+          patchCashLock();
+          showSafetyOverlay(data.reason, data.minutes || 0, safetyCode, 0, true);
           return true;
         }
       } catch (_) {}
@@ -158,20 +299,23 @@ const GSafe = (() => {
     return false;
   }
 
-  /* ═══ 封禁遮罩 UI ═══ */
-  function showBanOverlay(reason, code) {
+  /* ═══ 安全期提示 UI ═══ */
+  function showSafetyOverlay(reason, minutes, code, deducted, isResume) {
     if (document.getElementById('gsafe-overlay')) return;
 
+    const remaining = safetyActive ? Math.ceil((safetyUntil - Date.now()) / 60000) : minutes;
+
     const css = document.createElement('style');
-    css.id = 'gsafe-ban-css';
+    css.id = 'gsafe-css';
     css.textContent =
-      '#gsafe-overlay{position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;font-family:"Segoe UI","Microsoft YaHei",sans-serif}' +
-      '#gsafe-card{background:#fff;border:2px solid #808080;box-shadow:4px 4px 0 #000;max-width:400px;width:90%}' +
-      '#gsafe-titlebar{background:#b71c1c;color:#fff;padding:5px 8px;font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center}' +
+      '#gsafe-overlay{position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;font-family:"Segoe UI","Microsoft YaHei",sans-serif}' +
+      '#gsafe-card{background:#fff;border:2px solid #808080;box-shadow:4px 4px 0 #000;max-width:420px;width:90%}' +
+      '#gsafe-titlebar{background:#e65100;color:#fff;padding:5px 8px;font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center}' +
       '#gsafe-body{padding:20px 16px;text-align:center}' +
-      '#gsafe-body p{margin:0 0 10px;font-size:14px;color:#333;line-height:1.6}' +
-      '#gsafe-body .gs-code{display:inline-block;margin:8px 0;padding:6px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:4px;font-family:monospace;font-size:13px;color:#b71c1c;letter-spacing:1px;user-select:all}' +
-      '#gsafe-body .gs-reason{font-size:11px;color:#999;margin-top:6px}' +
+      '#gsafe-body p{margin:0 0 8px;font-size:13px;color:#333;line-height:1.6}' +
+      '#gsafe-body .gs-code{display:inline-block;margin:6px 0;padding:5px 14px;background:#fff3e0;border:1px solid #ffcc80;border-radius:4px;font-family:monospace;font-size:12px;color:#e65100;letter-spacing:1px;user-select:all}' +
+      '#gsafe-body .gs-info{font-size:11px;color:#999;margin-top:4px;line-height:1.6}' +
+      '#gsafe-body .gs-time{font-size:18px;font-weight:700;color:#e65100;margin:8px 0}' +
       '#gsafe-actions{padding:8px 16px 16px;text-align:center}' +
       '#gsafe-actions button{background:#d4d0c8;border:2px outset #fff;padding:4px 28px;font-size:12px;cursor:pointer;font-family:inherit}' +
       '#gsafe-actions button:active{border-style:inset}';
@@ -181,36 +325,23 @@ const GSafe = (() => {
     overlay.id = 'gsafe-overlay';
     overlay.innerHTML =
       '<div id="gsafe-card">' +
-        '<div id="gsafe-titlebar"><span>GSafe v' + VER + ' - 安全警告</span><span>&#10006;</span></div>' +
+        '<div id="gsafe-titlebar"><span>GSafe v' + VER + ' - 安全期通知</span><span>&#10006;</span></div>' +
         '<div id="gsafe-body">' +
-          '<p>你已被封禁，如有问题请申诉。</p>' +
+          '<p>' + (isResume ? '你仍在安全期内，如有问题请申诉。' : '检测到异常操作，已进入安全期。') + '</p>' +
+          '<div class="gs-time">' + remaining + ' 分钟</div>' +
           '<div class="gs-code">' + (code || 'N/A') + '</div>' +
-          '<div class="gs-reason">原因：' + (reason || '未知') + '</div>' +
+          '<div class="gs-info">安全期内成绩不计入 · 资金获取暂停</div>' +
+          (deducted > 0 ? '<div class="gs-info">已扣除 ' + deducted + ' 元</div>' : '') +
+          '<div class="gs-info" style="margin-top:6px">违规原因：' + (reason || '未知') + '</div>' +
         '</div>' +
         '<div id="gsafe-actions"><button id="gsafe-ok">确定</button></div>' +
       '</div>';
     document.body.appendChild(overlay);
 
     document.getElementById('gsafe-ok').addEventListener('click', function () {
-      location.reload();
+      overlay.remove();
+      css.remove();
     });
-
-    // 拦截键盘（允许 F5 / Ctrl+R 刷新）
-    document.addEventListener('keydown', function (e) {
-      if (!banned) return;
-      if (e.key === 'F5') return;
-      if (e.ctrlKey && (e.key === 'r' || e.key === 'R')) return;
-      e.preventDefault();
-      e.stopPropagation();
-    }, true);
-
-    // 拦截鼠标
-    document.addEventListener('click', function (e) {
-      if (!banned) return;
-      if (e.target.id === 'gsafe-ok') return;
-      e.preventDefault();
-      e.stopPropagation();
-    }, true);
   }
 
   /* ═══ 1. 函数完整性检查 ═══ */
@@ -261,7 +392,6 @@ const GSafe = (() => {
       captureFn(RaceFormulaUtils, 'computePlayerRating', 'RFU.computePlayerRating');
     }
 
-    // 原生函数
     fnSigs['Math.random'] = Function.prototype.toString.call(Math.random);
     fnSigs['performance.now'] = Function.prototype.toString.call(performance.now);
     fnSigs['Date.now'] = Function.prototype.toString.call(Date.now);
@@ -273,32 +403,32 @@ const GSafe = (() => {
       try {
         const current = Function.prototype.toString.call(w.obj[w.key]);
         if (current !== fnSigs[w.path]) {
-          flag('FN_OVERRIDE', w.path + ' has been replaced', true);
+          flag('FN_OVERRIDE', w.path + ' replaced', 'hard_high');
           return;
         }
       } catch (_) {}
     }
     try {
       if (Function.prototype.toString.call(Math.random) !== fnSigs['Math.random']) {
-        flag('MATH_RANDOM_HOOK', 'Math.random replaced', true);
+        flag('MATH_RANDOM_HOOK', 'Math.random replaced', 'hard_high');
       }
     } catch (_) {}
     try {
       if (Function.prototype.toString.call(performance.now) !== fnSigs['performance.now']) {
-        flag('PERFORMANCE_NOW_HOOK', 'performance.now replaced', true);
+        flag('PERFORMANCE_NOW_HOOK', 'performance.now replaced', 'hard');
       }
     } catch (_) {}
     try {
       if (Function.prototype.toString.call(Date.now) !== fnSigs['Date.now']) {
-        flag('DATE_NOW_HOOK', 'Date.now replaced', true);
+        flag('DATE_NOW_HOOK', 'Date.now replaced', 'hard');
       }
     } catch (_) {}
   }
 
   /* ═══ 2. 状态快照差分 ═══ */
   let prevSnap = null;
-  let cashHistory = []; // 最近 10 次现金快照
-  let achvHistory = []; // 最近成就计数
+  let cashHistory = [];
+  let achvHistory = [];
 
   let statCeilings = {};
   function computeCeilings() {
@@ -367,9 +497,8 @@ const GSafe = (() => {
     // ─── 刷钱检测 ───
     const cashDelta = cur.cash - p.cash;
     if (cashDelta > 3000 && p.phase !== 'finished') {
-      flag('CASH_ANOMALY', 'cash ' + p.cash + ' -> ' + cur.cash, false);
+      flag('CASH_ANOMALY', 'cash ' + p.cash + ' -> ' + cur.cash, 'soft');
     }
-    // 连续异常增长
     cashHistory.push({ ts: Date.now(), cash: cur.cash });
     if (cashHistory.length > 10) cashHistory.shift();
     if (cashHistory.length >= 3) {
@@ -379,62 +508,61 @@ const GSafe = (() => {
         if (d > 3000) abnormalCount++;
       }
       if (abnormalCount >= 2) {
-        flag('CASH_FARMING', abnormalCount + ' abnormal cash jumps in ' + cashHistory.length + ' snapshots', false);
+        flag('CASH_FARMING', abnormalCount + ' abnormal cash jumps', 'soft');
         cashHistory = [];
       }
     }
 
     // ─── 场次篡改 ───
     if (cur.raceCount < p.raceCount) {
-      flag('RACE_COUNT_ANOMALY', 'raceCount ' + p.raceCount + ' -> ' + cur.raceCount, true);
+      flag('RACE_COUNT_ANOMALY', 'raceCount ' + p.raceCount + ' -> ' + cur.raceCount, 'hard_low');
     }
     if (cur.raceCount - p.raceCount > 1 && p.phase === 'idle') {
-      flag('RACE_COUNT_ANOMALY', 'raceCount jumped ' + p.raceCount + ' -> ' + cur.raceCount, false);
+      flag('RACE_COUNT_ANOMALY', 'raceCount jumped ' + p.raceCount + ' -> ' + cur.raceCount, 'soft');
     }
 
-    // ─── 统计数据篡改 ───
+    // ─── 统计篡改 ───
     if (cur.statsTotalWins > cur.statsTotalRaces) {
-      flag('STATS_MISMATCH', 'wins(' + cur.statsTotalWins + ') > races(' + cur.statsTotalRaces + ')', true);
+      flag('STATS_MISMATCH', 'wins(' + cur.statsTotalWins + ') > races(' + cur.statsTotalRaces + ')', 'hard_low');
     }
     if (cur.statsTotalRaces < p.statsTotalRaces) {
-      flag('STATS_ROLLBACK', 'totalRaces ' + p.statsTotalRaces + ' -> ' + cur.statsTotalRaces, true);
+      flag('STATS_ROLLBACK', 'totalRaces ' + p.statsTotalRaces + ' -> ' + cur.statsTotalRaces, 'hard_low');
     }
 
-    // ─── 属性突破理论上限 ───
+    // ─── 属性突破上限 ───
     ['engine', 'tire', 'gearbox', 'hp'].forEach(function (k) {
       if (statCeilings[k] && cur[k] > statCeilings[k]) {
-        flag('STAT_CEILING_BREACH', k + '=' + cur[k] + ' > max ' + statCeilings[k], true);
+        flag('STAT_CEILING_BREACH', k + '=' + cur[k] + ' > max ' + statCeilings[k], 'hard');
       }
     });
-    if (cur.stability > 80) flag('STAT_CLAMP_BREACH', 'stability=' + cur.stability + ' > 80', true);
-    if (cur.weight < 760) flag('STAT_CLAMP_BREACH', 'weight=' + cur.weight + ' < 760', true);
+    if (cur.stability > 80) flag('STAT_CLAMP_BREACH', 'stability=' + cur.stability + ' > 80', 'hard');
+    if (cur.weight < 760) flag('STAT_CLAMP_BREACH', 'weight=' + cur.weight + ' < 760', 'hard');
 
-    // ─── 刷成就检测 ───
+    // ─── 刷成就 ───
     const achvDelta = cur.achvCount - p.achvCount;
     if (achvDelta > 2) {
-      flag('ACHIEVEMENT_INJECTION', achvDelta + ' achievements at once', false);
+      flag('ACHIEVEMENT_INJECTION', achvDelta + ' achievements at once', 'soft');
     }
     achvHistory.push(achvDelta);
     if (achvHistory.length > 5) achvHistory.shift();
     if (achvHistory.length >= 3) {
-      const totalRecentAchv = achvHistory.reduce((a, b) => a + Math.max(0, b), 0);
-      if (totalRecentAchv >= 5) {
-        flag('ACHIEVEMENT_FARMING', totalRecentAchv + ' achievements in ' + achvHistory.length + ' checks', false);
+      const total = achvHistory.reduce((a, b) => a + Math.max(0, b), 0);
+      if (total >= 5) {
+        flag('ACHIEVEMENT_FARMING', total + ' achievements in ' + achvHistory.length + ' checks', 'soft');
         achvHistory = [];
       }
     }
 
     // ─── 库存异常 ───
     if (cur.invLen - p.invLen > 3 && p.phase !== 'idle') {
-      flag('INVENTORY_ANOMALY', 'inventory +' + (cur.invLen - p.invLen) + ' outside shop', false);
+      flag('INVENTORY_ANOMALY', 'inventory +' + (cur.invLen - p.invLen) + ' outside shop', 'soft');
     }
 
     // ─── 阶段非法值 ───
-    if (typeof PHASE_LABELS !== 'undefined' && cur.phase && !PHASE_LABELS[cur.phase] && cur.phase !== 'gsafe_banned') {
-      flag('PHASE_INVALID', 'phase=' + cur.phase, true);
+    if (typeof PHASE_LABELS !== 'undefined' && cur.phase && !PHASE_LABELS[cur.phase] && cur.phase !== 'gsafe_safety') {
+      flag('PHASE_INVALID', 'phase=' + cur.phase, 'hard');
     }
 
-    // ─── 阶段跳转合法性 ───
     checkPhaseTransition(p.phase, cur.phase);
   }
 
@@ -453,7 +581,7 @@ const GSafe = (() => {
     if (!from || !to || from === to) return;
     const valid = VALID_TRANSITIONS[from];
     if (valid && valid.indexOf(to) === -1) {
-      flag('PHASE_SKIP', from + ' -> ' + to, true);
+      flag('PHASE_SKIP', from + ' -> ' + to, 'hard');
     }
   }
 
@@ -471,12 +599,12 @@ const GSafe = (() => {
     }
     prevReactionCheck = { time: t, control: c };
     if (t < 0.050) {
-      flag('REACTION_INHUMAN', 'reaction=' + t.toFixed(3) + 's', false);
+      flag('REACTION_INHUMAN', 'reaction=' + t.toFixed(3) + 's', 'soft');
       suspiciousReactionCount++;
     } else if (t < 0.100) {
       suspiciousReactionCount++;
       if (suspiciousReactionCount >= 3) {
-        flag('REACTION_CONSISTENTLY_SUSPICIOUS', suspiciousReactionCount + ' sub-0.1s reactions', false);
+        flag('REACTION_CONSISTENTLY_SUSPICIOUS', suspiciousReactionCount + ' sub-0.1s reactions', 'soft');
         suspiciousReactionCount = 0;
       }
     } else {
@@ -488,16 +616,14 @@ const GSafe = (() => {
   let selfScript = null;
 
   function initSelfProtect() {
-    try {
-      selfScript = document.currentScript;
-    } catch (_) {}
+    try { selfScript = document.currentScript; } catch (_) {}
   }
 
   function checkSelfIntegrity() {
     if (!selfScript) return;
     try {
       if (!document.contains(selfScript)) {
-        flag('SCRIPT_REMOVED', 'gsafe.js script element removed', true);
+        flag('SCRIPT_REMOVED', 'gsafe.js removed', 'hard_high');
       }
     } catch (_) {}
   }
@@ -519,7 +645,7 @@ const GSafe = (() => {
       if (t !== null && t < 0.080) {
         fastStartCount++;
         if (fastStartCount >= 3) {
-          flag('AUTO_START_DETECTED', fastStartCount + ' sub-80ms starts', false);
+          flag('AUTO_START_DETECTED', fastStartCount + ' sub-80ms starts', 'soft');
           fastStartCount = 0;
         }
       } else {
@@ -528,21 +654,41 @@ const GSafe = (() => {
     }
   }
 
-  /* ═══ 6. 控制台注入痕迹检测 ═══ */
+  /* ═══ 6. 控制台注入检测 ═══ */
   let consoleUsageCount = 0;
 
   function initConsoleDetection() {
-    // 重写 eval 使其可被追踪
     try {
       const origEval = window.eval;
       window.eval = function () {
         consoleUsageCount++;
         if (consoleUsageCount > 5) {
-          flag('EVAL_USAGE', 'eval() called ' + consoleUsageCount + ' times', false);
+          flag('EVAL_USAGE', 'eval() called ' + consoleUsageCount + ' times', 'soft');
         }
         return origEval.apply(this, arguments);
       };
     } catch (_) {}
+  }
+
+  /* ═══ 安全期内成绩无效化 ═══ */
+  function patchRaceCompletion() {
+    // 在 completeRace 后检查安全期，如果在安全期内则撤销奖励
+    if (typeof window.completeRace !== 'function') return;
+    const orig = window.completeRace;
+    window.completeRace = function () {
+      const wasInSafety = gsafeInSafety();
+      orig.call(this);
+      if (wasInSafety && typeof gameState !== 'undefined' && gameState) {
+        // 撤销最近一场的奖金
+        const lastPrize = (gameState.stats || {})._lastPrize || 0;
+        if (lastPrize > 0) {
+          gameState.cash -= lastPrize;
+          console.log(TAG + ' Safety period: race reward ' + lastPrize + ' revoked');
+        }
+        // 撤销连胜
+        gameState.currentWinStreak = 0;
+      }
+    };
   }
 
   /* ═══ 主循环 ═══ */
@@ -552,7 +698,6 @@ const GSafe = (() => {
 
   function startMonitoring() {
     function loopFnCheck() {
-      if (banned) return;
       checkFnIntegrity();
       checkSelfIntegrity();
       setTimeout(loopFnCheck, jitter(5000));
@@ -560,7 +705,16 @@ const GSafe = (() => {
     setTimeout(loopFnCheck, jitter(3000));
 
     function loopSnap() {
-      if (banned) return;
+      // 安全期到期检查
+      if (safetyActive && Date.now() > safetyUntil) {
+        safetyActive = false;
+        if (typeof gameState !== 'undefined' && gameState) {
+          gameState._gsafeSafety = false;
+        }
+        cashLocked = false;
+        console.log(TAG + ' Safety period expired.');
+      }
+
       const cur = takeSnap();
       diffSnap(cur);
       prevSnap = cur;
@@ -573,21 +727,29 @@ const GSafe = (() => {
 
   /* ═══ 初始化 ═══ */
   function init() {
-    if (checkExistingBan()) return;
+    loadViolationRecords();
+
+    if (checkExistingSafety()) {
+      console.log(TAG + ' Resumed safety period. Remaining: ' + Math.ceil((safetyUntil - Date.now()) / 60000) + 'min');
+    }
+
     initSelfProtect();
     computeCeilings();
     initFnChecks();
     initConsoleDetection();
+    patchRaceCompletion();
     prevSnap = takeSnap();
     startMonitoring();
+
     try { sessionStorage.setItem('_gs', '1'); } catch (_) {}
-    console.log(TAG + ' Anti-cheat v' + VER + ' initialized.');
+    console.log(TAG + ' Anti-cheat v' + VER + ' initialized. Violations: ' + violations.length);
   }
 
   return {
     init: init,
-    isBanned: function () { return banned; },
-    getBanCode: function () { return banCode; },
+    inSafety: globalThis.gsafeInSafety,
+    getSafetyInfo: globalThis.gsafeGetSafetyInfo,
+    getViolations: function () { return violations.slice(); },
     version: VER,
   };
 })();
