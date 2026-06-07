@@ -2,17 +2,22 @@
 
 本仓库允许使用 AI Agent / Codex 辅助开发。请遵守以下规则，避免影响主站、Lab 子站及线上部署。
 
+## 规则加载
+
+- 默认先阅读本文件。
+- 处理 Lab 子站时，再按需阅读 `AGENTS-Lab.md`。
+- Lab 范围包括：`lab-src/`、`lab-public/`、`astro.config.lab.mjs`、`dist-lab/`、`scripts/inject-lab-analytics.mjs`，以及 `npm run build:lab` 相关改动。
+- 非 Lab 任务不需要加载 Lab 专项规则，避免把子站约束误套到主站。
+
 ## 仓库结构与构建
 
-- 当前仓库是 Astro 主站项目：
-  - 主站入口：`src/`
-  - 主站静态资源：`public/`
-  - 主站配置：`astro.config.mjs`
-  - 主站构建命令：`npm run build`
-- Lab 子站使用独立配置：`astro.config.lab.mjs`。
-- Lab 构建命令：`npm run build:lab`。
-- Lab 输出目录：`dist-lab`。
-- `lab-public/race/` 对应线上路径：`https://lab.mpsteam.cn/race/`。
+- 当前仓库是 Astro 主站 + Lab 子站共存项目。
+- 主站不是单一首页项目，`src/pages/` 下包含首页、关于、加入社区、友情链接、联系、404 等页面。
+- 主站入口：`src/`
+- 主站静态资源：`public/`
+- 主站配置：`astro.config.mjs`
+- 主站构建命令：`npm run build`
+- Lab 子站使用独立配置、独立源码与独立输出；详见 `AGENTS-Lab.md`。
 
 ## 基本原则
 
@@ -22,6 +27,7 @@
 - 不要删除现有功能、文件、配置，除非任务明确要求。
 - 修改前先阅读相关 README、配置文件和现有代码风格。
 - 不要破坏主站现有构建流程；主站继续使用 `astro.config.mjs` 和原有 `npm run build`。
+- 涉及 Lab 子站时，先加载 `AGENTS-Lab.md`，并区分主站与 Lab 的构建影响。
 
 ## 提交前检查
 
