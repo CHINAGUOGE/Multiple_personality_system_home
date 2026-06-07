@@ -25,7 +25,7 @@ const GSafe = (() => {
   const COOKIE_KEY = _s([103, 115, 97, 102, 101, 95, 115, 97, 102, 101, 116, 121]); // gsafe_safety
   const FP_KEY = _s([103, 115, 102, 112]); // gsfp
   const REC_KEY = _s([103, 115, 97, 102, 101, 95, 114, 101, 99]); // gsafe_rec
-  const VER = '2.0.1';
+  const VER = '2.0.2';
   const DB_NAME = 'gsafe_evidence';
   const DB_STORE = 'events';
 
@@ -71,12 +71,30 @@ const GSafe = (() => {
   /* ═══ 证据收集 ═══ */
   const evidence = [];
 
+  let lastFlagCode = '';
+  let lastFlagTs = 0;
+
   function flag(code, detail, severity) {
-    const entry = { flag: code, ts: Date.now(), detail: detail || '', severity: severity || 'soft' };
+    const now = Date.now();
+
+    // 去重：同一违规码 10 秒内不重复记录
+    if (code === lastFlagCode && now - lastFlagTs < 10000) {
+      return;
+    }
+    lastFlagCode = code;
+    lastFlagTs = now;
+
+    const entry = { flag: code, ts: now, detail: detail || '', severity: severity || 'soft' };
     evidence.push(entry);
     violations.push(entry);
     writeEvidenceToDB(entry);
     console.warn(TAG + ' ' + code + ': ' + (detail || ''));
+
+    // 已在安全期内且不是升级处罚，跳过重复处罚
+    if (safetyActive && now < safetyUntil) {
+      saveViolationRecords();
+      return;
+    }
 
     if (severity === 'hard_high') {
       enterSafety(code, 600);
@@ -104,7 +122,16 @@ const GSafe = (() => {
   }
 
   /* ═══ 进入安全期 ═══ */
+  let overlayShown = false; // 弹窗去重
+
   function enterSafety(reason, baseMinutes) {
+    const now = Date.now();
+
+    // 已在安全期内且未到期，只延长不弹窗
+    if (safetyActive && now < safetyUntil) {
+      return;
+    }
+
     // 初犯制度：首次仅 5 分钟
     let minutes;
     if (isFirstOffense) {
@@ -114,9 +141,7 @@ const GSafe = (() => {
       minutes = Math.max(10, Math.min(600, baseMinutes));
     }
 
-    const now = Date.now();
     const newUntil = now + minutes * 60 * 1000;
-    if (safetyActive && safetyUntil >= newUntil) return;
 
     safetyActive = true;
     safetyUntil = newUntil;
