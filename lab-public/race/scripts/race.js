@@ -13,8 +13,8 @@ const OPPONENT_REACTION_RANGES = {
   easy: { min: 0.45, max: 0.9 },
   normal: { min: 0.34, max: 0.72 },
   hard: { min: 0.24, max: 0.52 },
-  expert: { min: 0.16, max: 0.36 },
-  nightmare: { min: 0.08, max: 0.24 },
+  expert: { min: 0.16, max: 0.26 },
+  nightmare: { min: 0.08, max: 0.14 },
 };
 
 let raceAudioContext = null;
