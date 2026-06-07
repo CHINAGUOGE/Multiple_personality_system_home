@@ -276,6 +276,12 @@ function getMinEntryFee() {
   return Math.min(...DIFFICULTY_ORDER.map((key) => getDifficultyEntryFee(key)));
 }
 
+function getMinEntryDifficultyKey() {
+  return DIFFICULTY_ORDER.reduce((minKey, key) => {
+    return getDifficultyEntryFee(key) < getDifficultyEntryFee(minKey) ? key : minKey;
+  }, DIFFICULTY_ORDER[0] || DEFAULT_DIFFICULTY);
+}
+
 function getCurrentLootPool() {
   return LOOT_POOLS[getDifficultyKey()] || LOOT_POOLS[DEFAULT_DIFFICULTY];
 }
@@ -353,6 +359,47 @@ function isManualRace(race) {
   return Boolean(race && race.controlledBy === 'manual');
 }
 
+function getActiveRaceType() {
+  return gameState.activeRaceType === 'practice' ? 'practice' : 'standard';
+}
+
+function isPracticeRace(race = null) {
+  if (race) {
+    return race.raceType === 'practice';
+  }
+  return getActiveRaceType() === 'practice';
+}
+
+function isFormalRace(race = null) {
+  return !isPracticeRace(race);
+}
+
+function getPracticePrize(playerRank) {
+  const rankIndex = Math.max(0, Math.min(PRACTICE_PRIZE_RATES.length - 1, playerRank - 1));
+  return Math.floor(getMinEntryFee() * PRACTICE_PRIZE_RATES[rankIndex]);
+}
+
+function canRecoverWithPractice() {
+  return gameState.cash < getMinEntryFee();
+}
+
+function canStartPracticeRace() {
+  return (
+    canRecoverWithPractice() &&
+    gameState.phase === 'idle' &&
+    !isRaceLockedPhase(gameState.phase) &&
+    gameState.phase !== 'game_over'
+  );
+}
+
+function getLossStreakReliefConfig() {
+  const config = LOSS_STREAK_RELIEF[getDifficultyKey()];
+  if (!config || gameState.currentLoseStreak < config.threshold) {
+    return null;
+  }
+  return config;
+}
+
 function normalizeReactionTime(value) {
   const reactionTime = Number(value);
   return Number.isFinite(reactionTime) && reactionTime >= MIN_MANUAL_REACTION_SECONDS
@@ -408,7 +455,6 @@ function setDifficulty(key) {
 
   gameState.difficulty = key;
   addLog(`难度切换为「${DIFFICULTIES[key].name}」。`);
-  refreshShop();
   renderDifficulty();
   renderAtlas();
   updateStats();
@@ -680,6 +726,10 @@ function sanitizeStatsData(data, fallback = {}) {
     0,
     Math.floor(Number((data && data.fifthPlaceStreak) ?? fallback.fifthPlaceStreak) || 0)
   );
+  const practiceRaces = Math.max(
+    0,
+    Math.floor(Number((data && data.practiceRaces) ?? fallback.practiceRaces) || 0)
+  );
   const partsPurchasedCount = Math.max(
     0,
     Math.floor(
@@ -735,6 +785,7 @@ function sanitizeStatsData(data, fallback = {}) {
     falseStartStreak,
     secondPlaceStreak,
     fifthPlaceStreak,
+    practiceRaces,
     partsPurchasedCount,
     highestCash,
     winsByDifficulty,
@@ -851,7 +902,12 @@ function hasSellableInventory() {
 }
 
 function shouldFailForNoEntryFee() {
-  return gameState.cash < getMinEntryFee() && isVehicleStripped() && !hasSellableInventory();
+  return (
+    gameState.cash < getMinEntryFee() &&
+    !canRecoverWithPractice() &&
+    isVehicleStripped() &&
+    !hasSellableInventory()
+  );
 }
 
 function checkGameFailure() {
@@ -887,6 +943,7 @@ function createSaveData() {
     lastManualReactionTime,
     lastReactionControl,
     currentWinStreak: gameState.currentWinStreak,
+    currentLoseStreak: gameState.currentLoseStreak,
     bestWinStreak: gameState.bestWinStreak,
     difficulty: getDifficultyKey(),
     raceControl: getCurrentRaceControl(),
@@ -894,6 +951,7 @@ function createSaveData() {
       gameState.lastRaceControl === 'ai' || gameState.lastRaceControl === 'manual'
         ? gameState.lastRaceControl
         : null,
+    lastRaceType: gameState.lastRaceType === 'practice' ? 'practice' : 'standard',
     aiAssist: {
       active: Boolean(gameState.aiAssist && gameState.aiAssist.active),
       reactionTime:
@@ -997,6 +1055,7 @@ function sanitizeSaveData(data) {
     falseStartStreak: 0,
     secondPlaceStreak: 0,
     fifthPlaceStreak: 0,
+    practiceRaces: 0,
     partsPurchasedCount: inventory.length,
     highestCash: Math.max(1500, Math.floor(Number(data.cash) || 0)),
     winsByDifficulty: createDifficultyStatsMap(),
@@ -1038,6 +1097,7 @@ function sanitizeSaveData(data) {
     data.lastRaceControl === 'ai' || data.lastRaceControl === 'manual'
       ? data.lastRaceControl
       : null;
+  const lastRaceType = data.lastRaceType === 'practice' ? 'practice' : 'standard';
   const manualDifficultyWinStreak = sanitizeManualDifficultyWinStreakData(
     data.manualDifficultyWinStreak
   );
@@ -1062,10 +1122,12 @@ function sanitizeSaveData(data) {
     lastManualReactionTime,
     lastReactionControl,
     currentWinStreak: Math.max(0, Math.floor(Number(data.currentWinStreak) || 0)),
+    currentLoseStreak: Math.max(0, Math.floor(Number(data.currentLoseStreak) || 0)),
     bestWinStreak: Math.max(0, Math.floor(Number(data.bestWinStreak) || 0)),
     difficulty: DIFFICULTIES[data.difficulty] ? data.difficulty : DEFAULT_DIFFICULTY,
     raceControl: data.raceControl === 'ai' ? 'ai' : 'manual',
     lastRaceControl,
+    lastRaceType,
     aiAssist: sanitizeAiAssistData(data.aiAssist),
     manualRankStreak: sanitizeManualRankStreakData(data.manualRankStreak),
     manualDifficultyWinStreak,
@@ -1089,6 +1151,7 @@ function applyPersistentState(data) {
   gameState.lastManualReactionTime = data.lastManualReactionTime ?? null;
   gameState.lastReactionControl = data.lastReactionControl || null;
   gameState.currentWinStreak = data.currentWinStreak ?? 0;
+  gameState.currentLoseStreak = data.currentLoseStreak ?? 0;
   gameState.bestWinStreak = Math.max(
     gameState.currentWinStreak,
     data.bestWinStreak ?? 0
@@ -1099,6 +1162,8 @@ function applyPersistentState(data) {
     data.lastRaceControl === 'ai' || data.lastRaceControl === 'manual'
       ? data.lastRaceControl
       : null;
+  gameState.activeRaceType = 'standard';
+  gameState.lastRaceType = data.lastRaceType === 'practice' ? 'practice' : 'standard';
   gameState.aiAssist = sanitizeAiAssistData(data.aiAssist);
   gameState.aiAssistLocked = false;
   gameState.manualRankStreak = sanitizeManualRankStreakData(data.manualRankStreak);
@@ -1121,13 +1186,14 @@ function refreshAfterPersistentChange() {
   gameState.playerStarted = false;
   gameState.panelReturnPhase = 'idle';
   gameState.raceControl = 'manual';
+  gameState.activeRaceType = 'standard';
   gameState.aiAssist = createDefaultAiAssistState();
   gameState.aiAssistLocked = false;
   if (el.restartBtn) {
     el.restartBtn.textContent = '重开并清档';
   }
   resetCars();
-  refreshShop();
+  refreshShop('load-or-reset');
   renderGarage();
   renderDifficulty();
   renderAtlas();
@@ -1206,9 +1272,13 @@ function updateButtons() {
   const gameOver = phase === 'game_over';
 
   el.registerBtn.disabled = phase !== 'idle' && !canPrepareNextRace;
-  el.registerBtn.textContent = canPrepareNextRace
-    ? '下一场比赛'
-    : `报名比赛（${getEntryFee()} 元）`;
+  if (canPrepareNextRace) {
+    el.registerBtn.textContent = '下一场比赛';
+  } else if (canStartPracticeRace()) {
+    el.registerBtn.textContent = '参加练习赛（免费）';
+  } else {
+    el.registerBtn.textContent = `报名比赛（${getEntryFee()} 元）`;
+  }
   el.startBtn.disabled = !countdownOrRace || gameState.playerStarted;
   if (el.aiAssistRaceButton) {
     el.aiAssistRaceButton.textContent =
@@ -1233,6 +1303,8 @@ function updateButtons() {
     const reasonNode = button.closest('.shop-card').querySelector('.card-reason');
     const alreadyOwned = part && (part.bought || hasOwnedPart(part));
     const notEnoughCash = part && gameState.cash < part.price;
+    const adviceLabel =
+      part && typeof getPartAdviceLabel === 'function' ? getPartAdviceLabel(part) : '属性提示';
 
     button.disabled = !canUseShop() || !part || alreadyOwned || notEnoughCash;
 
@@ -1241,13 +1313,15 @@ function updateButtons() {
       reasonNode.textContent = '原因：已经拥有';
     } else if (notEnoughCash) {
       button.textContent = '现金不足';
-      reasonNode.textContent = `原因：还差 ${part.price - gameState.cash} 元`;
+      reasonNode.textContent = `${adviceLabel} · 还差 ${part.price - gameState.cash} 元`;
     } else if (!canUseShop()) {
       button.textContent = countdownOrRace ? '比赛中' : '不可购买';
-      reasonNode.textContent = countdownOrRace ? '原因：比赛中不能购买' : '原因：当前状态不可购买';
+      reasonNode.textContent = countdownOrRace
+        ? `${adviceLabel} · 比赛中不能购买`
+        : `${adviceLabel} · 当前状态不可购买`;
     } else {
       button.textContent = '购买';
-      reasonNode.textContent = '可购买';
+      reasonNode.textContent = adviceLabel;
     }
   });
 
@@ -1314,14 +1388,20 @@ function updateResultMessage() {
   el.resultMessage.textContent = messages[gameState.phase] || PHASE_LABELS[gameState.phase];
 
   if (el.resultSubMessage) {
+    const showPracticeResultHint =
+      isPostRacePhase(gameState.phase) && gameState.lastRaceType === 'practice';
     const showAiResultHint =
       (getCurrentRaceControl() === 'ai' && gameState.phase !== 'idle') ||
       (isPostRacePhase(gameState.phase) && gameState.lastRaceControl === 'ai');
-    el.resultSubMessage.hidden = !showAiResultHint;
-    el.resultSubMessage.textContent =
-      gameState.phase === 'finished'
-        ? '本场由 AI 托管完成，操作类成就不会解锁。'
-        : '本场为 AI 托管，操作类成就不会解锁。';
+    el.resultSubMessage.hidden = !showPracticeResultHint && !showAiResultHint;
+    if (showPracticeResultHint) {
+      el.resultSubMessage.textContent = '练习赛无报名费，奖金较低，不计入正式连胜和高难度成就。';
+    } else {
+      el.resultSubMessage.textContent =
+        gameState.phase === 'finished'
+          ? '本场由 AI 托管完成，操作类成就不会解锁。'
+          : '本场为 AI 托管，操作类成就不会解锁。';
+    }
   }
 }
 
@@ -1414,6 +1494,9 @@ function updateStats() {
   }
   if (el.statusVersionText) {
     el.statusVersionText.textContent = GAME_VERSION;
+  }
+  if (typeof renderBuildAdvice === 'function') {
+    renderBuildAdvice();
   }
   renderDifficulty();
   if (typeof renderProfile === 'function') {

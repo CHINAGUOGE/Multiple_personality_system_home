@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
     />
-    <title>赛车小游戏 v1.7｜MPS Lab 复古赛车经营游戏</title>
+    <title>赛车小游戏 v1.8｜MPS Lab 复古赛车经营游戏</title>
     <meta
       name="description"
       content="MPS Lab 赛车小游戏是一个复古 Windows 风格的网页赛车经营小游戏，支持手机和电脑访问，包含赛道比赛、金币收益、车辆升级与轻量经营玩法。"
@@ -21,7 +21,7 @@
       <main class="app-window" aria-label="横线赛车经营赛">
         <div class="title-bar">
           <span class="title-icon"></span>
-          <span>横线赛车经营赛 v1.7</span>
+          <span>横线赛车经营赛 v1.8</span>
           <div class="window-buttons" aria-hidden="true">
             <span>_</span>
             <span>□</span>
@@ -96,7 +96,7 @@
                   <span>当前难度</span>
                   <strong id="difficultyCurrentName">标准</strong>
                   <small id="difficultyCurrentMeta"
-                    >报名200元 · 奖金×1 · 强度×1.04 · 上限2.85</small
+                    >报名200元 · 奖金×1 · 强度×1.04 · 上限1.80</small
                   >
                 </div>
                 <button
@@ -227,7 +227,12 @@
 
             <section id="shopPanel" class="shop-section">
               <h2>随机零件商店</h2>
-              <p class="panel-note">已拥有零件仍可能少量出现，但刷新权重已降低。</p>
+              <p class="panel-note">
+                已拥有零件仍可能少量出现，但刷新权重已降低；商店会在比赛结束后刷新，切换难度不会刷新。
+              </p>
+              <p id="shopAdviceText" class="panel-note build-advice">
+                当前车辆短板：马力。标签仅提示属性方向，不保证换装收益。
+              </p>
               <div id="shopBody" class="card-grid shop-cards"></div>
             </section>
           </section>
@@ -288,6 +293,9 @@
               <p class="panel-note">
                 每种类型只能装备一个部件。旧部件会保留在库存；未装备零件可按原价 8 折出售。
               </p>
+              <p id="tuningAdviceText" class="panel-note build-advice">
+                当前车辆短板：马力。标签仅提示属性方向，不保证换装收益。
+              </p>
               <div id="garageSlotsBody" class="slot-list"></div>
 
               <h2>已装备零件</h2>
@@ -317,7 +325,7 @@
                   <span>当前难度</span>
                   <strong id="profileDifficultyName">标准</strong>
                   <small id="profileDifficultyMeta"
-                    >报名200元 · 奖金×1 · 强度×1.04 · 上限2.85</small
+                    >报名200元 · 奖金×1 · 强度×1.04 · 上限1.80</small
                   >
                 </div>
                 <button type="button" data-action="open-difficulty" aria-haspopup="dialog">
@@ -347,6 +355,10 @@
                 <div>
                   <dt>总比赛数</dt>
                   <dd id="statsTotalRaces">0</dd>
+                </div>
+                <div>
+                  <dt>练习赛数</dt>
+                  <dd id="statsPracticeRaces">0</dd>
                 </div>
                 <div>
                   <dt>总胜场</dt>
@@ -395,15 +407,14 @@
               <h2>版本信息</h2>
               <div class="version-card">
                 <div class="version-card-head">
-                  <strong id="versionText">v1.7</strong>
+                  <strong id="versionText">v1.8</strong>
                   <span class="version-qq">QQ群 727419840</span>
                 </div>
                 <p id="versionNote">
-                  新增「AI 托管一场」，会模拟普通玩家反应自动跑完本场，保留完整赛道动画和正常结算。
+                  休闲 / 标准体验补丁：降低电脑后期压迫，加入失败软保底、练习赛恢复和配装提示。
                 </p>
                 <small
-                  >AI
-                  托管可正常获得收益与比赛记录，但不会解锁反应、抢跑、连胜、连续名次等操作类成就。</small
+                  >商店改为比赛结束后刷新；切换难度不会免费刷新。</small
                 >
               </div>
             </section>
@@ -455,7 +466,7 @@
             </a>
           </div>
           <div class="status-panel status-panel-version">
-            <span id="statusVersionText">v1.7</span>
+            <span id="statusVersionText">v1.8</span>
           </div>
         </footer>
       </main>

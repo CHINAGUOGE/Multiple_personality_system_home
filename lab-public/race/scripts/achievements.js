@@ -317,6 +317,9 @@ function renderProfile() {
   if (el.statsTotalRaces) {
     el.statsTotalRaces.textContent = String(gameState.stats.totalRaces);
   }
+  if (el.statsPracticeRaces) {
+    el.statsPracticeRaces.textContent = String(gameState.stats.practiceRaces || 0);
+  }
   if (el.statsTotalWins) {
     el.statsTotalWins.textContent = String(gameState.stats.totalWins);
   }

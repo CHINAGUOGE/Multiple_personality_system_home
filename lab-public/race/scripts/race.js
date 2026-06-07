@@ -76,7 +76,7 @@ function getPlayerRating() {
 }
 
 function getOpponentPower() {
-  return RaceFormulaUtils.computeOpponentStrength({
+  const baseStrength = RaceFormulaUtils.computeOpponentStrength({
     raceCount: gameState.raceCount,
     difficulty: getDifficulty(),
     playerRating: getPlayerRating(),
@@ -84,6 +84,11 @@ function getOpponentPower() {
     chaseRampRaces: OPPONENT_CHASE_RAMP_RACES,
     chaseCap: OPPONENT_CHASE_CAP,
   });
+  const lossRelief = getLossStreakReliefConfig();
+  const lossReliefMultiplier = lossRelief ? lossRelief.opponentMultiplier : 1;
+  const practiceMultiplier = isPracticeRace() ? PRACTICE_OPPONENT_STRENGTH_MULTIPLIER : 1;
+
+  return baseStrength * lossReliefMultiplier * practiceMultiplier;
 }
 
 function getOpponentCarPower(id) {
@@ -142,6 +147,55 @@ function startAiAssistRace() {
   return true;
 }
 
+function startPracticeRace() {
+  if (!canStartPracticeRace()) {
+    const minEntryFee = getMinEntryFee();
+    const minDifficultyName = DIFFICULTIES[getMinEntryDifficultyKey()].name;
+
+    if (gameState.cash >= minEntryFee) {
+      addLog(`现金已够支付「${minDifficultyName}」模式报名费，练习赛暂不开放。`);
+      openNoticeModal(
+        '不能参加练习赛',
+        `当前资金已达到「${minDifficultyName}」报名线，练习赛暂不开放。请切到「${minDifficultyName}」模式继续正式赛事。`
+      );
+    } else {
+      addLog('练习赛只会在待机且现金不足最低报名费时开放。');
+    }
+    return false;
+  }
+
+  gameState.raceControl = 'manual';
+  gameState.aiAssist = createDefaultAiAssistState();
+  registerRace({ raceType: 'practice' });
+  updateStats();
+  return true;
+}
+
+function showPracticeEntryNotice() {
+  const minEntryFee = getMinEntryFee();
+  const minDifficultyName = DIFFICULTIES[getMinEntryDifficultyKey()].name;
+
+  openNoticeModal(
+    '资金不足，进入练习赛',
+    `当前资金低于「${minDifficultyName}」赛事报名费 ${minEntryFee} 元。本场可参加免费练习赛：奖金较低，不计入正式连胜和高难度成就。`,
+    {
+      confirmText: '开始练习赛',
+      onConfirm: startPracticeRace,
+    }
+  );
+}
+
+function showPracticeRecoveryNotice() {
+  const minEntryFee = getMinEntryFee();
+  const minDifficultyName = DIFFICULTIES[getMinEntryDifficultyKey()].name;
+
+  addLog(`现金已够支付「${minDifficultyName}」模式报名费，练习赛暂时关闭。`);
+  openNoticeModal(
+    '练习赛已关闭',
+    `你已经攒够「${minDifficultyName}」赛事报名费了。建议先切到「${minDifficultyName}」模式跑正式比赛；练习赛只会在资金低于最低报名费时开放。`
+  );
+}
+
 function takeOverAiAssistRace() {
   if (getCurrentRaceControl() !== 'ai') {
     return;
@@ -188,33 +242,61 @@ function onGreenLight() {
 }
 
 // 报名后进入红黄绿灯倒计时；玩家在绿灯前点击会进入抢跑分支。
-function registerRace() {
-  if (gameState.cash < getEntryFee()) {
-    const reachedGameOver = checkGameFailure();
-    addLog(`现金不足以支付「${getDifficulty().name}」难度报名费 ${getEntryFee()} 元。`);
-    if (!reachedGameOver && gameState.cash >= getMinEntryFee()) {
-      addLog('可降低难度以减少报名费，或进改装页卸下/卖掉零件。');
-    } else if (!reachedGameOver) {
-      addLog('可以进改装页卸下或卖掉零件，未装备零件回收价为原价 8 折。');
-    }
+function registerRace(options = {}) {
+  const raceType = options.raceType === 'practice' ? 'practice' : 'standard';
+  const entryFee = raceType === 'practice' ? 0 : getEntryFee();
+  const minEntryFee = getMinEntryFee();
+  const minDifficultyKey = getMinEntryDifficultyKey();
+  const minDifficultyName = DIFFICULTIES[minDifficultyKey].name;
+
+  if (raceType === 'practice' && gameState.cash >= minEntryFee) {
+    addLog(`现金已够支付「${minDifficultyName}」模式报名费，练习赛暂不开放。`);
+    openNoticeModal(
+      '不能参加练习赛',
+      `当前资金已达到「${minDifficultyName}」报名线，练习赛暂不开放。请切到「${minDifficultyName}」模式继续正式赛事。`
+    );
+    return false;
+  }
+
+  if (raceType === 'standard' && gameState.cash < entryFee) {
+    addLog(`现金不足以支付「${getDifficulty().name}」难度报名费 ${entryFee} 元。`);
     unlockAchievementById('broke_entry_attempt');
-    openNoticeModal('报名失败', '钱包空空，报名处拒绝了你的参赛申请。');
-    return;
+
+    if (gameState.cash >= minEntryFee) {
+      addLog(`当前余额已够「${minDifficultyName}」模式报名费，请先降低难度。`);
+      openNoticeModal(
+        '建议降低难度',
+        `当前资金不足以参加本难度赛事。你现在仍可参加「${minDifficultyName}」赛事，建议先切到「${minDifficultyName}」模式攒一两场。练习赛只会在资金低于最低报名费时开放。`
+      );
+      return false;
+    }
+
+    addLog(`当前余额低于最低报名费 ${minEntryFee} 元，可进入免费练习赛。`);
+    showPracticeEntryNotice();
+    return false;
   }
 
   clearRaceTimers();
   if (getCurrentRaceControl() !== 'ai') {
     resetRaceControlState();
   }
-  const entryFee = getEntryFee();
+  gameState.activeRaceType = raceType;
   gameState.cash -= entryFee;
   gameState.reactionTime = null;
   gameState.playerStarted = false;
   gameState.lastRaceControl = null;
+  gameState.lastRaceType = null;
   resetCars();
   updateStats();
 
-  addLog(`报名费 ${entryFee} 元`);
+  if (raceType === 'practice') {
+    addLog('参加练习赛：无报名费，奖金较低，不计入正式连胜。');
+  } else {
+    addLog(`报名费 ${entryFee} 元`);
+    if (getLossStreakReliefConfig()) {
+      addLog('系统悄悄放宽了这一场的对手强度。');
+    }
+  }
   addLog('等待绿灯……红灯或黄灯点击“起步 / 踩油门”会抢跑。');
 
   setPhase('countdown_red');
@@ -275,7 +357,7 @@ function updateBestReactionRecord(reactionSeconds) {
 }
 
 function updateWinStreak(playerRank, race) {
-  if (!isManualRace(race)) {
+  if (!isManualRace(race) || isPracticeRace(race)) {
     return;
   }
 
@@ -292,7 +374,7 @@ function updateWinStreak(playerRank, race) {
 }
 
 function updateManualDifficultyWinStreak(playerRank, race) {
-  if (!isManualRace(race)) {
+  if (!isManualRace(race) || isPracticeRace(race)) {
     return;
   }
 
@@ -318,7 +400,7 @@ function updateManualDifficultyWinStreak(playerRank, race) {
 }
 
 function updateManualRankStreak(playerRank, race) {
-  if (!isManualRace(race)) {
+  if (!isManualRace(race) || isPracticeRace(race)) {
     return;
   }
 
@@ -334,28 +416,33 @@ function updateManualRankStreak(playerRank, race) {
 
 function handleFalseStart() {
   const falseStartPhase = gameState.phase;
+  const practiceRace = isPracticeRace();
   clearRaceTimers();
   gameState.reactionTime = null;
   gameState.lastReactionTime = null;
   gameState.lastReactionControl = null;
   gameState.playerStarted = false;
-  gameState.currentWinStreak = 0;
-  gameState.manualRankStreak = createDefaultManualRankStreak();
-  gameState.manualDifficultyWinStreak = createDefaultManualDifficultyWinStreak();
-  gameState.stats.falseStartCount = (gameState.stats.falseStartCount || 0) + 1;
-  gameState.stats.falseStartStreak = (gameState.stats.falseStartStreak || 0) + 1;
-  gameState.stats.secondPlaceStreak = 0;
-  gameState.stats.fifthPlaceStreak = 0;
+  if (!practiceRace) {
+    gameState.currentWinStreak = 0;
+    gameState.currentLoseStreak += 1;
+    gameState.manualRankStreak = createDefaultManualRankStreak();
+    gameState.manualDifficultyWinStreak = createDefaultManualDifficultyWinStreak();
+    gameState.stats.falseStartCount = (gameState.stats.falseStartCount || 0) + 1;
+    gameState.stats.falseStartStreak = (gameState.stats.falseStartStreak || 0) + 1;
+    gameState.stats.secondPlaceStreak = 0;
+    gameState.stats.fifthPlaceStreak = 0;
+  }
   syncProgressStats();
-  gameState.lastRank = '犯规';
+  gameState.lastRank = practiceRace ? '练习犯规' : '犯规';
+  gameState.lastRaceType = practiceRace ? 'practice' : 'standard';
   setPhase('false_start');
   setLights('red');
   addLog(`${falseStartPhase === 'countdown_yellow' ? '黄灯' : '红灯'}抢跑犯规！`);
-  addLog('本场成绩无效，奖金 0 元，报名费不退。');
-  if (typeof checkAchievements === 'function') {
+  addLog(practiceRace ? '本场练习作废，奖金 0 元。' : '本场成绩无效，奖金 0 元，报名费不退。');
+  if (!practiceRace && typeof checkAchievements === 'function') {
     checkAchievements({ source: 'falseStart' });
   }
-  finishPostRace();
+  finishPostRace({ refreshShopAfterRace: false });
   autoSaveGame();
 }
 
@@ -441,7 +528,7 @@ function startPlayerCar(options = {}) {
   }
   updateResultMessage();
   updateButtons();
-  if (controlledBy === 'manual' && typeof checkAchievements === 'function') {
+  if (controlledBy === 'manual' && isFormalRace() && typeof checkAchievements === 'function') {
     checkAchievements({ source: 'validStart' });
   }
 }
@@ -498,9 +585,13 @@ function completeRace() {
   });
 
   const playerRank = ranked.findIndex((car) => car.isPlayer) + 1;
+  const practiceRace = isPracticeRace();
   const basePrize = PRIZES[playerRank - 1] || 0;
-  const rewardMultiplier = getDifficulty().rewardMultiplier;
-  const prize = Math.floor(basePrize * rewardMultiplier);
+  const rewardMultiplier = practiceRace ? 1 : getDifficulty().rewardMultiplier;
+  let prize = practiceRace ? getPracticePrize(playerRank) : Math.floor(basePrize * rewardMultiplier);
+  if (!practiceRace && getDifficultyKey() === 'easy' && playerRank === 5) {
+    prize = Math.max(prize, Math.floor(getEntryFee() * 0.7));
+  }
   const finishedRace = {
     controlledBy: getCurrentRaceControl(),
     reactionTime: gameState.reactionTime,
@@ -508,91 +599,111 @@ function completeRace() {
     prize,
     rewardMultiplier,
     difficultyKey: getDifficultyKey(),
+    raceType: practiceRace ? 'practice' : 'standard',
   };
 
   gameState.cash += prize;
-  gameState.raceCount += 1;
-  gameState.lastRank = `第 ${playerRank} 名`;
+  gameState.lastRank = practiceRace ? `练习第 ${playerRank} 名` : `第 ${playerRank} 名`;
   gameState.lastRaceControl = finishedRace.controlledBy;
-  updateWinStreak(playerRank, finishedRace);
-  updateManualDifficultyWinStreak(playerRank, finishedRace);
-  gameState.stats.falseStartStreak = 0;
-  const secondPlaceStreakBeforeRace = gameState.stats.secondPlaceStreak || 0;
-  if (isManualRace(finishedRace) && playerRank === 1 && secondPlaceStreakBeforeRace >= 10) {
-    gameState.stats.hasWonAfterSecondPlaceStreak = true;
-  }
-  if (isManualRace(finishedRace)) {
-    updateManualRankStreak(playerRank, finishedRace);
-  }
-  gameState.stats.totalRaces += 1;
-  gameState.stats.hasFinishedLast =
-    gameState.stats.hasFinishedLast || playerRank === ranked.length;
-  gameState.stats.hasLowCashAfterRace =
-    gameState.stats.hasLowCashAfterRace || gameState.cash < 100;
-  if (playerRank === 1) {
-    const difficultyKey = finishedRace.difficultyKey;
-    const equippedTemplateIds = EQUIPMENT_SLOTS.map((type) => getEquippedPart(type))
-      .filter(Boolean)
-      .map((part) => getPartTemplateId(part));
-    const wonWithBuildAchievements =
-      typeof getWinningAchievementTagsFromCurrentBuild === 'function'
-        ? getWinningAchievementTagsFromCurrentBuild()
-        : [];
+  gameState.lastRaceType = finishedRace.raceType;
 
-    gameState.stats.totalWins += 1;
-    gameState.stats.winsByDifficulty[difficultyKey] += 1;
-    if (isNightmareDifficulty(difficultyKey)) {
-      if (
-        isManualRace(finishedRace) &&
-        Number.isFinite(gameState.lastManualReactionTime) &&
-        gameState.lastManualReactionTime >= NIGHTMARE_SLOW_REACTION_SECONDS
-      ) {
-        gameState.stats.hasNightmareSlowReactionWin = true;
-      }
-      if (typeof getNightmareWinningAchievementTagsFromCurrentBuild === 'function') {
-        markNightmareBuildAchievementFlags(getNightmareWinningAchievementTagsFromCurrentBuild());
-      }
-    }
-    wonWithBuildAchievements.forEach((achievementId) => {
-      if (!gameState.stats.wonWithBuildAchievements.includes(achievementId)) {
-        gameState.stats.wonWithBuildAchievements.push(achievementId);
-      }
-    });
-
-    ['gearbox_xue_wrench', 'stability_xiaoyu_sponsor'].forEach((templateId) => {
-      if (
-        equippedTemplateIds.includes(templateId) &&
-        !gameState.stats.wonWithSpecialParts.includes(templateId)
-      ) {
-        gameState.stats.wonWithSpecialParts.push(templateId);
-      }
-    });
+  if (practiceRace) {
+    gameState.stats.practiceRaces = (gameState.stats.practiceRaces || 0) + 1;
   } else {
-    gameState.stats.totalLosses += 1;
+    gameState.raceCount += 1;
+    updateWinStreak(playerRank, finishedRace);
+    updateManualDifficultyWinStreak(playerRank, finishedRace);
+    gameState.stats.falseStartStreak = 0;
+    const secondPlaceStreakBeforeRace = gameState.stats.secondPlaceStreak || 0;
+    if (isManualRace(finishedRace) && playerRank === 1 && secondPlaceStreakBeforeRace >= 10) {
+      gameState.stats.hasWonAfterSecondPlaceStreak = true;
+    }
+    if (isManualRace(finishedRace)) {
+      updateManualRankStreak(playerRank, finishedRace);
+    }
+    gameState.stats.totalRaces += 1;
+    gameState.stats.hasFinishedLast =
+      gameState.stats.hasFinishedLast || playerRank === ranked.length;
+    gameState.stats.hasLowCashAfterRace =
+      gameState.stats.hasLowCashAfterRace || gameState.cash < 100;
+    if (playerRank === 1) {
+      const difficultyKey = finishedRace.difficultyKey;
+      const equippedTemplateIds = EQUIPMENT_SLOTS.map((type) => getEquippedPart(type))
+        .filter(Boolean)
+        .map((part) => getPartTemplateId(part));
+      const wonWithBuildAchievements =
+        typeof getWinningAchievementTagsFromCurrentBuild === 'function'
+          ? getWinningAchievementTagsFromCurrentBuild()
+          : [];
+
+      gameState.currentLoseStreak = 0;
+      gameState.stats.totalWins += 1;
+      gameState.stats.winsByDifficulty[difficultyKey] += 1;
+      if (isNightmareDifficulty(difficultyKey)) {
+        if (
+          isManualRace(finishedRace) &&
+          Number.isFinite(gameState.lastManualReactionTime) &&
+          gameState.lastManualReactionTime >= NIGHTMARE_SLOW_REACTION_SECONDS
+        ) {
+          gameState.stats.hasNightmareSlowReactionWin = true;
+        }
+        if (typeof getNightmareWinningAchievementTagsFromCurrentBuild === 'function') {
+          markNightmareBuildAchievementFlags(getNightmareWinningAchievementTagsFromCurrentBuild());
+        }
+      }
+      wonWithBuildAchievements.forEach((achievementId) => {
+        if (!gameState.stats.wonWithBuildAchievements.includes(achievementId)) {
+          gameState.stats.wonWithBuildAchievements.push(achievementId);
+        }
+      });
+
+      ['gearbox_xue_wrench', 'stability_xiaoyu_sponsor'].forEach((templateId) => {
+        if (
+          equippedTemplateIds.includes(templateId) &&
+          !gameState.stats.wonWithSpecialParts.includes(templateId)
+        ) {
+          gameState.stats.wonWithSpecialParts.push(templateId);
+        }
+      });
+    } else {
+      gameState.currentLoseStreak += 1;
+      gameState.stats.totalLosses += 1;
+    }
   }
   syncProgressStats();
   setPhase('finished');
   setLights('none');
 
   addLog('比赛结束！');
-  addLog(`本场排名：第 ${playerRank} 名`);
-  addLog(`难度「${getDifficulty().name}」奖金×${rewardMultiplier}`);
+  addLog(`本场排名：${gameState.lastRank}`);
+  if (practiceRace) {
+    addLog('练习赛奖金按最低报名费的小比例结算。');
+    addLog('练习赛不会刷新商店。');
+  } else {
+    addLog(`难度「${getDifficulty().name}」奖金×${rewardMultiplier}`);
+  }
   addLog(`获得奖金 ${prize} 元`);
   if (isAiRace(finishedRace)) {
     addLog('AI 托管完成本场比赛。');
     addLog('本场为 AI 托管，操作类成就不会解锁。');
   }
-  finishPostRace();
-  if (typeof checkAchievements === 'function') {
+  finishPostRace({ refreshShopAfterRace: !practiceRace });
+  if (practiceRace && gameState.cash >= getMinEntryFee()) {
+    showPracticeRecoveryNotice();
+  }
+  if (!practiceRace && typeof checkAchievements === 'function') {
     checkAchievements({ source: 'raceEnd', race: finishedRace });
   }
   resetRaceControlState({ preserveLastRaceControl: true });
   autoSaveGame();
 }
 
-function finishPostRace() {
-  refreshShop();
-  addLog('商店已刷新');
+function finishPostRace(options = {}) {
+  const refreshShopAfterRace = options.refreshShopAfterRace !== false;
+  if (refreshShopAfterRace) {
+    refreshShop('race-finished');
+    addLog('商店已刷新');
+  }
   addLog(`现金余额：${gameState.cash} 元`);
   updateStats();
 }
@@ -602,6 +713,7 @@ function nextRace() {
   gameState.reactionTime = null;
   gameState.playerStarted = false;
   gameState.panelReturnPhase = 'idle';
+  gameState.activeRaceType = 'standard';
   resetRaceControlState();
   resetCars();
   setLights('none');

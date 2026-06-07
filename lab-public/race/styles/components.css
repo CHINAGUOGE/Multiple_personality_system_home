@@ -318,6 +318,30 @@
   border: 1px solid #808080;
 }
 
+.build-advice {
+  color: #143f1f;
+  background: #e9f7ed;
+  border-color: #7eb98d;
+}
+
+.part-advice-label {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px 6px;
+  color: #0a3d18;
+  font-weight: bold;
+  background: #e9f7ed;
+  border: 1px solid #7eb98d;
+  border-radius: 4px;
+}
+
+.shop-card .part-advice-label,
+.inventory-card .part-advice-label,
+.part-option-row .part-advice-label {
+  color: #0a3d18;
+}
+
 .slot-list,
 .inventory-list,
 .owned-list {

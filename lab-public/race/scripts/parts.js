@@ -113,7 +113,7 @@ function pickWeightedParts(pool, count, options = {}) {
 }
 
 // 刷新商店会重新抽取当前难度奖池，并记录到存档，保证刷新后页面状态一致。
-function refreshShop() {
+function refreshShop(reason = 'manual') {
   const pool = getCurrentLootPool();
   const available = PART_POOL.filter((part) => pool.includes(getPartRarity(part)));
   const count = Math.min(available.length, Math.floor(randomBetween(4, 7)));
@@ -126,6 +126,117 @@ function refreshShop() {
   }));
   renderShop();
   autoSaveGame();
+}
+
+const CASUAL_DIFFICULTY_KEYS = ['easy', 'normal'];
+const SHORTAGE_LABELS = {
+  stability: '稳定',
+  tire: '轮胎',
+  transmission: '变速',
+  power: '马力',
+};
+const CASUAL_SHORTAGE_PRIORITY = ['stability', 'tire', 'transmission', 'power'];
+const RACING_SHORTAGE_PRIORITY = ['power', 'transmission', 'stability', 'tire'];
+
+function isCasualDifficulty() {
+  return CASUAL_DIFFICULTY_KEYS.includes(getDifficultyKey());
+}
+
+function getShortageAdviceTargets() {
+  const racePressure = Math.min(gameState.raceCount, 18);
+  const difficultyBias = {
+    easy: 0,
+    normal: 2,
+    hard: 6,
+    expert: 10,
+    nightmare: 14,
+  }[getDifficultyKey()] || 0;
+
+  return {
+    hp: Math.round(110 + racePressure * 3 + difficultyBias * 2.5),
+    engine: Math.round(14 + racePressure * 0.8 + difficultyBias),
+    tire: Math.round(13 + racePressure * 0.65 + difficultyBias * 0.7),
+    gearbox: Math.round(13 + racePressure * 0.7 + difficultyBias * 0.8),
+    stability: Math.round(12 + racePressure * 0.65 + difficultyBias * 0.8),
+  };
+}
+
+// 这里不是最优装备计算，只做轻量短板提示。
+// 不计算价格性价比，不模拟比赛结果，也不保证换装后一定更强。
+// 目标是帮助玩家理解当前车辆大概缺什么，避免商店信息太冷。
+function getCurrentShortages() {
+  const targets = getShortageAdviceTargets();
+  const stats = gameState.player;
+
+  return {
+    power: stats.hp < targets.hp || stats.engine < targets.engine,
+    tire: stats.tire < targets.tire,
+    transmission: stats.gearbox < targets.gearbox,
+    stability:
+      stats.stability < targets.stability ||
+      (stats.hp >= targets.hp + 35 && stats.stability < targets.stability + 4),
+  };
+}
+
+function getShortagePriority() {
+  return isCasualDifficulty() ? CASUAL_SHORTAGE_PRIORITY : RACING_SHORTAGE_PRIORITY;
+}
+
+function getCurrentShortageList(shortages = getCurrentShortages()) {
+  return getShortagePriority().filter((key) => shortages[key]);
+}
+
+function getVehicleShortageText() {
+  const shortageKeys = getCurrentShortageList();
+  const prefix = shortageKeys.length
+    ? `当前车辆短板：${shortageKeys.map((key) => SHORTAGE_LABELS[key]).join(' / ')}。`
+    : '当前车辆短板：暂无明显短板。';
+
+  return `${prefix}标签仅提示属性方向，不保证换装收益。`;
+}
+
+function getPartAdviceLabel(part, shortages = getCurrentShortages()) {
+  const changes = part && part.changes ? part.changes : {};
+  const hpGain = Number(changes.hp) || 0;
+  const engineGain = Number(changes.engine) || 0;
+  const tireGain = Number(changes.tire) || 0;
+  const gearboxGain = Number(changes.gearbox) || 0;
+  const stabilityGain = Number(changes.stability) || 0;
+  const weightChange = Number(changes.weight) || 0;
+
+  if (stabilityGain <= -4 || weightChange >= 85) {
+    return '高风险竞速件';
+  }
+  if (shortages.stability && stabilityGain > 0) {
+    return '补稳定短板';
+  }
+  if (shortages.tire && tireGain > 0) {
+    return '补轮胎短板';
+  }
+  if (shortages.transmission && gearboxGain > 0) {
+    return '补变速短板';
+  }
+  if (shortages.power && (hpGain > 0 || engineGain > 0)) {
+    return '补马力短板';
+  }
+  if (isCasualDifficulty() && stabilityGain >= 0 && weightChange < 85) {
+    return '休闲友好';
+  }
+  return '属性提示';
+}
+
+function renderPartAdviceLabel(part) {
+  return `<small class="part-advice-label">${getPartAdviceLabel(part)}</small>`;
+}
+
+function renderBuildAdvice() {
+  const text = getVehicleShortageText();
+  if (el.shopAdviceText) {
+    el.shopAdviceText.textContent = text;
+  }
+  if (el.tuningAdviceText) {
+    el.tuningAdviceText.textContent = text;
+  }
 }
 
 function renderShop() {
@@ -143,6 +254,7 @@ function renderShop() {
         <p>类型：${formatPartType(part.type)}</p>
         <p>效果：${part.effectText}</p>
         <strong>价格：${part.price} 元</strong>
+        ${renderPartAdviceLabel(part)}
       </div>
     `;
 
@@ -154,7 +266,7 @@ function renderShop() {
 
     const reason = document.createElement('small');
     reason.className = 'card-reason';
-    reason.textContent = '可购买';
+    reason.textContent = getPartAdviceLabel(part);
 
     card.appendChild(button);
     card.appendChild(reason);
@@ -344,6 +456,7 @@ function createPartOptionList(type) {
                   </button>
                 </div>
                 ${renderPartChangeTags(getPartComparisonChanges(part, equippedPart))}
+                ${renderPartAdviceLabel(part)}
               </li>
             `;
           })
@@ -513,6 +626,7 @@ function createTuningPartCard(part, equipped) {
       </div>
       <p>类型：${formatPartType(part.type)}</p>
       ${renderPartComparison(part, equippedPart)}
+      ${renderPartAdviceLabel(part)}
       <small>${equipped ? '当前车辆已装备' : '库存零件，可装备或出售'}</small>
     </div>
   `;

@@ -22,15 +22,27 @@ const PHASE_LABELS = {
 
 const PRIZES = [1200, 800, 500, 200, 100];
 const ENTRY_FEE = 200;
+const PRACTICE_PRIZE_RATES = [0.7, 0.62, 0.55, 0.48, 0.42];
+const PRACTICE_OPPONENT_STRENGTH_MULTIPLIER = 0.78;
 const PART_SELL_RATE = 0.8;
 const FINISH = 100;
 const TICK_MS = 45;
 const STORAGE_KEY = 'mpsteam-race-save-v1';
-const GAME_VERSION = 'v1.7';
+const GAME_VERSION = 'v1.8';
 const GAME_VERSION_NOTE =
-  '新增「AI 托管一场」，会模拟普通玩家反应自动跑完本场，保留完整赛道动画和正常结算。';
+  '休闲 / 标准体验补丁：降低电脑后期压迫，加入失败软保底、练习赛恢复和配装提示。';
 const AI_ASSIST_REACTION_RANGE_SECONDS = [0.12, 0.3];
 const MIN_MANUAL_REACTION_SECONDS = 0.001;
+const LOSS_STREAK_RELIEF = {
+  easy: {
+    threshold: 3,
+    opponentMultiplier: 0.88,
+  },
+  normal: {
+    threshold: 4,
+    opponentMultiplier: 0.94,
+  },
+};
 
 const BASE_PLAYER_STATS = {
   engine: 10,
@@ -118,7 +130,7 @@ const DIFFICULTIES = {
     entryFeeMultiplier: 0.8,
     chaseRate: 0.015,
     opponentChaseCap: 0.7,
-    maxOpponentStrength: 2.45,
+    maxOpponentStrength: 1.5,
     opponentChaseStartRace: 6,
     opponentChaseRampRaces: 14,
     earlyRaceAssist: 0.2,
@@ -132,7 +144,7 @@ const DIFFICULTIES = {
     entryFeeMultiplier: 1.0,
     chaseRate: 0.045,
     opponentChaseCap: 0.85,
-    maxOpponentStrength: 2.85,
+    maxOpponentStrength: 1.8,
     opponentChaseStartRace: 6,
     opponentChaseRampRaces: 14,
     earlyRaceAssist: 0.18,
