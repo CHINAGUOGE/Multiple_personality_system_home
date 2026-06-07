@@ -68,7 +68,7 @@
         </div>
         <div class="save-meta">
           <span id="saveStatus">自动加载中</span>
-          <span class="dev-note">测试节奏：1 小时 = 1 分钟</span>
+          <span id="paceNote" class="pace-note">真实节奏：旅行按真实时间</span>
         </div>
       </section>
 
@@ -126,6 +126,12 @@
                 <h2 id="gardenTitle">露珠慢慢落下来</h2>
               </div>
               <strong id="gardenPending">0 / 20</strong>
+            </div>
+            <div class="dewfall-scene" aria-hidden="true">
+              <span class="garden-stem garden-stem-left"></span>
+              <span class="garden-stem garden-stem-right"></span>
+              <span class="falling-dew"></span>
+              <span class="dew-landing"></span>
             </div>
             <p id="gardenHint" class="panel-note">下一颗露珠正在路上。</p>
             <button id="collectDewBtn" class="primary-action" type="button">收集露珠</button>

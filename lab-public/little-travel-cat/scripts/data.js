@@ -4,12 +4,12 @@ export const ACTIVE_SLOT_KEY = 'littleTravelCatActiveSlot:v1';
 export const SAVE_KEY_PREFIX = 'littleTravelCatSave:v1:slot:';
 export const THEME_KEY = 'littleTravelCatTheme:v1';
 
-export const RESOURCE_INTERVAL_MS = 5 * 60 * 1000;
+export const RESOURCE_INTERVAL_MS = 60 * 1000;
 export const RESOURCE_CAP = 20;
 export const STARTING_DEW = 25;
 
-// 发布前如需真实放置节奏，将 DEV_TIME_SCALE 改为 false。
-export const DEV_TIME_SCALE = true;
+// 默认真实节奏；页面运行时带 ?dev 会临时使用测试旅行时长。
+export const DEV_TIME_SCALE = false;
 export const DEV_HOUR_MS = 60 * 1000;
 export const PROD_HOUR_MS = 60 * 60 * 1000;
 export const HOUR_MS = DEV_TIME_SCALE ? DEV_HOUR_MS : PROD_HOUR_MS;
